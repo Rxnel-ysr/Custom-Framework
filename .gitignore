@@ -4,7 +4,7 @@ App/Http/Middlewares/*
 App/Http/Controllers/*
 App/Http/Models/*
 database/migrations/*
-public/*
+public/**
 resources/views/*
 storage/*
 !App/Http/Controllers/Controller.php
