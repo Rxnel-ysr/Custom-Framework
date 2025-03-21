@@ -1,2 +1,10 @@
 public/css/*
 public/js/*
+App/Http/Middlewares/*
+App/Http/Controllers/*
+App/Http/Models/*
+database/migrations/*
+public/*
+resources/views/*
+storage/*
+!App/Http/Controllers/Controller.php
