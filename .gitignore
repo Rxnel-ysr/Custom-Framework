@@ -7,4 +7,6 @@
 /resources/views/*
 /storage/**
 *.log
+*.css
+*.js
 !/App/Http/Controllers/Controller.php
