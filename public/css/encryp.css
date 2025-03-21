@@ -1,0 +1,37 @@
+#encryptionForm {
+  display: flex;
+  flex-direction: column;
+  margin: 20px auto;
+  width: 50%;
+  padding: 20px;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.encryption-container {
+  background-color: #f8f9fa;
+  border: 1px solid #ced4da;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  margin-top: 20px;
+}
+
+.encryption-container h2 {
+  color: #007bff;
+}
+
+.encryption-container .form-label {
+  font-weight: bold;
+}
+
+.encryption-container .btn-primary {
+  background-color: #007bff;
+  border: none;
+}
+
+.encryption-container .btn-primary:hover {
+  background-color: #0056b3;
+}
+
