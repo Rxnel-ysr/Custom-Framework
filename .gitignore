@@ -1,8 +1,8 @@
-public/**
-App/Http/Middlewares/*
-App/Http/Controllers/*
-App/Http/Models/*
-database/migrations/*
-resources/views/*
-storage/**
-!App/Http/Controllers/Controller.php
+/public/**
+/App/Http/Middlewares/*
+/App/Http/Controllers/*
+/App/Http/Models/*
+/database/migrations/*
+/resources/views/*
+/storage/**
+!/App/Http/Controllers/Controller.php
