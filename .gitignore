@@ -6,4 +6,5 @@
 /database/migrations/*
 /resources/views/*
 /storage/**
+*.log
 !/App/Http/Controllers/Controller.php
