@@ -2,6 +2,7 @@
 /App/Http/Middlewares/*
 /App/Http/Controllers/*
 /App/Http/Models/*
+/App/Core/Libs/**
 /database/migrations/*
 /resources/views/*
 /storage/**
