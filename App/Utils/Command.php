@@ -18,7 +18,7 @@ class Command
 {
     private static array $command = [];
 
-    public static function register(string $triggers, string|callable $command, array $params, array $dependencies = [], string $help_message = '', array $export_var = [])
+    public static function register(string $triggers, string|callable $command, array $params = [], array $dependencies = [], string $help_message = '', array $export_var = [])
     {
         self::$command[$triggers] = [
             'dependencies' => $dependencies,
