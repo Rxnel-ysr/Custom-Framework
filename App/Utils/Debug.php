@@ -2,6 +2,9 @@
 
 namespace App\Debug;
 
+use Exception;
+use Throwable;
+
 class Debugger
 {
     private static $logFile = __DIR__ . '/storage/logs/debug.log';
@@ -86,5 +89,13 @@ class Debugger
     public static function dumpTrace($trace)
     {
         error_log('[BACKTRACE] ' . print_r($trace, true));
+    }
+
+    public static function dumpErr(Exception|Throwable $e)
+    {
+        error_log("\n[ERROR] " . get_class($e) . ' | Code: ' . $e->getCode()
+            . "\nMessage: " . $e->getMessage()
+            . "\nFile: " . $e->getFile() . ' (Line: ' . $e->getLine() . ')'
+            . "\nTrace:\n" . $e->getTraceAsString() . "\n");
     }
 }

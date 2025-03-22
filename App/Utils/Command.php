@@ -12,7 +12,7 @@ require_once UTILS_PATH . 'Debug.php';
 
 ini_set('display_errors', 0);
 ini_set('display_startup_errors', 0);
-Debugger::init(false,0);
+Debugger::init(false, 0);
 
 class Command
 {
@@ -37,10 +37,14 @@ class Command
             }
 
             foreach (self::$command[$trigger]['dependencies'] as $alias => $dependency) {
-                require_once ClassManager::getClassFile($dependency);
+                if (strpos($dependency, '.php') === false) {
+                    require_once ClassManager::getClassFile($dependency);
 
-                if (!is_numeric($alias)) {
-                    class_alias($dependency, $alias);
+                    if (!is_numeric($alias)) {
+                        class_alias($dependency, $alias);
+                    }
+                } else {
+                    require_once $dependency;
                 }
             }
 
@@ -49,15 +53,14 @@ class Command
             $command = self::$command[$trigger]['command'];
 
             if (is_callable($command)) {
-                callFuncWithParams($command, self::$command[$trigger]['params']);
+                return callFuncWithParams($command, self::$command[$trigger]['params']);
             }
 
             if (is_string($command)) {
                 return eval($command);
             }
         } catch (\Throwable $e) {
-            error_log($e->getMessage());
-            Debugger::dumpTrace($e->getTrace());
+            Debugger::dumpErr($e);
         }
     }
 
@@ -83,9 +86,9 @@ class Command
     /**
      * Return php CLI parameter on given index
      */
-    public static function parameter(int $n)
+    public static function parameter(int $n, string $prompt, mixed $default = '')
     {
         global $argv;
-        return $argv[$n];
+        return $argv[$n] ?? (empty($default) ? trim(readline($prompt)) : $default);
     }
 }

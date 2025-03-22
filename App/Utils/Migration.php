@@ -15,8 +15,8 @@ class Migration
     {
         try {
             return require DATABASE . 'record/record.php';
-        } catch (\ParseError $e) {
-            Debugger::dumpTrace($e->getTrace());
+        } catch (\Throwable $e) {
+            Debugger::dumpErr($e);
         }
     }
 
@@ -25,8 +25,8 @@ class Migration
         try {
             $records = require DATABASE . 'record/record.php';
             return $records[$records['current']];
-        } catch (\ParseError $e) {
-            Debugger::dumpTrace($e->getTrace());
+        } catch (\Throwable $e) {
+            Debugger::dumpErr($e);
         }
     }
 
@@ -43,6 +43,98 @@ class Migration
         file_put_contents(DATABASE . 'record/record.php', $content);
     }
 
+    public static function migrate()
+    {
+        $files = glob(MIGRATIONS . '*.php');
+        $records = Migration::getRecord();
+
+        if ($records['current'] > -1) {
+            $filenames = array_map(fn($file) => basename($file), $files);
+            $current_migrations = array_keys($records[$records['current']]);
+
+            $new_migrations = arrayNonIntersect($current_migrations, $filenames);
+
+            if (empty($new_migrations)) {
+                echo 'Nothing to migrate.' . PHP_EOL;
+                return 0;
+            }
+
+            $old_migrations = arrayIntersectOnly($current_migrations, $filenames);
+
+            $files = array_map(function ($file) use ($new_migrations, $old_migrations) {
+                if (in_array(basename($file), $new_migrations)) {
+                    return ['file' => $file, 'status' => 'pending'];
+                };
+
+                if (in_array(basename($file), $old_migrations)) {
+                    return ['file' => $file, 'status' => 'done'];
+                }
+                return null;
+            }, $files);
+
+            foreach ($files as $f) {
+                if (!$f)
+                    continue;
+                $basename = basename($f['file']);
+
+                Migration::addMigrationOnRecord($records['current'] + 1, getContent($f['file'], FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES, [1]), $basename);
+
+                if ($f['status'] != 'done') {
+                    echo 'Running migration: ' . $basename . PHP_EOL;
+                    $class = require $f['file'];
+                    $class->up();
+                }
+            }
+        } else {
+            foreach ($files as $f) {
+                $basename = basename($f);
+                Migration::addMigrationOnRecord($records['current'] + 1, getContent($f, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES, [1]), $basename);
+                echo 'Running migration: ' . $basename . PHP_EOL;
+                $class = require $f;
+                $class->up();
+            }
+        }
+
+        Migration::goToNextMigration();
+    }
+
+    public static function dropAll()
+    {
+        $files = glob(MIGRATIONS . '*.php');
+
+        if (empty($files)) {
+            echo 'Nothing to drop.' . PHP_EOL;
+            return;
+        }
+
+        foreach ($files as $f) {
+            echo 'Dropping migration: ' . basename($f) . PHP_EOL;
+            $class = require $f;
+            $class->down();
+        }
+    }
+
+    public static function dropAndReapplyAll()
+    {
+        $files = glob(MIGRATIONS . '*.php');
+
+        if (empty($files)) {
+            echo 'Nothing to migrate.' . PHP_EOL;
+            return;
+        }
+
+        foreach ($files as $f) {
+            echo 'Dropping migration: ' . basename($f) . PHP_EOL;
+            $class = require $f;
+            $class->down();
+        }
+        foreach ($files as $f) {
+            echo 'Running migration: ' . basename($f) . PHP_EOL;
+            $class = require $f;
+            $class->up();
+        }
+    }
+
     public static function goToNextMigration()
     {
         $records = self::getRecord();
@@ -54,38 +146,42 @@ class Migration
 
     public static function goToPrevMigrationsAndUnset()
     {
-        $records = self::getRecord();
-        $current = $records['current'];
+        try {
+            $records = self::getRecord();
+            $current = $records['current'];
 
-        if ($current < 0) {
-            echo 'No previous migration to rollback.' . PHP_EOL;
-            return;
-        }
+            if ($current < 0) {
+                echo 'No previous migration to rollback.' . PHP_EOL;
+                return;
+            }
 
-        $current_record = $records[$current];
-        $prev_record = $records[$current - 1] ?? [];
+            $current_record = $records[$current];
+            $prev_record = $records[$current - 1] ?? [];
 
-        $prepare = filterArrayToKeep($current_record, arrayNonIntersect(array_keys($current_record), array_keys($prev_record)));
+            $prepare = filterArrayToKeep($current_record, arrayNonIntersect(array_keys($current_record), array_keys($prev_record)));
 
-        foreach ($prepare as $key => $code) {
-            try {
+            foreach ($prepare as $key => $code) {
                 $instance = eval($code);
                 echo 'Rolling back: ' . $key . PHP_EOL;
                 $instance->down();
-            } catch (\ParseError $e) {
-                Debugger::dumpTrace($e->getTrace());
             }
+
+            if ($records['current'] !== -1) {
+                unset($records[$current]);
+            }
+
+            $records['current']--;
+            echo '';
+
+            $content = "<?php\n\nreturn " . var_export($records, true) . ";\n";
+            file_put_contents(DATABASE . 'record/record.php', $content);
+        } catch (\ParseError $e) {
+            Debugger::dumpErr($e);
+        } catch (\Throwable $e) {
+            Debugger::dumpErr($e);
+        } finally {
+            echo 'Done.' . PHP_EOL;
         }
-
-        if ($records['current'] !== -1) {
-            unset($records[$current]);
-        }
-
-        $records['current']--;
-        echo '';
-
-        $content = "<?php\n\nreturn " . var_export($records, true) . ";\n";
-        file_put_contents(DATABASE . 'record/record.php', $content);
     }
 
     public static function getCurrentConnection()
