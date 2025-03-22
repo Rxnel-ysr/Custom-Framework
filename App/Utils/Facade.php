@@ -3,7 +3,7 @@
 namespace App\Support\Facades;
 
 use App\Utils\Model as BaseModel;
-use Instance;
+use App\Utils\Manager\InstanceManager;
 
 class Model
 {
@@ -13,7 +13,7 @@ class Model
     public static function getInstance()
     {
         if (!self::$instance) {
-            self::$instance = Instance::getInstance(BaseModel::class);
+            self::$instance = InstanceManager::getInstance(BaseModel::class);
         }
 
         return self::$instance;
