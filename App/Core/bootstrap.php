@@ -2,10 +2,11 @@
 
 use App\Debug\Debugger;
 use App\Utils\Guard\RateLimiter;
-use App\Utils\Http\Response;
 
 require_once 'definitions.php';
 require_once UTILS_PATH . 'Debug.php';
+
+Debugger::init(true,0);
 
 try {
     require_once UTILS_PATH . 'Utility.php';
@@ -21,6 +22,10 @@ try {
         UTILS_PATH . 'Utility.php',
         UTILS_PATH . 'Env.php',
         UTILS_PATH . 'Debug.php',
+        UTILS_PATH . 'Command.php',
+        UTILS_PATH . 'ClassManager.php',
+        UTILS_PATH . 'Migrations.php',
+
     ]);   
 
     $rate_limiter_config = require_once CONFIG . 'rate-limiter.php';

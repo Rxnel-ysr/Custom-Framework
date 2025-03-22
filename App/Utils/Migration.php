@@ -3,7 +3,6 @@
 namespace App\Utils\Database;
 
 use App\Utils\Database\Connection;
-use PSpell\Config;
 
 class Migration
 {
@@ -36,7 +35,7 @@ class Migration
             $records[$id][$name] = $migration;
         }
 
-        $content = "<?php\n\nreturn " . convertArraySyntax(var_export($records, true)) . ";\n";
+        $content = "<?php\n\nreturn " . var_export($records, true) . ";\n";
         file_put_contents(DATABASE . 'record/record.php', $content);
     }
 
@@ -45,7 +44,7 @@ class Migration
         $records = self::getRecord();
         $records['current'] = (int)$records['current'] + 1;
 
-        $content = "<?php\n\nreturn " . convertArraySyntax(var_export($records, true)) . ";\n";
+        $content = "<?php\n\nreturn " . var_export($records, true) . ";\n";
         file_put_contents(DATABASE . 'record/record.php', $content);
     }
 
@@ -77,7 +76,7 @@ class Migration
         $records['current']--;
         echo '';
 
-        $content = "<?php\n\nreturn " . convertArraySyntax(var_export($records, true)) . ";\n";
+        $content = "<?php\n\nreturn " . var_export($records, true) . ";\n";
         file_put_contents(DATABASE . 'record/record.php', $content);
     }
 

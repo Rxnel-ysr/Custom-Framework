@@ -1,5 +1,5 @@
 <?php
 
-use App\Http\Controllers\test;
-
-Route::get('/test', [test::class,'test']);
+Route::get('/test', function () {
+    echo 'Hi';
+});

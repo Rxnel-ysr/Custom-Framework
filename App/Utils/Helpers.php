@@ -202,7 +202,30 @@ function arrayIntersectOnly(array $a, array $b): array
     return array_values(array_intersect($a, $b));
 }
 
-function convertArraySyntax(string $input): string
-{
-    return preg_replace(['/array \(/', '/\),/'], ['[', '],'], str_replace(')', ']', $input));
+function compacts(...$keys) {
+    $vars = get_defined_vars();
+    $result = [];
+    
+    foreach ($keys as $key) {
+        if (isset($GLOBALS[$key])) {
+            $result[$key] = $GLOBALS[$key];
+        }
+    }
+    
+    return $result;
 }
+
+function callFuncWithParams(callable $func, array $params) {
+    $ref = new ReflectionFunction($func);
+    $args = [];
+    foreach ($ref->getParameters() as $param) {
+        $name = $param->getName();
+        $args[] = $params[$name] ?? ($param->isDefaultValueAvailable() ? $param->getDefaultValue() : null);
+    }
+
+    return $ref->invoke(...$args);
+}
+
+// function convertArraySyntax(string $exported): string {
+//     return preg_replace('/array\s*\((.*?)\)/s', '[$1]', $exported);
+// }

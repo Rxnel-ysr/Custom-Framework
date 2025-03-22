@@ -2,7 +2,9 @@
 // Define paths, and others
 define('ROOT', realpath(dirname(dirname(__DIR__))) . '/');
 define('PUBLICS', ROOT . 'public/');
-define('CORE', __DIR__ . '/');
+define('APP', ROOT .'App/');
+define('CORE', APP .'Core/');
+define('CLI', APP .'CLI/');
 define('UTILS_PATH', ROOT . 'App/Utils/');
 define('HTTP', ROOT . 'App/Http/');
 define('LOGS_PATH', ROOT . 'storage/logs/');

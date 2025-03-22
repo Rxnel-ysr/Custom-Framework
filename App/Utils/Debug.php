@@ -5,9 +5,14 @@ namespace App\Debug;
 class Debugger
 {
     private static $logFile = __DIR__ . '/storage/logs/debug.log';
+    private static bool $web;
 
-    public static function init()
+    public static function init($isWeb, $errorLevel)
     {
+        self::$web = $isWeb;
+        ini_set('display_errors', 0);
+        ini_set('display_startup_errors', 0);
+        error_reporting($errorLevel);
         error_reporting(E_ALL);
         ini_set('display_errors', 1);
         ini_set('log_errors', 1);
@@ -20,11 +25,11 @@ class Debugger
 
     public static function handleError($errno, $errstr, $errfile, $errline)
     {
-        $trimmedFile = self::trimPath($errfile); // Trim long paths
+        $trimmedFile = self::trimPath($errfile);  // Trim long paths
         $message = "File: $trimmedFile\n";
         $message .= "Line: $errline\n";
 
-        showErrorPage(500, 'Error: ' . $errstr, $message);
+        self::$web ? showErrorPage(500, 'Error: ' . $errstr, $message) : '';
     }
 
     /**
@@ -45,11 +50,11 @@ class Debugger
         $errfile = $exception->getFile();
         $errline = $exception->getLine();
 
-        $trimmedFile = self::trimPath($errfile); // Trim long paths
+        $trimmedFile = self::trimPath($errfile);  // Trim long paths
         $message = "File: $trimmedFile\n";
         $message .= "Line: $errline\n";
 
-        showErrorPage(500, 'Exception: ' . $errstr, $message);
+        self::$web ? showErrorPage(500, 'Exception: ' . $errstr, $message) : '';
     }
 
     public static function handleShutdown()
@@ -66,13 +71,12 @@ class Debugger
             $message .= "Line: $errline\n";
             $message .= "Message: $errstr\n";
 
-            error_log("[SHUTDOWN] " . $message);  // Log it
-            showErrorPage(500, 'Fatal Error', $message);
+            error_log('[SHUTDOWN] ' . $message);  // Log it
+            self::$web ? showErrorPage(500, 'Fatal Error', $message) : '';
 
             exit(1);
         }
     }
-
 
     // private static function log($message)
     // {
@@ -81,11 +85,6 @@ class Debugger
 
     public static function dumpTrace($trace)
     {
-        error_log("[BACKTRACE] " . print_r($trace, true));
+        error_log('[BACKTRACE] ' . print_r($trace, true));
     }
 }
-
-ini_set('display_errors', 0);
-ini_set('display_startup_errors', 0);
-error_reporting(0);
-Debugger::init();

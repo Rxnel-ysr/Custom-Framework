@@ -1,5 +1,5 @@
 <?php
 
-return [
-    'current' => -1,
-];
+return array (
+  'current' => -1,
+);
