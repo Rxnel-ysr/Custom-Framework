@@ -9,4 +9,5 @@
 *.log
 *.css
 *.js
+*.env
 !/App/Http/Controllers/Controller.php
