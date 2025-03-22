@@ -2,6 +2,7 @@
 
 namespace App\Utils\Database;
 
+use App\Debug\Debugger;
 use App\Utils\Database\Connection;
 
 class Migration
@@ -12,22 +13,25 @@ class Migration
 
     public static function getRecord()
     {
-        return require DATABASE . 'record/record.php';
+        try {
+            return require DATABASE . 'record/record.php';
+        } catch (\ParseError $e) {
+            Debugger::dumpTrace($e->getTrace());
+        }
     }
 
     public static function getCurrentRecord()
     {
-
-        $records = require DATABASE . 'record/record.php';
-        return $records[$records['current']];
+        try {
+            $records = require DATABASE . 'record/record.php';
+            return $records[$records['current']];
+        } catch (\ParseError $e) {
+            Debugger::dumpTrace($e->getTrace());
+        }
     }
-
 
     public static function addMigrationOnRecord($id, $migration, $name)
     {
-
-        ini_set('short_open_tag', 1);
-
         $records = self::getRecord();
         if (!isset($records[$id])) {
             $records[$id] = [$name => $migration];
@@ -42,7 +46,7 @@ class Migration
     public static function goToNextMigration()
     {
         $records = self::getRecord();
-        $records['current'] = (int)$records['current'] + 1;
+        $records['current'] = (int) $records['current'] + 1;
 
         $content = "<?php\n\nreturn " . var_export($records, true) . ";\n";
         file_put_contents(DATABASE . 'record/record.php', $content);
@@ -64,9 +68,13 @@ class Migration
         $prepare = filterArrayToKeep($current_record, arrayNonIntersect(array_keys($current_record), array_keys($prev_record)));
 
         foreach ($prepare as $key => $code) {
-            $instance = eval($code);
-            echo 'Rolling back: ' . $key . PHP_EOL;
-            $instance->down();
+            try {
+                $instance = eval($code);
+                echo 'Rolling back: ' . $key . PHP_EOL;
+                $instance->down();
+            } catch (\ParseError $e) {
+                Debugger::dumpTrace($e->getTrace());
+            }
         }
 
         if ($records['current'] !== -1) {
@@ -80,20 +88,16 @@ class Migration
         file_put_contents(DATABASE . 'record/record.php', $content);
     }
 
-
     public static function getCurrentConnection()
     {
         return Connection::getInstance();
     }
 }
 
-
 class Schema
 {
-
     public static function create($table, $callback)
     {
-
         self::dropIfExists($table);
         $blueprint = new Blueprint($table);
         $callback($blueprint);
@@ -108,10 +112,8 @@ class Schema
     }
 }
 
-
 class Blueprint
 {
-
     private $pdo;
     private $stmt;
     private $table_name;
@@ -123,7 +125,6 @@ class Blueprint
     private $charset;
     private $db_type;
     private $config;
-
 
     public function __construct($table_name)
     {
@@ -137,7 +138,6 @@ class Blueprint
 
     public function build()
     {
-
         $columns = implode(', ', array_values($this->columns));
         $query = '
         CREATE TABLE IF NOT EXISTS '
@@ -151,7 +151,6 @@ class Blueprint
         $this->stmt = $this->pdo->prepare($query);
         $this->stmt->execute();
     }
-
 
     private function addColumn($column, $definition)
     {
@@ -221,17 +220,17 @@ class Blueprint
 
     public function decimal($column, $digits, $precision = 2)
     {
-        $this->addColumn($column, 'DECIMAL(' . $digits . ',' . $precision .  ') NOT NULL');
+        $this->addColumn($column, 'DECIMAL(' . $digits . ',' . $precision . ') NOT NULL');
         return $this;
     }
 
     public function foreignKey($fk_name, $type, $parent_table, $parent_table_id)
     {
-        $this->addColumn($fk_name, $type)
+        $this
+            ->addColumn($fk_name, $type)
             ->modifyLastColumn(', FOREIGN KEY (' . $fk_name . ') REFERENCES ' . $parent_table . '(' . $parent_table_id . ')');
         return $this;
     }
-
 
     public function foreignId($fk_name, $parent_table, $parent_table_id = 'id')
     {
@@ -259,7 +258,8 @@ class Blueprint
 
     public function timestamps()
     {
-        $this->addColumn('created_at', 'DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP')
+        $this
+            ->addColumn('created_at', 'DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP')
             ->addColumn('updated_at', 'DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP' . ($this->db_type == 'mysql' ? ' ON UPDATE CURRENT_TIMESTAMP' : ''));
         return $this;
     }

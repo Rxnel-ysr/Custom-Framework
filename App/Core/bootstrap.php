@@ -6,7 +6,7 @@ use App\Utils\Guard\RateLimiter;
 require_once 'definitions.php';
 require_once UTILS_PATH . 'Debug.php';
 
-Debugger::init(true,0);
+Debugger::init(true, 0);
 
 try {
     require_once UTILS_PATH . 'Utility.php';
@@ -25,8 +25,7 @@ try {
         UTILS_PATH . 'Command.php',
         UTILS_PATH . 'ClassManager.php',
         UTILS_PATH . 'Migrations.php',
-
-    ]);   
+    ]);
 
     $rate_limiter_config = require_once CONFIG . 'rate-limiter.php';
 
@@ -68,9 +67,9 @@ try {
 
     $executionTime = timeExecution(fn() => Route::dispatch($requestUri));
     error_log("Request done within: {$executionTime}ms");
-} catch (Exception $e) {
+} catch (\Throwable $e) {
     Debugger::dumpTrace($e->getTrace());
-    showErrorPage(500, $e->getMessage());
+    showErrorPage(500, $e->getMessage(),$e->getFile());
 }
 
 // Due some update, performance is whopping going down from 0.0005+~0.006+ to 0.#+ haizzzzzzzzz(Maybe these project are growing in size)
