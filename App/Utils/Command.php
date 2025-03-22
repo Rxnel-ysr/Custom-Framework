@@ -2,7 +2,7 @@
 namespace App\CLI;
 
 use App\Debug\Debugger;
-use App\Utils\ClassManager;
+use App\Utils\Manager\ClassManager;
 
 require_once './App/Core/definitions.php';
 require_once UTILS_PATH . 'ClassManager.php';

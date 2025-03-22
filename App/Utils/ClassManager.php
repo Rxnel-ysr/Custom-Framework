@@ -1,5 +1,5 @@
 <?php
-namespace App\Utils;
+namespace App\Utils\Manager;
 
 require_once './App/Core/definitions.php';
 

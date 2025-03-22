@@ -4,6 +4,7 @@
 use App\Utils\Http\Response;
 use App\utils\Guard\CSRF;
 use App\Debug\Debugger;
+use App\Utils\Manager\InstanceManager;
 
 $logFile = ROOT . "/storage/logs/server.log";
 $resources = ROOT . "/resources/";
@@ -139,7 +140,7 @@ class Utils
 
 function response($code = 200)
 {
-    $instance = Instance::getInstance(Response::class);
+    $instance = InstanceManager::getInstance(Response::class);
     $instance->status($code);
     return $instance;
 }
