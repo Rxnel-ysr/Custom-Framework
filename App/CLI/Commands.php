@@ -17,19 +17,13 @@ Command::register('start', function () {
     shell_exec('php -S ' . $ipPort . ' index.php');
 }, [], [], 'Start the server, if no ip and port where provided, defaulted to localhost:8000');
 
-Command::register('migrate', function () {
-    Migration::migrate();
-}, [], $required['migration'], 'Run then migrations');
+Command::register('migrate', fn() => Migration::migrate(), [], $required['migration'], 'Run then migrations');
 
-Command::register('migrate:fresh', function () {
-    Migration::dropAndReapplyAll();
-}, [], $required['migration'], 'Dropping all the migrations then reapply them');
+Command::register('migrate:dropAll', fn() => Migration::dropAll(), [], $required['migration'], 'Dropping all the migrations');
 
-Command::register('migrate:dropAll', function () {}, [], $required['migration'], 'Dropping all the migrations');
+Command::register('migrate:fresh', fn() => Migration::dropAndReapplyAll(), [], $required['migration'], 'Dropping all the migrations then reapply them');
 
-Command::register('migrate:rollback', function () {
-    Migration::goToPrevMigrationsAndUnset();
-}, [], $required['migration'], 'Rolling back the migrations');
+Command::register('migrate:rollback', fn() => Migration::goToPrevMigrationsAndUnset(), [], $required['migration'], 'Rolling back the migrations');
 
 Command::register('make:controller', function () {
     $name = Command::parameter(2, 'Name of controller: ');
@@ -41,6 +35,6 @@ Command::register('make:controller', function () {
 }, [], [], 'Make a new controller', ['test']);
 
 $cihuy = 'CIIIIIIIIIIIHHHHHHHHUUUUUUUUUUUUUYYYYYYYYY';
-Command::register('test', function () {
-    echo Test::test();
-}, [], [UTILS_PATH . 'Test.php'], '', ['cihuy']);
+Command::register('test', function ($name) {
+    echo $name;
+}, ['name' => $argv[2]], [UTILS_PATH . 'Test.php'], '', ['cihuy']);
