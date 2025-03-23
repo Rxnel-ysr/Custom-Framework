@@ -2,32 +2,32 @@
 
 use App\Debug\Debugger;
 use App\Utils\Guard\RateLimiter;
+use App\Utils\Manager\ClassManager;
 
 require_once 'definitions.php';
 require_once UTILS_PATH . 'Debug.php';
 
 Debugger::init(true, 0);
 
+require_once UTILS_PATH . 'ClassManager.php';
+require_once HTTP . 'Route.php';
+require_once CONTROLLERS . 'Controller.php';
+require_once UTILS_PATH . 'Model.php';
+require_once UTILS_PATH . 'Helpers.php';
+
+ClassManager::init();
+
 try {
-    require_once UTILS_PATH . 'Utility.php';
+
+    spl_autoload_register([ClassManager::class, 'autoload']);
 
     load([
-        UTILS_PATH,
         ROOT . 'App/Models',
-        HTTP . 'Route.php',
         ROOT . 'routes',
-        CONTROLLERS . 'Controller.php',
         CONTROLLERS,
-    ], [
-        UTILS_PATH . 'Utility.php',
-        UTILS_PATH . 'Env.php',
-        UTILS_PATH . 'Debug.php',
-        UTILS_PATH . 'Command.php',
-        UTILS_PATH . 'ClassManager.php',
-        UTILS_PATH . 'Migrations.php',
     ]);
 
-    $rate_limiter_config = require_once CONFIG . 'rate-limiter.php';
+    $rate_limiter_config = config(CONFIG . 'rate-limiter.php');
 
     $api_limiter = new RateLimiter(
         'api',
@@ -68,8 +68,8 @@ try {
     $executionTime = timeExecution(fn() => Route::dispatch($requestUri));
     error_log("Request done within: {$executionTime}ms");
 } catch (\Throwable $e) {
-    Debugger::dumpTrace($e->getTrace());
-    showErrorPage(500, $e->getMessage(),$e->getFile());
+    if ($e->getCode() == 404) {
+        echo 'Okay that work';
+        Debugger::dumpErr($e, true);
+    }
 }
-
-// Due some update, performance is whopping going down from 0.0005+~0.006+ to 0.#+ haizzzzzzzzz(Maybe these project are growing in size)

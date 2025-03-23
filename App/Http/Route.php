@@ -1,6 +1,8 @@
 <?php
 
 use App\utils\Guard\CSRF;
+use App\Utils\Http\Request;
+use App\Utils\Manager\ClassManager;
 
 class TrieNode
 {
@@ -143,7 +145,7 @@ class Route
         }
 
         if (is_callable($action)) {
-            $result = call_user_func_array($action, $params);
+            $result = call_user_func($action, ...$params);
             if (is_string($result)) {
                 echo $result;
                 exit;
@@ -171,5 +173,20 @@ Route::init();
 if (filter_var(env('WELCOME_MESSAGE', true), FILTER_VALIDATE_BOOLEAN)) {
     Route::get('/', function () {
         return view('index');
+    });
+}
+if (filter_var(env('WELCOME_MESSAGE', true), FILTER_VALIDATE_BOOLEAN)) {
+    Route::post('/DEBUG/ADD_CLASS', function () {
+        $class_path = Request::post('class-path');
+        $class_name = Request::post('class-name');
+
+        if (!file_exists(ROOT . $class_path . '.php')) {
+            echo "<script>alert('File not found');</script>";
+            return;
+        }
+        $class_name = explode('::class', $class_name, 2);
+        ClassManager::registerNewClass(str_replace('Exception: ', '', $class_name[0]), $class_path.'.php');
+
+        return redirectBack();
     });
 }

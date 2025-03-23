@@ -2,7 +2,8 @@
 
 namespace App\Utils;
 
-use App\Utils\Database\Connection;
+require_once UTILS_PATH . 'QueryBuilder.php';
+
 use App\Utils\Database\QueryBuilder;
 
 class Model extends QueryBuilder
@@ -23,7 +24,7 @@ class Model extends QueryBuilder
         if (!$this->table)
             $this->table(strtolower(str_replace('base', '', basename(str_replace('\\', '/', get_called_class())))) . 's');
 
-        $this->pdo = Connection::getInstance();
+        $this->pdo = self::getInstance();
     }
 
     public function __set($name, $value)

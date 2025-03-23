@@ -8,16 +8,16 @@ use Throwable;
 class Debugger
 {
     private static $logFile = __DIR__ . '/storage/logs/debug.log';
-    private static bool $web;
+    private static bool $web = false;
 
-    public static function init($isWeb, $errorLevel)
+    public static function init(bool $isWeb, int $errorLevel)
     {
         self::$web = $isWeb;
         ini_set('display_errors', 0);
         ini_set('display_startup_errors', 0);
         error_reporting($errorLevel);
-        error_reporting(E_ALL);
-        ini_set('display_errors', 1);
+        // error_reporting(E_ALL);
+        // ini_set('display_errors', 1);
         ini_set('log_errors', 1);
         ini_set('error_log', self::$logFile);
 
@@ -63,7 +63,10 @@ class Debugger
     public static function handleShutdown()
     {
         $error = error_get_last();
-        if ($error) {
+        if ($error !== null) {
+            if (!headers_sent()) {
+                http_response_code(500);
+            }
             $errType = $error['type'];
             $errstr = $error['message'];
             $errfile = $error['file'];
@@ -91,11 +94,42 @@ class Debugger
         error_log('[BACKTRACE] ' . print_r($trace, true));
     }
 
-    public static function dumpErr(Exception|Throwable $e)
+    public static function dumpErr(Exception|Throwable $e, bool $ignore = false)
     {
-        error_log("\n[ERROR] " . get_class($e) . ' | Code: ' . $e->getCode()
-            . "\nMessage: " . $e->getMessage()
-            . "\nFile: " . $e->getFile() . ' (Line: ' . $e->getLine() . ')'
-            . "\nTrace:\n" . $e->getTraceAsString() . "\n");
+        if ($e->getPrevious() === null) {
+            error_log("\n[ERROR] " . get_class($e) . ' | Code: ' . $e->getCode()
+                . "\nMessage: " . $e->getMessage()
+                . "\nFile: " . $e->getFile() . ' (Line: ' . $e->getLine() . ')'
+                . "\nTrace:\n" . $e->getTraceAsString() . "\n");
+        } else {
+            error_log("\n[ERROR] " . get_class($e) . ' | Code: ' . $e->getCode()
+                . "\nMessage: " . $e->getMessage()
+                . "\nFile: " . $e->getFile() . ' (Line: ' . $e->getLine() . ')'
+                . "\nTrace:\n" . $e->getTraceAsString()
+                . "\n\nPrevious Trigger:\n" . 'Code: ' . $e->getPrevious()->getCode()
+                . "\nMessage: " . $e->getPrevious()->getMessage()
+                . "\nFile: " . $e->getPrevious()->getFile() . ' (Line: ' . $e->getPrevious()->getLine() . ')'
+                . "\nTrace:\n" . $e->getPrevious()->getTraceAsString());
+        }
+
+        if (!$ignore) {
+            $errclass = get_class($e);
+            $errstr = $e->getMessage();
+            $errfile = $e->getFile();
+            $errline = $e->getLine();
+
+            $trimmedFile = self::trimPath($errfile);  // Trim long paths
+            $message = "File: $trimmedFile\n";
+            $message .= "Line: $errline\n";
+
+            echo "work here?";
+            var_dump(self::$web);
+            // showErrorPage(200);
+            if (self::$web === true) {
+                showErrorPage(500, $errclass . ': ' . $errstr, $message, '', $e->getTraceAsString(), $e, $e->getCode() === 404);
+            } else {
+                // die();
+            }
+        }
     }
 }

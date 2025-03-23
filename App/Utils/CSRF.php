@@ -3,10 +3,9 @@ namespace App\utils\Guard;
 
 class CSRF
 {
-
     /**
      * Generate pair of Token and Key
-     * 
+     *
      * @return array `['token' => 'token', 'key' => 'key']`
      */
     public static function generateCSRF(int $unixTime)
@@ -38,7 +37,7 @@ class CSRF
 
     /**
      * Validate CSRF token from request
-     * 
+     *
      * @return true if matched otherwise showing `Error page`
      */
     public static function validateCSRF()
@@ -84,7 +83,7 @@ class CSRF
 
     /**
      * Immediately expire given cookie by name
-     * 
+     *
      * @param string $key Name of cookie
      * @return void
      */
@@ -92,7 +91,6 @@ class CSRF
     {
         self::setSecureCookie($key, '', -3600);
     }
-
 
     private static function obliterate()
     {
@@ -102,7 +100,6 @@ class CSRF
             error_log('Deleted used CSRF token and cookie: ' . $key);
         }
     }
-
 
     private static function setSecureCookie(string $name, string $value, int $expires)
     {
@@ -117,13 +114,14 @@ class CSRF
     /**
      * Wrapper for `showErrorPage()`
      */
-    private static function handleFailure(int $httpCode, string $message, bool $reload = false)
+    private static function handleFailure(int $httpCode, string $message, string $trace = '', bool $reload = false)
     {
         showErrorPage(
             $httpCode,
             'CSRF Validation failed',
             $message,
             'Validation failed',
+            $trace,
             $reload,
             $reload ? getReferer() : null,
             $reload ? 'Retry' : null

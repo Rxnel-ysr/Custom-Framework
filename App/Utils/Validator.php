@@ -52,7 +52,7 @@ class Validator
             };
 
             if ($func !== null && method_exists(self::class, $func)) {
-                call_user_func_array([self::class, $func], array_merge([$field, $data], $params));
+                call_user_func([self::class, $func], ...array_merge([$field, $data], $params));
             } 
         }
     }

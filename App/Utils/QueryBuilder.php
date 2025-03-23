@@ -4,6 +4,7 @@ namespace App\Utils\Database;
 
 require_once UTILS_PATH . 'Connection.php';
 
+use App\Debug\Debugger;
 use App\Utils\Database\Connection;
 
 class QueryBuilder extends Connection
@@ -33,7 +34,7 @@ class QueryBuilder extends Connection
      */
     public function __construct()
     {
-        $this->pdo = Connection::getInstance();
+        $this->pdo = self::getInstance();
     }
 
     public function fillable($fillable = [])
@@ -54,7 +55,7 @@ class QueryBuilder extends Connection
     /**
      * Get ip of person or thing that made the query.
      */
-    private function getRequestIp()
+    private static function getRequestIp()
     {
         return '[' . $_SERVER['REMOTE_ADDR'] . ']:';
     }
@@ -358,10 +359,10 @@ class QueryBuilder extends Connection
 
             $main_body = $this->stmt->fetchAll(\PDO::FETCH_OBJ) ?: [];
 
-            if(empty($main_body)) return $main_body;
+            if (empty($main_body)) return $main_body;
 
             if (empty($this->relations) || $skipRelations) {
-                return new static (array_map(function ($item) {
+                return new static(array_map(function ($item) {
                     $item = new static($item);
                     $item->setIsFetched();
                     return $item;
@@ -370,7 +371,7 @@ class QueryBuilder extends Connection
 
             return $this->processRelations($main_body);
         } catch (\PDOException $e) {
-            error_log($e->getMessage());
+            Debugger::dumpErr($e);
             return [];
         }
     }
@@ -403,7 +404,7 @@ class QueryBuilder extends Connection
 
             return $this->processRelations($main_body);
         } catch (\PDOException $e) {
-            error_log($e->getMessage());
+            Debugger::dumpErr($e);
             return null;
         }
     }
@@ -553,7 +554,7 @@ class QueryBuilder extends Connection
                         $item->setIsFetched();
                         return $item;
                     }, $data);
-                } else{
+                } else {
                     $data = new static((object)array_merge((array)$data, $this->related));
                     $data->setIsFetched();
                     return $data;

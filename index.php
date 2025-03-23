@@ -2,10 +2,7 @@
 
 use App\Utils\Env;
 
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
-
+ob_start();
 require_once './App/Core/definitions.php';
 require_once UTILS_PATH . 'Utility.php';
 require_once UTILS_PATH . 'Env.php';

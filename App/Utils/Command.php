@@ -10,17 +10,26 @@ require_once UTILS_PATH . 'Helpers.php';
 require_once UTILS_PATH . 'Utility.php';
 require_once UTILS_PATH . 'Debug.php';
 
-ini_set('display_errors', 0);
-ini_set('display_startup_errors', 0);
 Debugger::init(false, 0);
 
 class Command
 {
     private static array $command = [];
 
-    public static function register(string $triggers, string|callable $command, array $params = [], array $dependencies = [], string $help_message = '', array $export_var = [])
+    /**
+     * Register a new command.
+     *
+     * @param string $trigger The command trigger (alias).
+     * @param string|callable $command The command to execute, either as a string (code) or callable.
+     * @param array $params Parameters for the command.
+     * @param array $dependencies Dependencies for the command.
+     * @param string $help_message Help message for the command.
+     * @param array $export_var Variables to export for the command.
+     * @return void
+     */
+    public static function register(string $trigger, string|callable $command, array $params = [], array $dependencies = [], string $help_message = '', array $export_var = [])
     {
-        self::$command[$triggers] = [
+        self::$command[$trigger] = [
             'dependencies' => $dependencies,
             'command' => $command,
             'params' => $params,
@@ -29,6 +38,12 @@ class Command
         ];
     }
 
+    /**
+     * Execute a registered command.
+     *
+     * @param string $trigger The command trigger to execute.
+     * @return mixed The result of the command execution.
+     */
     public static function execute(string $trigger)
     {
         try {
@@ -64,12 +79,21 @@ class Command
         }
     }
 
+    /**
+     * Standby and execute a default or help command.
+     *
+     * @return void
+     */
     public static function standBy()
     {
-        global $argv;
-        self::execute($argv[1] ?? '');
+        self::execute(self::parameter(1,'','help'));
     }
 
+    /**
+     * Show the help information for all registered commands.
+     *
+     * @return void
+     */
     public static function showHelp()
     {
         echo "Built-in command handler for this custom framework\nCommands:\n";
@@ -84,7 +108,12 @@ class Command
     }
 
     /**
-     * Return php CLI parameter on given index
+     * Return PHP CLI parameter at a given index.
+     *
+     * @param int $n The parameter index.
+     * @param string $prompt A prompt to display if the parameter is not provided.
+     * @param mixed $default The default value to return if the parameter is not provided.
+     * @return mixed The value of the CLI parameter or the default value.
      */
     public static function parameter(int $n, string $prompt, mixed $default = '')
     {

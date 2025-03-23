@@ -1,9 +1,12 @@
 <?php
 
 use App\Models\User;
+use App\Utils\Manager\ClassManager;
 
-Route::get('/test', function () {
+Route::get('/testting', function () {
+    echo '<pre>'.join("\n",ClassManager::getLoadedClass()).'</pre>';
     $user = new User();
-    $newU = $user->first();
-    $newU();
+
+    dd($user->with(['has.many.posts'])->get());
+
 });

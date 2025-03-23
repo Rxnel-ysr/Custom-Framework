@@ -3,6 +3,13 @@ namespace App\Utils;
 
 class Env
 {
+    /**
+     * Loads environment variables from a given file and sets them in the system environment.
+     *
+     * @param string $path The path to the environment file to load.
+     * 
+     * @return void
+     */
     public static function load($path)
     {
         if (!file_exists($path)) return;
