@@ -6,22 +6,21 @@ use App\Utils\Manager\ClassManager;
 
 require_once 'definitions.php';
 require_once UTILS_PATH . 'Debug.php';
+Debugger::init(true, E_ALL);
 
-Debugger::init(true, 0);
-
-require_once UTILS_PATH . 'ClassManager.php';
-require_once HTTP . 'Route.php';
-require_once CONTROLLERS . 'Controller.php';
-require_once UTILS_PATH . 'Model.php';
-require_once UTILS_PATH . 'Helpers.php';
-
-ClassManager::init();
 
 try {
-
+    require_once UTILS_PATH . 'ClassManager.php';
+    ClassManager::init();
+    
     spl_autoload_register([ClassManager::class, 'autoload']);
-
+    
     load([
+        HTTP . 'Route.php',
+        CONTROLLERS . 'Controller.php',
+        UTILS_PATH . 'Model.php',
+        UTILS_PATH . 'Helpers.php',
+        UTILS_PATH . 'RateLimiter.php',
         ROOT . 'App/Models',
         ROOT . 'routes',
         CONTROLLERS,
@@ -68,8 +67,5 @@ try {
     $executionTime = timeExecution(fn() => Route::dispatch($requestUri));
     error_log("Request done within: {$executionTime}ms");
 } catch (\Throwable $e) {
-    if ($e->getCode() == 404) {
-        echo 'Okay that work';
-        Debugger::dumpErr($e, true);
-    }
+    Debugger::dumpErr($e);
 }

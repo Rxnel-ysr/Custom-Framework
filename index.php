@@ -1,5 +1,6 @@
 <?php
 
+use App\Debug\Debugger;
 use App\Utils\Env;
 
 ob_start();

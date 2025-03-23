@@ -1,7 +1,7 @@
 <?php
-
-use App\Utils\Http\Request;
-use App\Utils\Manager\ClassManager;
+require_once 'definitions.php';
+require_once UTILS_PATH . 'Utility.php';
+require_once UTILS_PATH . 'Helpers.php';
 
 $requestUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $error_code = filter_var(http_response_code());

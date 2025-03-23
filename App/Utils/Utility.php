@@ -279,15 +279,14 @@ function load(array|string $paths, array|string $excepts = [], array|string $onl
         $filteredFiles = array_intersect_key($filteredFiles, $only);
 
     foreach (array_keys($filteredFiles) as $file) {
-        try {
+        // try {
             // $content = trim(file_get_contents($file));
             // if ($content === '' || $content === "<?php\n"){ error_log('Auto-loader: skipped file '. $file);continue;}
-
             require_once $file;
-        } catch (Throwable $e) {
-            Debugger::dumpErr($e);
-            showErrorPage(HTTP_SERVER_ERROR, 'Auto-loader: ' . $e->getMessage(), Debugger::trimPath($file) . ' on line ' . $e->getLine());
-        }
+        // } catch (Throwable $e) {
+            // Debugger::dumpErr($e);
+            // showErrorPage(HTTP_SERVER_ERROR, 'Auto-loader: ' . $e->getMessage(), Debugger::trimPath($file) . ' on line ' . $e->getLine());
+        // }
     }
 
     error_log('File-loader: Loaded all files successfully.');
@@ -402,7 +401,7 @@ function showErrorPage(
     string $customSubMessage = '',
     string $customTitleName = '',
     string $trace = '',
-    Throwable|Exception|null $e = null,
+    Throwable|null $e = null,
     bool $add_new_class = false,
     bool $returnButton = false,
     string|null $urlForButton = null,

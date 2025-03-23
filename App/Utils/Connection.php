@@ -18,7 +18,7 @@ class Connection
      */
     public static function getInstance()
     {
-        try {
+        // try {
             if (self::$PDO === null) {
 
                 $config = require_once CONFIG . 'database.php';
@@ -42,8 +42,8 @@ class Connection
                 }
             }
             return self::$PDO;
-        } catch (\Throwable $e) {
-            Debugger::dumpErr($e);
-        }
+        // } catch (\Throwable $e) {
+        //     Debugger::dumpErr($e);
+        // }
     }
 }

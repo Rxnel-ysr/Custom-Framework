@@ -10,8 +10,6 @@ require_once UTILS_PATH . 'Helpers.php';
 require_once UTILS_PATH . 'Utility.php';
 require_once UTILS_PATH . 'Debug.php';
 
-Debugger::init(false, 0);
-
 class Command
 {
     private static array $command = [];

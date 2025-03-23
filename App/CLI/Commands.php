@@ -6,6 +6,7 @@ use App\Debug\Debugger;
 require_once './App/Core/definitions.php';
 require_once UTILS_PATH . 'Command.php';
 require_once UTILS_PATH . 'Debug.php';
+
 Debugger::init(false, E_ALL & ~E_WARNING);
 
 try {
@@ -44,7 +45,5 @@ try {
         echo t::test();
     }, [], ['Manager' => App\Utils\Manager\ClassManager::class]);
 } catch (\Throwable $e) {
-    Debugger::dumpErr($e);
-} catch (\ParseError $e) {
     Debugger::dumpErr($e);
 }

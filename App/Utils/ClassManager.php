@@ -17,13 +17,9 @@ class ClassManager
     public static function init()
     {
         if (!self::$isInitialized) {
-            try {
-                self::$classes = require CONFIG . 'classes.php';
-                self::$isInitialized = true;
-                error_log('Auto-loader: initialized.');
-            } catch (\Throwable $e) {
-                Debugger::dumpErr($e);
-            }
+            self::$classes = require CONFIG . 'classes.php';
+            self::$isInitialized = true;
+            error_log('Auto-loader: initialized.');
         } else {
             error_log('Auto-loader: skipped initialization because classes are already loaded.');
         }
@@ -48,29 +44,19 @@ class ClassManager
      */
     public static function loadClasses(array $classes)
     {
-        try {
+        foreach ($classes as $alias => $class) {
+            require_once self::$classes[$class];
 
-
-            foreach ($classes as $alias => $class) {
-                require_once self::$classes[$class];
-
-                if (!is_numeric($alias)) {
-                    class_alias($class, $alias);
-                }
+            if (!is_numeric($alias)) {
+                class_alias($class, $alias);
             }
-        } catch (\Throwable $e) {
-            Debugger::dumpErr($e);
         }
     }
 
     public static function autoload($class)
     {
-        try {
-            require_once self::getClassFile($class);
-            error_log('Auto-loader: loaded class [' . $class . ']');
-        } catch (\Throwable $e) {
-            Debugger::dumpErr($e);
-        }
+        require_once self::getClassFile($class);
+        error_log('Auto-loader: loaded class [' . $class . ']');
     }
 
     public static function getLoadedClass()

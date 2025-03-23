@@ -2,7 +2,6 @@
 
 namespace App\Debug;
 
-use Exception;
 use Throwable;
 
 class Debugger
@@ -94,7 +93,7 @@ class Debugger
         error_log('[BACKTRACE] ' . print_r($trace, true));
     }
 
-    public static function dumpErr(Exception|Throwable $e, bool $ignore = false)
+    public static function dumpErr(Throwable $e, bool $ignore = false)
     {
         if ($e->getPrevious() === null) {
             error_log("\n[ERROR] " . get_class($e) . ' | Code: ' . $e->getCode()
@@ -122,13 +121,11 @@ class Debugger
             $message = "File: $trimmedFile\n";
             $message .= "Line: $errline\n";
 
-            echo "work here?";
-            var_dump(self::$web);
             // showErrorPage(200);
             if (self::$web === true) {
                 showErrorPage(500, $errclass . ': ' . $errstr, $message, '', $e->getTraceAsString(), $e, $e->getCode() === 404);
             } else {
-                // die();
+                die();
             }
         }
     }
