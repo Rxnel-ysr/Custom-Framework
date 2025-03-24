@@ -1,14 +1,23 @@
 #!/usr/bin/env php
 <?php
+
+use App\CLI\Command;
+use App\Utils\Manager\ClassManager;
+
 if (PHP_SAPI !== 'cli') {
     return die('Must run on CLI');
 }
 
 require_once __DIR__ . '/App/Core/definitions.php';
+require_once UTILS_PATH . 'ClassManager.php';
 require_once UTILS_PATH . 'Command.php';
+
+ClassManager::init(false);
+ClassManager::initAutoLoader();
+
 require_once CLI . 'Commands.php';
 
-\App\CLI\Command::standBy();
+Command::standBy();
 
 // define('BASE_PATH', __DIR__);
 

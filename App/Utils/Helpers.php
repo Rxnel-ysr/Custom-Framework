@@ -1,5 +1,7 @@
 <?php
 
+use App\Utils\Manager\InstanceManager;
+
 /**
  * Will include given views when the URL is matched or execute a callback.
  * @deprecated
@@ -76,8 +78,8 @@ function asset(string $path): string
 {
     $protocol =
         !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'
-            ? 'https'
-            : 'http';
+        ? 'https'
+        : 'http';
 
     $host = $_SERVER['HTTP_HOST'];
 
@@ -89,8 +91,8 @@ function media(string $path): string
 {
     $protocol =
         !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'
-            ? 'https'
-            : 'http';
+        ? 'https'
+        : 'http';
 
     $host = $_SERVER['HTTP_HOST'];
 
@@ -214,74 +216,93 @@ function compacts(...$keys)
     return $result;
 }
 
-function callFuncWithParams(callable|string|array $func, array $params)
+/**
+ * Calls a function with the given parameters, supporting automatic dependency resolution.
+ *
+ * @param callable|string|array $func The function, method, or callable array to invoke.
+ * @param bool $autoResolve Whether to automatically resolve class dependencies.
+ * @param mixed ...$params Parameters to pass to the function.
+ *
+ * @throws InvalidArgumentException If the callable is invalid or required parameters are missing.
+ *
+ * @return mixed The result of the function execution.
+ */
+function callFuncWithParams(callable|string|array $func, bool $strict = false, bool $autoResolve = false, mixed ...$params,)
 {
     $args = [];
 
-    if (!is_array($func) && is_callable($func)) {
-        $ref = new ReflectionFunction($func);
-    } elseif (is_array($func) && is_callable($func)) {
-        if (is_string($func[0])) {
+    if (is_callable($func)) {
+        if (is_array($func)) {
             $ref = new ReflectionMethod($func[0], $func[1]);
+        } elseif (is_string($func) && function_exists($func)) {
+            $ref = new ReflectionFunction($func);
         } else {
-            $ref = new ReflectionMethod($func[0], $func[1]);
+            $ref = new ReflectionFunction($func);
         }
-    } else if (is_string($func) && function_exists($func)) {
-        $ref = new ReflectionFunction($func);
     } else {
         throw new InvalidArgumentException('Invalid callable provided.');
     }
 
-    if (!empty($params) && !is_numeric(array_keys($params)[0])) {
-        foreach ($ref->getParameters() as $param) {
-            $name = $param->getName();
-            if (!array_key_exists($name, $params)) {
-                if ($param->isOptional()) {
-                    $args[] = $param->getDefaultValue();
+    $isAssoc = !empty($params) && !is_numeric(array_keys($params)[0]);
+    // error_log('Is assoc: '.var_export($isAssoc,true));
+
+    foreach ($ref->getParameters() as $i => $param) {
+        // error_log("I = $i");
+        if ($autoResolve) $i--;
+        // error_log("I = $i");
+        // error_log('Param: '.$param);
+        // error_log("Length of param" . count($params));
+        // error_log(isset($params[$i]) ? "isset for $i" : "Not set for $i");
+        $name = $param->getName();
+        $type = $param->getType();
+
+        if ($autoResolve && $type && !$type->isBuiltin()) {
+            $className = $type->getName();
+            // error_log('Called auto resolve');
+            $args[] = InstanceManager::getInstance($className);
+        } elseif ($isAssoc && array_key_exists($name, $params)) {
+            $args[] = $params[$name];
+        } elseif (!$isAssoc && isset($params[$i])) {
+            // error_log('This enter here: '.$params[$i]);
+            if ($strict && $type && $type->isBuiltin()) {
+                if (get_debug_type($params[$i]) === $type->getName()) {
+                    $args[] = $params[$i];
                 } else {
-                    throw new InvalidArgumentException("Missing required parameter: $name");
+                    throw new InvalidArgumentException("Type mismatch for parameter: $name");
                 }
             } else {
-                $args[] = $params[$name];
-            }
-        }
-    } else {
-        foreach ($ref->getParameters() as $i => $param) {
-            if (isset($params[$i])) {
+                // error_log('CIhut: '.$params[$i]);
                 $args[] = $params[$i];
-            } elseif ($param->isOptional()) {
-                $args[] = $param->getDefaultValue();
-            } else {
-                throw new InvalidArgumentException('Missing required parameter: ' . $param->getName());
             }
+        } elseif ($param->isOptional()) {
+            $args[] = $param->getDefaultValue();
+        } else {
+            throw new InvalidArgumentException("Missing required parameter: $name");
         }
     }
 
-    if ($ref instanceof ReflectionFunction) {
-        return $ref->invokeArgs($args);
-    } elseif ($ref->isStatic()) {
-        return $ref->invokeArgs(null, $args);
-    } else {
-        return $ref->invokeArgs($func[0], $args);
-    }
+    return $ref instanceof ReflectionFunction
+        ? $ref->invokeArgs($args)
+        : $ref->invokeArgs(is_array($func) ? $func[0] : null, $args);
 }
 
 /**
- * Executes a callable safely, handling errors and optionally executing a fallback function.
+ * Safely executes a callable, handling errors and allowing a fallback function.
  *
  * @param callable|string|array $closure The function to be executed.
- * @param mixed $parameter Parameters to be passed to the function, can be an array or a single value.
- * @param mixed &$result Reference variable to store the result of the function execution.
- * @param bool $ignoreError If true, errors will be ignored after logging.
- * @param callable|null $ifCodeFails Optional callable executed when an error occurs.
+ * @param mixed $parameter Parameters for the function, either an array or a single value.
+ * @param mixed &$result Reference to store the function's return value.
+ * @param bool $ignoreError Whether to ignore errors after logging.
+ * @param callable|null $ifCodeFails Optional fallback function if execution fails.
+ * @param bool $autoResolve Whether to automatically resolve class dependencies.
  *
  * @return void
  */
-function safe(callable|string|array $closure, mixed $parameter = [], mixed &$result = null, bool $ignoreError = false, callable|null $ifCodeFails = null)
+function safe(callable|string|array $closure, mixed $parameter = [], mixed &$result = null, bool $ignoreError = false, callable|null $ifCodeFails = null, bool $strict =false, bool $autoResolve = false)
 {
     try {
         $params = is_array($parameter) ? $parameter : [$parameter];
-        $result = callFuncWithParams($closure, $params);
+        $result = callFuncWithParams($closure, $strict,  $autoResolve, ...$params);
     } catch (\Throwable $e) {
         if (is_callable($ifCodeFails)) {
             $ifCodeFails();

@@ -145,7 +145,7 @@ class Route
         }
 
         if (is_callable($action)) {
-            $result = call_user_func($action, ...$params);
+            $result = callFuncWithParams($action,true,true, ...$params);
             if (is_string($result)) {
                 echo $result;
                 exit;
@@ -185,7 +185,7 @@ if (filter_var(env('WELCOME_MESSAGE', true), FILTER_VALIDATE_BOOLEAN)) {
             return;
         }
         $class_name = explode('::class', $class_name, 2);
-        ClassManager::registerNewClass(str_replace('Exception: ', '', $class_name[0]), $class_path.'.php');
+        ClassManager::registerNewClass(str_replace('Exception: ', '', $class_name[0]), $class_path . '.php');
 
         return redirectBack();
     });

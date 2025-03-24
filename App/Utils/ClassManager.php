@@ -8,21 +8,28 @@ class ClassManager
 {
     private static array $classes = [];
     private static bool $isInitialized = false;
+    private static bool $isWeb = false;
 
     /**
      * Initializes the class manager by loading the class mappings from the configuration file.
      *
      * @return void
      */
-    public static function init()
+    public static function init(bool $isWeb = true)
     {
+        self::$isWeb = $isWeb;
         if (!self::$isInitialized) {
             self::$classes = require CONFIG . 'classes.php';
             self::$isInitialized = true;
-            error_log('Auto-loader: initialized.');
+            if (self::$isWeb) error_log('Auto-loader: initialized.');
         } else {
-            error_log('Auto-loader: skipped initialization because classes are already loaded.');
+            if (self::$isWeb) error_log('Auto-loader: skipped initialization because classes are already loaded.');
         }
+    }
+
+    public static function initAutoLoader()
+    {
+        spl_autoload_register([self::class, 'autoload']);
     }
 
     /**
@@ -56,7 +63,7 @@ class ClassManager
     public static function autoload($class)
     {
         require_once self::getClassFile($class);
-        error_log('Auto-loader: loaded class [' . $class . ']');
+        if (self::$isWeb) error_log('Auto-loader: loaded class [' . $class . ']');
     }
 
     public static function getLoadedClass()

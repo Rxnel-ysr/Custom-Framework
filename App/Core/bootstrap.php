@@ -11,9 +11,10 @@ Debugger::init(true, E_ALL);
 
 try {
     require_once UTILS_PATH . 'ClassManager.php';
+    require_once UTILS_PATH . 'InstanceManager.php';
     ClassManager::init();
-    
-    spl_autoload_register([ClassManager::class, 'autoload']);
+
+    ClassManager::initAutoLoader();
     
     load([
         HTTP . 'Route.php',

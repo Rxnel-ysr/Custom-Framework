@@ -66,7 +66,7 @@ class Command
             $command = self::$command[$trigger]['command'];
 
             if (is_callable($command)) {
-                return callFuncWithParams($command, self::$command[$trigger]['params']);
+                return callFuncWithParams($command, false,true,self::$command[$trigger]['params']);
             }
 
             if (is_string($command)) {

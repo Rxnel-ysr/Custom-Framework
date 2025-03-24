@@ -3,10 +3,6 @@
 use App\CLI\Command;
 use App\Debug\Debugger;
 
-require_once './App/Core/definitions.php';
-require_once UTILS_PATH . 'Command.php';
-require_once UTILS_PATH . 'Debug.php';
-
 Debugger::init(false, E_ALL & ~E_WARNING);
 
 try {
@@ -40,9 +36,7 @@ try {
     $cihuy = 'CIIIIIIIIIIIHHHHHHHHUUUUUUUUUUUUUYYYYYYYYY';
 
     Command::register('test', function () {
-        Manager::registerNewClass(Test::class, 'App/Utils/Test.php');
-        Manager::loadClasses(['t' => Test::class]);
-        echo t::test();
+        echo Test::test();
     }, [], ['Manager' => App\Utils\Manager\ClassManager::class]);
 } catch (\Throwable $e) {
     Debugger::dumpErr($e);

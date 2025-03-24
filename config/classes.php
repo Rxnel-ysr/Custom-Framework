@@ -6,7 +6,7 @@ return [
     App\Utils\Model::class => ROOT . 'App/Utils/Model.php',
     App\Utils\Http\Request::class => ROOT . 'App/Utils/Request.php',
     App\Utils\Http\Controller::class => ROOT . 'App/Http/Controllers/Controller.php',
-    App\Utils\Http\Response::class => ROOT .  ' App/Utils/Response.php',
+    App\Utils\Http\Response::class => ROOT . 'App/Utils/Response.php',
     App\utils\Guard\CSRF::class => ROOT . 'App/Utils/CSRF.php',
     App\Utils\Guard\Validator::class => ROOT . 'App/Utils/Validator.php',
     App\Utils\Guard\RateLimiter::class => ROOT . 'App/Utils/RateLimiter.php',
