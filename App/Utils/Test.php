@@ -32,11 +32,12 @@ class Test
         if (self::$num % 2 == 0) {
             throw new \Exception(self::$num . ' Its even!');
         } else {
-            echo '<br>'.self::$num . ' Its Odd!' . PHP_EOL;
+            echo '<br>' . self::$num . ' Its Odd!' . PHP_EOL;
         }
     }
 
-    public static function testFunc($name){
+    public static function testFunc($name)
+    {
         echo "It work $name";
         return true;
     }

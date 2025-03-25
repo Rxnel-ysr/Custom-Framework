@@ -145,7 +145,7 @@ class Route
         }
 
         if (is_callable($action)) {
-            $result = callFuncWithParams($action,true,true, ...$params);
+            $result = callFuncWithParams($action, true, true, ...$params);
             if (is_string($result)) {
                 echo $result;
                 exit;
@@ -170,23 +170,37 @@ class Route
 
 Route::init();
 
-if (filter_var(env('WELCOME_MESSAGE', true), FILTER_VALIDATE_BOOLEAN)) {
+if (getBoolEnv('WELCOME_MESSAGE', true)) {
     Route::get('/', function () {
         return view('index');
     });
 }
-if (filter_var(env('WELCOME_MESSAGE', true), FILTER_VALIDATE_BOOLEAN)) {
-    Route::post('/DEBUG/ADD_CLASS', function () {
-        $class_path = Request::post('class-path');
+
+if (getBoolEnv('AUTO_LOAD_USER_PATH_DEFINED_CLASS', $auto_resolve = ClassManager::getAttr()['auto_resolve'])) {
+    Route::post($_SERVER['REQUEST_URI'], function () {
+        $class_path = Request::post('class-path') . '.php';
         $class_name = Request::post('class-name');
+        $class_name = explode(': ', $class_name, 2)[1];
+        $debug = ClassManager::getAttr()['debug'];
 
-        if (!file_exists(ROOT . $class_path . '.php')) {
-            echo "<script>alert('File not found');</script>";
-            return;
+        if (file_exists(ROOT . $class_path)) {
+            require_once ROOT . $class_path;
+            if (!class_exists($class_name)) {
+                if ($debug) error_log('Auto-loader: Method 6 failed (invalid file)');
+                if (getBoolEnv('AUTO_LOAD_CLASS_ALWAYS_EXISTS', $auto_resolve)) {
+                    ClassManager::method_7($class_name);
+                }
+            } else {
+                ClassManager::registerNewClass($class_name, $class_path);
+                ClassManager::loadClass($class_name);
+                ClassManager::messageForResolvedClass($class_name, 6);
+            }
+        } else {
+            if ($debug) error_log('Auto-loader: Method 6 failed (file not found)');
+            if (getBoolEnv('AUTO_LOAD_CLASS_ALWAYS_EXISTS', $auto_resolve)) {
+                ClassManager::method_7($class_name);
+            }
         }
-        $class_name = explode('::class', $class_name, 2);
-        ClassManager::registerNewClass(str_replace('Exception: ', '', $class_name[0]), $class_path . '.php');
-
         return redirectBack();
     });
 }

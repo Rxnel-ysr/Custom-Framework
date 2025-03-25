@@ -1,4 +1,7 @@
 <?php
+
+use App\Utils\Manager\ClassManager;
+
 require_once 'definitions.php';
 require_once UTILS_PATH . 'Utility.php';
 require_once UTILS_PATH . 'Helpers.php';
@@ -119,9 +122,9 @@ $jsFile = asset('js/main.js');
             <?php } ?>
 
         </div>
-        <?php if ($add_new_class === true) { ?>
+        <?php if ($add_new_class) { ?>
             <div class="error-container p-3 text-center">
-                <form action="/DEBUG/ADD_CLASS" method="post" class="d-flex flex-column justify-content-center align-items-center" enctype="multipart/form-data">
+                <form action="" method="post" class="d-flex flex-column justify-content-center align-items-center" enctype="multipart/form-data">
                     <h1 class="error_message mb-3">Register new class</h1>
                     <div class="input-group mb-3 w-75">
                         <input type="hidden" name="class-name" value="<?= $error_message ?>" id="class_name">

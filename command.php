@@ -12,8 +12,8 @@ require_once __DIR__ . '/App/Core/definitions.php';
 require_once UTILS_PATH . 'ClassManager.php';
 require_once UTILS_PATH . 'Command.php';
 
-ClassManager::init(false);
-ClassManager::initAutoLoader();
+ClassManager::init(true);
+ClassManager::initAutoloader(true);
 
 require_once CLI . 'Commands.php';
 

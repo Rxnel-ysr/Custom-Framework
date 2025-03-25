@@ -3,6 +3,8 @@
 use App\CLI\Command;
 use App\Debug\Debugger;
 
+// require_once UTILS_PATH .'Test.php';
+
 Debugger::init(false, E_ALL & ~E_WARNING);
 
 try {
@@ -36,8 +38,9 @@ try {
     $cihuy = 'CIIIIIIIIIIIHHHHHHHHUUUUUUUUUUUUUYYYYYYYYY';
 
     Command::register('test', function () {
-        echo Test::test();
-    }, [], ['Manager' => App\Utils\Manager\ClassManager::class]);
+        // var_export(scanForClasses(ROOT, ['App/Http/Controllers', 'App/Http/Middlewares', 'App/Core/Libs', 'database'], [], ['App/Http/Controllers/Controller.php']));
+        Test::test();
+    }, [], []);
 } catch (\Throwable $e) {
     Debugger::dumpErr($e);
 }

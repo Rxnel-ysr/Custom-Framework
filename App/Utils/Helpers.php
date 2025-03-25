@@ -220,14 +220,14 @@ function compacts(...$keys)
  * Calls a function with the given parameters, supporting automatic dependency resolution.
  *
  * @param callable|string|array $func The function, method, or callable array to invoke.
- * @param bool $autoResolve Whether to automatically resolve class dependencies.
+ * @param bool $auto_resolve Whether to automatically resolve class dependencies.
  * @param mixed ...$params Parameters to pass to the function.
  *
  * @throws InvalidArgumentException If the callable is invalid or required parameters are missing.
  *
  * @return mixed The result of the function execution.
  */
-function callFuncWithParams(callable|string|array $func, bool $strict = false, bool $autoResolve = false, mixed ...$params,)
+function callFuncWithParams(callable|string|array $func, bool $strict = false, bool $auto_resolve = false, mixed ...$params,)
 {
     $args = [];
 
@@ -248,7 +248,7 @@ function callFuncWithParams(callable|string|array $func, bool $strict = false, b
 
     foreach ($ref->getParameters() as $i => $param) {
         // error_log("I = $i");
-        if ($autoResolve) $i--;
+        if ($auto_resolve) $i--;
         // error_log("I = $i");
         // error_log('Param: '.$param);
         // error_log("Length of param" . count($params));
@@ -256,7 +256,7 @@ function callFuncWithParams(callable|string|array $func, bool $strict = false, b
         $name = $param->getName();
         $type = $param->getType();
 
-        if ($autoResolve && $type && !$type->isBuiltin()) {
+        if ($auto_resolve && $type && !$type->isBuiltin()) {
             $className = $type->getName();
             // error_log('Called auto resolve');
             $args[] = InstanceManager::getInstance($className);
@@ -298,7 +298,7 @@ function callFuncWithParams(callable|string|array $func, bool $strict = false, b
  *
  * @return void
  */
-function safe(callable|string|array $closure, mixed $parameter = [], mixed &$result = null, bool $ignoreError = false, callable|null $ifCodeFails = null, bool $strict =false, bool $autoResolve = false)
+function safe(callable|string|array $closure, mixed $parameter = [], mixed &$result = null, bool $ignoreError = false, callable|null $ifCodeFails = null, bool $strict = false, bool $autoResolve = false)
 {
     try {
         $params = is_array($parameter) ? $parameter : [$parameter];
@@ -314,3 +314,130 @@ function safe(callable|string|array $closure, mixed $parameter = [], mixed &$res
 // function convertArraySyntax(string $exported): string {
 //     return preg_replace('/array\s*\((.*?)\)/s', '[$1]', $exported);
 // }
+
+// function scanFsorClasses($directory, $ignore_dirs = [], $ignore_files = [])
+// {
+//     $files = new RecursiveIteratorIterator(
+//         new RecursiveCallbackFilterIterator(
+//             new RecursiveDirectoryIterator($directory),
+//             function ($file, $key, $iterator) use ($ignore_dirs) {
+//                 if ($file->isDir()) {
+//                     return !in_array($file->getBasename(), $ignore_dirs);
+//                 }
+//                 return true;
+//             }
+//         )
+//     );
+//     $classes = [];
+
+//     foreach ($files as $file) {
+//         if ($file->isFile() && $file->getExtension() === 'php') {
+//             $relativePath = str_replace($directory . DIRECTORY_SEPARATOR, '', $file->getPathname());
+
+//             // Skip files explicitly listed in $ignore_files
+//             if (in_array($relativePath, $ignore_files)) {
+//                 continue;
+//             }
+//             $content = file_get_contents($file->getPathname());
+
+//             // Remove single-line and multi-line comments
+//             $cleanedContent = preg_replace([
+//                 '/\/\/.*/',                    // Remove // comments
+//                 '/\/\*[\s\S]*?\*\//'           // Remove /* */ comments
+//             ], '', $content);
+
+//             // Remove all string literals (single & double quotes)
+//             $cleanedContent = preg_replace('/(["\'])(?:\\\1|.)*?\1/s', '', $cleanedContent);
+
+//             // Capture namespace (if exists)
+//             preg_match('/namespace\s+([\w\\\\]+);/i', $cleanedContent, $namespace);
+
+//             // Capture all class-like structures (class, interface, abstract class)
+//             preg_match_all('/\b(?:class|interface|abstract\s+class)\s+([\w]+)\b/i', $cleanedContent, $matches);
+
+//             if (!empty($matches[1])) {
+//                 foreach ($matches[1] as $classname) {
+//                     $fullClass = (!empty($namespace[1]) ? $namespace[1] . "\\" : "") . $classname;
+//                     $classes[$fullClass] = $file->getPathname();
+//                 }
+//             }
+//         }
+//     }
+
+//     return $classes;
+// }
+
+function scanForClasses($directory, $ignore_dirs = [], $ignore_files = [], $except_files = [])
+{
+    $directory = rtrim($directory, DIRECTORY_SEPARATOR); // Ensure no trailing slash
+
+    $files = new RecursiveIteratorIterator(
+        new RecursiveCallbackFilterIterator(
+            new RecursiveDirectoryIterator($directory, FilesystemIterator::SKIP_DOTS),
+            function ($file, $key, $iterator) use ($ignore_dirs, $directory, $except_files) {
+                $relativePath = str_replace($directory . DIRECTORY_SEPARATOR, '', $file->getPathname());
+
+                // echo "Now at {$relativePath}\n";
+
+                // If this file is in the 'except_files' list, allow it no matter what
+                if (in_array($relativePath, $except_files)) {
+                    // echo "EXCEPTED: {$relativePath}\n";
+                    return true;
+                }
+
+                // If it's a directory, check full relative path (not just basename)
+                foreach ($ignore_dirs as $ignoreDir) {
+                    if (str_starts_with($relativePath, trim($ignoreDir, '/') . '/')) {
+                        // echo "IGNORING DIRECTORY: {$relativePath}\n";
+                        return false; // Skip entire dir unless excepted
+                    }
+                }
+
+                return true;
+            }
+        )
+    );
+    $classes = [];
+
+    foreach ($files as $file) {
+        if ($file->isFile() && $file->getExtension() === 'php') {
+            $relativePath = str_replace($directory . DIRECTORY_SEPARATOR, '', $file->getPathname());
+
+            // Skip explicitly ignored files
+            if (in_array($relativePath, $ignore_files)) {
+                continue;
+            }
+
+            $content = file_get_contents($file->getPathname());
+
+            // Remove single-line and multi-line comments
+            $cleanedContent = preg_replace([
+                '/\/\/.*/',                    // Remove // comments
+                '/\/\*[\s\S]*?\*\//'           // Remove /* */ comments
+            ], '', $content);
+
+            // Remove all string literals (single & double quotes)
+            $cleanedContent = preg_replace('/(["\'])(?:\\\1|.)*?\1/s', '', $cleanedContent);
+
+            // Capture namespace (if exists)
+            preg_match('/namespace\s+([\w\\\\]+);/i', $cleanedContent, $namespace);
+
+            // Capture all class-like structures (class, interface, abstract class)
+            preg_match_all('/\b(?:class|interface|abstract\s+class)\s+([\w]+)\b/i', $cleanedContent, $matches);
+
+            if (!empty($matches[1])) {
+                foreach ($matches[1] as $classname) {
+                    $fullClass = (!empty($namespace[1]) ? $namespace[1] . "\\" : "") . $classname;
+                    $classes[$fullClass] = $file->getPathname();
+                }
+            }
+        }
+    }
+
+    return $classes;
+}
+
+function getBoolEnv($name, $default = null)
+{
+    return filter_var(env($name, $default), FILTER_VALIDATE_BOOLEAN);
+}

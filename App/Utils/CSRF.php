@@ -122,6 +122,8 @@ class CSRF
             $message,
             'Validation failed',
             $trace,
+            null,
+            false,
             $reload,
             $reload ? getReferer() : null,
             $reload ? 'Retry' : null

@@ -6,16 +6,15 @@ use App\Utils\Manager\ClassManager;
 
 require_once 'definitions.php';
 require_once UTILS_PATH . 'Debug.php';
-Debugger::init(true, E_ALL);
+Debugger::init(true, 0);
 
 
 try {
     require_once UTILS_PATH . 'ClassManager.php';
     require_once UTILS_PATH . 'InstanceManager.php';
-    ClassManager::init();
+    ClassManager::init(true,true);
+    ClassManager::initAutoloader(true);
 
-    ClassManager::initAutoLoader();
-    
     load([
         HTTP . 'Route.php',
         CONTROLLERS . 'Controller.php',
@@ -68,5 +67,6 @@ try {
     $executionTime = timeExecution(fn() => Route::dispatch($requestUri));
     error_log("Request done within: {$executionTime}ms");
 } catch (\Throwable $e) {
+    error_log("triggered here, with code {$e->getCode()}");
     Debugger::dumpErr($e);
 }

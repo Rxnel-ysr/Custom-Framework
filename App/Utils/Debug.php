@@ -14,12 +14,9 @@ class Debugger
         self::$web = $isWeb;
         ini_set('display_errors', 0);
         ini_set('display_startup_errors', 0);
-        error_reporting($errorLevel);
-        // error_reporting(E_ALL);
-        // ini_set('display_errors', 1);
+        error_reporting($errorLevel & ~E_WARNING);
         ini_set('log_errors', 1);
         ini_set('error_log', self::$logFile);
-
         set_error_handler([self::class, 'handleError']);
         set_exception_handler([self::class, 'handleException']);
         register_shutdown_function([self::class, 'handleShutdown']);
