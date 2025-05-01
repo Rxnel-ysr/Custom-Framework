@@ -4,7 +4,6 @@
 /App/Http/Models/*
 /App/Core/Libs/**
 /database/migrations/*
-/resources/views/*
 /storage/**
 *.log
 *.css
