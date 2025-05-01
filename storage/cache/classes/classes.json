@@ -1,0 +1,17 @@
+{
+    "App\\utils\\Env": "App\/Utils\/Env.php",
+    "App\\Utils\\Model": "App\/Utils\/Model.php",
+    "App\\Utils\\Http\\Request": "App\/Utils\/Request.php",
+    "App\\Utils\\Http\\Controller": "App\/Http\/Controllers\/Controller.php",
+    "App\\Utils\\Http\\Response": "App\/Utils\/Response.php",
+    "App\\utils\\Guard\\CSRF": "App\/Utils\/CSRF.php",
+    "App\\Utils\\Guard\\Validator": "App\/Utils\/Validator.php",
+    "App\\Utils\\Guard\\RateLimiter": "App\/Utils\/RateLimiter.php",
+    "App\\Utils\\Database\\Migration": "App\/Utils\/Migration.php",
+    "App\\Utils\\Database\\Connection": "App\/Utils\/Connection.php",
+    "App\\Utils\\Database\\QueryBuilder": "App\/Utils\/QueryBuilder.php",
+    "App\\Utils\\Manager\\ClassManager": "App\/Utils\/ClassManager.php",
+    "App\\Utils\\Manager\\InstanceManager": "App\/Utils\/InstanceManager.php",
+    "Route": "App\/Http\/Route.php",
+    "Test": "App\/Core\/Test.php"
+}

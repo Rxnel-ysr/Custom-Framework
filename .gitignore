@@ -4,9 +4,8 @@
 /App/Http/Models/*
 /App/Core/Libs/**
 /database/migrations/*
-/storage/**
-*.log
-*.css
-*.js
-*.env
+**/*.log
+**/*.css
+**/*.js
+**/*.env
 !/App/Http/Controllers/Controller.php
