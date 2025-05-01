@@ -1,36 +1,60 @@
 #!/usr/bin/env php
 <?php
 
-use App\CLI\Command;
-use App\Utils\Manager\ClassManager;
+declare(strict_types=1);
+
+use App\Debug\Debugger;
+use App\Foundation\CLI\Command;
+use App\EXPE\Foundation\Manager\ClassManager;
+use App\Foundation\Helpers\Env;
 
 if (PHP_SAPI !== 'cli') {
     return die('Must run on CLI');
 }
 
-require_once __DIR__ . '/App/Core/definitions.php';
-require_once UTILS_PATH . 'ClassManager.php';
-require_once UTILS_PATH . 'Command.php';
+// define('ROOT', __DIR__);
 
-ClassManager::init(true);
+// require_once __DIR__ . '/App/Core/definitions.php';
+require_once __DIR__ . '/App/Foundation/Manager/ClassManager_EXPE.php';
+require_once __DIR__ . '/App/Foundation/CLI/Command.php';
+require_once __DIR__ . '/App/Foundation/Helpers/Env.php';
+require_once __DIR__ . '/App/Foundation/Helpers/Utility.php';
+require_once __DIR__ . '/App/Foundation/Helpers/Helpers.php';
+// require_once ROOT . 'test/memory.php';
+Env::load(__DIR__ . '/config/.env');
+
+ClassManager::init(__DIR__, false, false, [
+    'classmap' => __DIR__ . '/config/classes.php',
+    'cache_classmap' => __DIR__ . '/storage/cache/classes/classes.php',
+]);
 ClassManager::initAutoloader(true);
+Debugger::init(false, E_ALL & ~E_WARNING, __DIR__ . '/App/Core/error.php');
 
-require_once CLI . 'Commands.php';
+safe(
+    function () {
+        require_once __DIR__ . '/App/CLI/Commands.php';
+        Command::standBy();
+    },
+    [],
+    $res,
+    false,
+    true
+);
 
-Command::standBy();
+
 
 // define('BASE_PATH', __DIR__);
 
-// use App\Utils\Database\Blueprint;
-// use App\Utils\Database\Migration;
-// use App\Utils\Database\Schema;
-// use App\Utils\Env;
-// use App\utils\Guard\CSRF;
+// use App\Foundation\Database\Blueprint;
+// use App\Foundation\Database\Migration;
+// use App\Foundation\Database\Schema;
+// use App\Foundation\Env;
+// use App\Foundation\Guard\CSRF;
 
 // require_once __DIR__ . '/App/Core/definitions.php';
-// require_once UTILS_PATH . 'Utility.php';
-// require_once UTILS_PATH . 'Helpers.php';
-// require_once UTILS_PATH . 'Env.php';
+// require_once FOUNDATION .'Utility.php';
+// require_once FOUNDATION .'Helpers.php';
+// require_once FOUNDATION .'Env.php';
 // Env::load(ROOT . 'config/.env');
 
 // function cleanupFiles($dir, $pattern, $maxAge)
@@ -74,8 +98,8 @@ Command::standBy();
 //     echo "CSRF tokens cleared.";
 // }
 // if ($argv[1] == 'migrate') {
-//     require_once UTILS_PATH . 'Connection.php';
-//     require_once UTILS_PATH . 'Migration.php';
+//     require_once FOUNDATION .'Connection.php';
+//     require_once FOUNDATION .'Migration.php';
 
 //     $files = glob(MIGRATIONS . '*.php');
 //     $records = Migration::getRecord();
@@ -130,8 +154,8 @@ Command::standBy();
 // }
 
 // if ($argv[1] == 'migrate:fresh') {
-//     require_once UTILS_PATH . 'Connection.php';
-//     require_once UTILS_PATH . 'Migration.php';
+//     require_once FOUNDATION .'Connection.php';
+//     require_once FOUNDATION .'Migration.php';
 //     $files = glob(MIGRATIONS . '*.php');
 
 //     foreach ($files as $f) {
@@ -147,14 +171,14 @@ Command::standBy();
 // }
 
 // if ($argv[1] == 'migrate:rollback') {
-//     require_once UTILS_PATH . 'Connection.php';
-//     require_once UTILS_PATH . 'Migration.php';
+//     require_once FOUNDATION .'Connection.php';
+//     require_once FOUNDATION .'Migration.php';
 
 //     Migration::goToPrevMigrationsAndUnset();
 // }
 
 // if ($argv[1] == 'make:controller') {
-//     $content = "<?php\nnamespace App\Http\Controllers;\n\nuse App\Utils\Http\Controller;\n\nclass $argv[2] extends Controller\n{\n    //\n}\n";
+//     $content = "<?php\nnamespace App\Http\Controllers;\n\nuse App\Foundation\Http\Controller;\n\nclass $argv[2] extends Controller\n{\n    //\n}\n";
 //     $filename = CONTROLLERS . $argv[2] . '.php';
 //     file_put_contents($filename, $content);
 
@@ -162,7 +186,7 @@ Command::standBy();
 // }
 
 // if ($argv[1] == 'make:model') {
-//     $content = "<?php\nnamespace App\Models;\n\nuse App\Utils\Model;\n\nclass $argv[2] extends Model\n{\n    // \n}\n";
+//     $content = "<?php\nnamespace App\Models;\n\nuse App\Foundation\Model;\n\nclass $argv[2] extends Model\n{\n    // \n}\n";
 //     $filename = MODELS . $argv[2] . '.php';
 //     file_put_contents($filename, $content);
 
@@ -170,7 +194,7 @@ Command::standBy();
 // }
 
 // if ($argv[1] == 'make:migration') {
-//     $content = "<?php\n\nuse App\Utils\Database\Blueprint;\nuse App\Utils\Database\Migration;\nuse App\Utils\Database\Schema;\n\nreturn new class extends Migration {\n\n    public function up() {\n        Schema::create(\"$argv[2]\", function (Blueprint \$table) {\n            \$table->id();\n            \$table->timestamps();\n        });\n    }\n\n    public function down() {\n        Schema::dropIfExists(\"$argv[2]\");\n    }\n\n};";
+//     $content = "<?php\n\nuse App\Foundation\Database\Blueprint;\nuse App\Foundation\Database\Migration;\nuse App\Foundation\Database\Schema;\n\nreturn new class extends Migration {\n\n    public function up() {\n        Schema::create(\"$argv[2]\", function (Blueprint \$table) {\n            \$table->id();\n            \$table->timestamps();\n        });\n    }\n\n    public function down() {\n        Schema::dropIfExists(\"$argv[2]\");\n    }\n\n};";
 //     $filename = MIGRATIONS . date('Y_m_d') . '_' . $argv[2] . '.php';
 //     file_put_contents($filename, $content);
 

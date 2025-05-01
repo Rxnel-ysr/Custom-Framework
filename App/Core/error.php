@@ -1,14 +1,4 @@
 <?php
-
-use App\Utils\Manager\ClassManager;
-
-require_once 'definitions.php';
-require_once UTILS_PATH . 'Utility.php';
-require_once UTILS_PATH . 'Helpers.php';
-
-$requestUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-$error_code = filter_var(http_response_code());
-$current_file = basename($_SERVER['PHP_SELF']);
 $cssFile = asset('css/main.css');
 $jsFile = asset('js/main.js');
 ?>
@@ -114,7 +104,7 @@ $jsFile = asset('js/main.js');
     <div class="container d-flex flex-column justify-content-center align-items-center gap-3 py-5">
         <div class="error-container p-5 text-center">
 
-            <h1 class="error_code"><?= $error_code ?></h1>
+            <h1 class="error_code"><?= http_response_code() ?></h1>
             <h2 class="error_message"><?= $error_message ?></h2>
             <p class="error_sub_message"><?= $error_sub_message ?></p>
             <?php if ($returnButton) { ?>
@@ -124,7 +114,7 @@ $jsFile = asset('js/main.js');
         </div>
         <?php if ($add_new_class) { ?>
             <div class="error-container p-3 text-center">
-                <form action="" method="post" class="d-flex flex-column justify-content-center align-items-center" enctype="multipart/form-data">
+                <form action="/AUTO-LOAD/REGISTER" method="POST" class="d-flex flex-column justify-content-center align-items-center">
                     <h1 class="error_message mb-3">Register new class</h1>
                     <div class="input-group mb-3 w-75">
                         <input type="hidden" name="class-name" value="<?= $error_message ?>" id="class_name">

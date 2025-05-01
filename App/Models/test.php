@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Utils\Model;
+use App\Foundation\Model;
 
 class Test extends Model
 {

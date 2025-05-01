@@ -2,11 +2,11 @@
 
 namespace App\Models;
 
-use App\Utils\Model;
+use App\Foundation\Model;
 
 class User extends Model
 {
-    protected $table = 'users';
+    protected $table = 'posts';
 
     protected $fillable = [
         'name',

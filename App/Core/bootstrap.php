@@ -1,72 +1,41 @@
 <?php
 
 use App\Debug\Debugger;
-use App\Utils\Guard\RateLimiter;
-use App\Utils\Manager\ClassManager;
+use App\EXPE\Foundation\Manager\ClassManager;
+use App\Foundation\Compiler\Compile;
+use App\Foundation\Helpers\Env;
+use App\Foundation\Http\Request;
 
-require_once 'definitions.php';
-require_once UTILS_PATH . 'Debug.php';
-Debugger::init(true, 0);
+$root = dirname(dirname(__DIR__));
+
+require_once $root . '/App/Foundation/Manager/ClassManager_EXPE.php';
+require_once $root . '/App/Foundation/Compiler/Compile.php';
+require_once $root . '/App/Foundation/Helpers/Utility.php';
+require_once $root . '/App/Foundation/Helpers/Helpers.php';
+require_once $root . '/App/Http/Route.php';
+
+$dependencies = require_once $root . '/config/app.php';
+$configs = require_once $root . '/config/config.php';
+$router_plugins = require_once $root . '/config/router_plugins.php';
+
+ClassManager::init($root, false, true, [
+    'classmap' => $root . '/config/classes.php',
+    'cache_classmap' => $root . '/storage/cache/classes/classes.php',
+]);
+ClassManager::initAutoloader(true);
+
+Env::load($root . '/config/.env');
+Debugger::init(true, E_ALL & ~E_WARNING, $root . '/App/Core/error.php');
 
 
-try {
-    require_once UTILS_PATH . 'ClassManager.php';
-    require_once UTILS_PATH . 'InstanceManager.php';
-    ClassManager::init(true,true);
-    ClassManager::initAutoloader(true);
+Compile::init(
+    $root . '/resources/views',
+    $root . '/storage/cache/views'
+);
 
-    load([
-        HTTP . 'Route.php',
-        CONTROLLERS . 'Controller.php',
-        UTILS_PATH . 'Model.php',
-        UTILS_PATH . 'Helpers.php',
-        UTILS_PATH . 'RateLimiter.php',
-        ROOT . 'App/Models',
-        ROOT . 'routes',
-        CONTROLLERS,
-    ]);
+$request = new Request();
+$app = new App($root, $request);
 
-    $rate_limiter_config = config(CONFIG . 'rate-limiter.php');
+$app->setting($dependencies, $configs, $router_plugins);
 
-    $api_limiter = new RateLimiter(
-        'api',
-        $rate_limiter_config['api']['request_limit'],
-        $rate_limiter_config['api']['request_timeframe'],
-        $rate_limiter_config['api']['ban_time'],
-    );
-
-    $web_limiter = new RateLimiter(
-        'web',
-        $rate_limiter_config['web']['request_limit'],
-        $rate_limiter_config['web']['request_timeframe'],
-        $rate_limiter_config['web']['ban_time'],
-    );
-
-    $trimmedUri = ltrim($requestUri, '/');
-
-    if (str_starts_with($trimmedUri, 'api/') && str_starts_with($trimmedUri, 'api')) {
-        $api_limiter->check();
-        require_once MIDDLEWARES . 'ApiHandler.php';
-    } else {
-        $web_limiter->check();
-        require_once MIDDLEWARES . 'WebHandler.php';
-    }
-
-    if (getRequestMethod() == 'OPTIONS') {
-        response()->json([
-            'options' => [
-                'GET',
-                'POST',
-                'PUT',
-                'DELETE'
-            ]
-        ]);
-        exit;
-    }
-
-    $executionTime = timeExecution(fn() => Route::dispatch($requestUri));
-    error_log("Request done within: {$executionTime}ms");
-} catch (\Throwable $e) {
-    error_log("triggered here, with code {$e->getCode()}");
-    Debugger::dumpErr($e);
-}
+return $app;

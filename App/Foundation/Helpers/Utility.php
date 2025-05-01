@@ -1,0 +1,359 @@
+<?php
+
+use App\Foundation\Guard\CSRF;
+use App\Foundation\Http\Response;
+use App\Foundation\Manager\InstanceManager;
+
+$logFile = dirname(dirname(dirname(__DIR__))) . '/storage/logs/server.log';
+$resources = dirname(dirname(dirname(__DIR__))) . '/resources/';
+$views = dirname(dirname(dirname(__DIR__))) . '/resources/views';
+$ErrorPage = dirname(dirname(dirname(__DIR__))) . '/App/Core/error.php';
+$requestUri = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH);
+
+class Utils
+{
+    /**
+     * Sanitizes input data by converting special characters to HTML entities.
+     *
+     * @param string $data The input data to sanitize.
+     * @return string The sanitized string.
+     */
+    public static function sanitize(string $data): string
+    {
+        return htmlspecialchars($data, ENT_QUOTES, 'UTF-8');
+    }
+
+    /**
+     * Safely retrieves the basename of a given path.
+     *
+     * @param string $data The path to retrieve the basename from.
+     * @param string $suffix Optional. A suffix to be removed from the basename.
+     * @return string The basename of the path.
+     * @throws Exception If the provided path is not a valid string or does not contain a filename.
+     */
+    public static function getBaseName(
+        string $data,
+        string $suffix = ''
+    ): string {
+        if (!is_string($data) || empty($data)) {
+            throw new Exception(
+                'The provided file does not contain a valid filename.'
+            );
+        }
+
+        $baseName = basename($data, $suffix);
+
+        if ($baseName === '') {
+            throw new Exception('Invalid filename provided.');
+        }
+
+        return $baseName;
+    }
+
+    /**
+     * Refresh current page
+     *
+     * @param int $delay Delay for refresh
+     * @return void
+     */
+    public static function refresh(int $delay)
+    {
+        header('refresh: ' . $delay);
+        exit();
+    }
+
+    /**
+     * Logs a message to the log file.
+     *
+     * @param string $message The message to log.
+     * @return void
+     */
+    public static function log(string $message, bool $logUser = true): void
+    {
+        global $logFile;
+        $user = $logUser ? self::getUserInfo() : '[User info deactivated]';
+
+        file_put_contents(
+            $logFile,
+            '[' . date('Y-m-d H:i:s') . '] { ' . $message . ' - ' . $user . " }\n",
+            FILE_APPEND
+        );
+    }
+
+    /**
+     * Collects user information and returns it as a string.
+     *
+     * @return string The collected user information.
+     */
+    public static function getUserInfo(): string
+    {
+        $ip = $_SERVER['REMOTE_ADDR'];
+        if (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+            $ip = $_SERVER['HTTP_X_FORWARDED_FOR'];
+        }
+
+        $userAgent = $_SERVER['HTTP_USER_AGENT'];
+
+        $referrer = isset($_SERVER['HTTP_REFERER'])
+            ? $_SERVER['HTTP_REFERER']
+            : 'No referrer';
+
+        $protocol =
+            !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'
+            ? 'https'
+            : 'http';
+
+        $currentUrl =
+            $protocol . '://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
+
+        $acceptedLanguages = $_SERVER['HTTP_ACCEPT_LANGUAGE'] ?? 'N\A';
+
+        $requestMethod = $_SERVER['REQUEST_METHOD'];
+
+        $requestTime = $_SERVER['REQUEST_TIME'];
+
+        return "User Info: 'IP: $ip, User-Agent: $userAgent, Referrer: $referrer, URL: $currentUrl, Accepted Languages: $acceptedLanguages, Request Method: $requestMethod, Request Time: $requestTime'";
+    }
+}
+
+function response($code = 200): Response
+{
+    $instance = InstanceManager::getInstance('App\\Foundation\\Http\\Response');
+    if (!headers_sent()) {
+        $instance->status($code);
+    }
+    return $instance;
+}
+
+function config(string $path)
+{
+    return require $path;
+}
+
+function method($method)
+{
+    $method = strtoupper($method);
+    return "<input type='hidden' name='_HTTP_METHOD' value='$method'></input>";
+}
+
+/**
+ * Reads a file and returns its content as a string, excluding specified line ranges.
+ *
+ * @param string $filename The path to the file.
+ * @param int $flags Flags for file reading (e.g., FILE_SKIP_EMPTY_LINES, FILE_IGNORE_NEW_LINES).
+ * @param array<int, int>[] $ignoreRanges List of line ranges to ignore:
+ *        - [start, end] to ignore a range of lines (inclusive).
+ *        - [line] to ignore a single specific line.
+ *
+ * @throws Exception If the file does not exist.
+ *
+ * @return string The file content with ignored lines removed.
+ */
+function getContent(string $filename, int $flags, array ...$ignoreRanges): string
+{
+    if (!file_exists($filename)) {
+        throw new Exception("File not found: $filename");
+    }
+
+    $lines = file($filename, $flags);
+    $filteredLines = [];
+
+    foreach ($lines as $i => $line) {
+        $lineNum = $i + 1;
+
+        $skip = false;
+        foreach ($ignoreRanges as $range) {
+            if (isset($range[1])) {
+                if ($lineNum >= $range[0] && $lineNum <= $range[1]) {
+                    $skip = true;
+                    break;
+                }
+            } elseif ($lineNum === $range[0]) {
+                $skip = true;
+                break;
+            }
+        }
+
+        if (!$skip) {
+            $filteredLines[] = $line;
+        }
+    }
+
+    return implode("\n", $filteredLines);
+}
+
+function clearUrl($url)
+{
+    return preg_replace('~(?<!:)//+~', '/', $url);
+}
+
+function cleanPath($path)
+{
+    return preg_replace('~//+~', '/', $path);
+}
+
+function str_rand($length = 16, $prefix = '')
+{
+    return $prefix . bin2hex(random_bytes(intdiv($length, 2) + ($length % 2)));
+}
+
+function printAsJson($data, $additionalOption = 0)
+{
+    if (!headers_sent()) {
+        header('Content-Type: application/json');
+    }
+    echo json_encode($data, $additionalOption);
+    exit;
+}
+
+function env($name, $default = false)
+{
+    $result = getenv($name);
+    return $result != false ? $result : $default;
+}
+
+/**
+ * A minimalist file-loader with file validation
+ */
+function load(array|string $paths, array|string $excepts = [], array|string $only = []): void
+{
+    $allFiles = [];
+
+    foreach ((array) $paths as $path) {
+        $realPath = realpath($path);
+        if (!$realPath || !is_readable($realPath))
+            continue;
+        // && pathinfo($realPath, PATHINFO_EXTENSION) === 'php'
+        if (is_file($realPath)) {
+            $allFiles[$realPath] = true;
+        } elseif (is_dir($realPath)) {
+            $iterator = new RecursiveIteratorIterator(
+                new RecursiveDirectoryIterator($realPath, FilesystemIterator::SKIP_DOTS | FilesystemIterator::FOLLOW_SYMLINKS)
+            );
+
+            foreach ($iterator as $file) {
+                $filePath = $file->getRealPath();
+                if ($file->isFile()) {
+                    // && pathinfo($filePath, PATHINFO_EXTENSION) === 'php'
+                    $allFiles[$filePath] = true;
+                }
+            }
+        }
+    }
+
+    $excepts = array_flip(array_filter(array_map('realpath', (array) $excepts)));
+    $only = $only ? array_flip(array_filter(array_map('realpath', (array) $only))) : null;
+
+    $filteredFiles = array_diff_key($allFiles, $excepts);
+    if ($only)
+        $filteredFiles = array_intersect_key($filteredFiles, $only);
+
+    foreach (array_keys($filteredFiles) as $file) {
+        require_once $file;
+    }
+
+    getBoolEnv('APP_DEBUG', false) &&  error_log('File-loader: Loaded all files successfully.');
+}
+
+function timeExecution(callable $func, &$result = null): float
+{
+    $start = hrtime(true);
+    $result = $func();
+    return (hrtime(true) - $start) / 1.0e6;
+}
+
+function dd(...$args)
+{
+    echo '<style>
+            body { background: #111; color: #0f0; font-family: monospace; padding: 10px; }
+            .dump-container { background: #222; padding: 10px; border-radius: 5px; margin: 10px 0; }
+            .dump-header { color: #f00; font-weight: bold; margin-bottom: 5px; cursor: pointer; }
+            .dump-content { white-space: pre-wrap; font-size: 14px; display: none; padding: 5px; border-left: 2px solid #f00; }
+        </style>';
+
+    echo "<script>
+            function toggleDump(id) {
+                var el = document.getElementById(id);
+                el.style.display = (el.style.display === 'none' || el.style.display === '') ? 'block' : 'none';
+            }
+        </script>";
+
+    foreach ($args as $index => $arg) {
+        $dumpId = 'dump_' . uniqid();
+        echo "<div class='dump-container'>";
+        echo "<div class='dump-header' onclick='toggleDump(\"$dumpId\")'> Dump #$index (click to expand)</div>";
+        echo "<div class='dump-content' id='$dumpId'><pre>";
+
+        // Convert objects before exporting
+        // if (is_object($arg)) {
+        //     $arg = convert_object($arg);
+        // }
+
+        echo htmlspecialchars(var_export($arg, true));
+
+        echo '</pre></div></div>';
+    }
+
+    exit;
+}
+
+function convert_object($obj)
+{
+    if (!is_object($obj))
+        return var_export($obj);
+
+    $reflection = new ReflectionClass($obj);
+    $properties = [];
+
+    foreach ($reflection->getProperties() as $prop) {
+        $prop->setAccessible(true);
+        $properties[$prop->getName()] = $prop->getValue($obj);
+    }
+
+    return [
+        '__Class' => $reflection->getName(),
+        '__Properties' => $properties,
+        '__Methods' => array_map(fn($m) => $m->getName(), $reflection->getMethods()),
+    ];
+}
+
+function minifyContent($content)
+{
+    $content = preg_replace('/[ \t]+$/m', '', $content);
+    $content = preg_replace('/\s+/', ' ', $content);
+    return trim($content);
+}
+
+// function serveMinifiedFile($requestUri)
+// {
+//     $file = ROOT . $requestUri;
+//     $ext = pathinfo($file, PATHINFO_EXTENSION);
+
+//     if (!file_exists($file) || !is_file($file)) {
+//         http_response_code(404);
+//         exit('File not found!');
+//     }
+
+//     $contentTypes = [
+//         'css' => 'text/css',
+//         'js' => 'application/javascript',
+//         'html' => 'text/html',
+//     ];
+
+//     header('Content-Type: ' . $contentTypes[$ext]);
+//     header('Cache-Control: public, max-age=3600');
+
+//     $cacheFile = STORAGE_PATH . 'cache/minified/' . md5($requestUri) . ".$ext";
+
+//     if (file_exists($cacheFile) && filemtime($cacheFile) >= filemtime($file)) {
+//         readfile($cacheFile);
+//         exit;
+//     }
+
+//     $content = file_get_contents($file);
+//     $minifiedContent = minifyContent($content);
+//     file_put_contents($cacheFile, $minifiedContent);
+
+//     echo $minifiedContent;
+//     exit;
+// }

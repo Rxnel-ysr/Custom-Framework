@@ -1,8 +1,8 @@
 <?php
 
-use App\Utils\Database\Blueprint;
-use App\Utils\Database\Migration;
-use App\Utils\Database\Schema;
+use App\Foundation\Database\Blueprint;
+use App\Foundation\Database\Migration;
+use App\Foundation\Database\Schema;
 
 return new class extends Migration {
 

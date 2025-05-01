@@ -6,7 +6,7 @@ return [
     ],
     'mysql' => [
         'host' => env('DB_HOST', '127.0.0.1'),
-        'name' => env('DB_NAME', ''),
+        'name' => env('DB_NAME', 'Native-php'),
         'user' => env('DB_USER', 'root'),
         'password' => env('DB_PASS', ''),
         'charset' => env('DB_CHARSET', 'utf8mb4'),
