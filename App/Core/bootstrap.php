@@ -6,7 +6,7 @@ use App\Foundation\Compiler\Compile;
 use App\Foundation\Helpers\Env;
 use App\Foundation\Http\Request;
 
-$root = dirname(dirname(__DIR__));
+$root = dirname(__DIR__, 2);
 
 require_once $root . '/App/Foundation/Manager/ClassManager_EXPE.php';
 require_once $root . '/App/Foundation/Compiler/Compile.php';
@@ -25,17 +25,23 @@ ClassManager::init($root, false, true, [
 ClassManager::initAutoloader(true);
 
 Env::load($root . '/config/.env');
-Debugger::init(true, E_ALL & ~E_WARNING, $root . '/App/Core/error.php');
+Debugger::init(true, E_ALL & ~E_WARNING, $root . '/App/Core/error.php', true, $root . '/storage/logs/debug.log');
 
 
 Compile::init(
     $root . '/resources/views',
-    $root . '/storage/cache/views'
+    $root . '/storage/cache/views',
+    '.rx.php'
 );
 
 $request = new Request();
-$app = new App($root, $request);
-
-$app->setting($dependencies, $configs, $router_plugins);
+$app = new App(root: $root, request: $request)
+    ->withRouting([
+        'web' => '/routes/web.php',
+        'api' => '/routes/api.php',
+        'api_prefix' => 'api',
+        'plugins' => $router_plugins
+    ])->withConfig($configs)
+    ->withDependencies($dependencies);
 
 return $app;

@@ -3,31 +3,25 @@
 namespace App\Support\Facades;
 
 use App\Foundation\Manager\InstanceManager;
-use App\EXPE\Foundation\Manager\ClassManager;
+use Exception;
 
-class Facade
+abstract class Facade
 {
-    private static $instances = [];
-
-    /**
-     * Get the instance of a class
-     *
-     * @param string $class Class name to resolve
-     * @return object
-     */
-    protected static function getInstance($class)
+    protected static function getFacadeAccessor()
     {
-        // Prevent creating a new instance if it's already been instantiated
-        if (!isset(self::$instances['real_' . $class])) {
-            self::$instances['real_' . $class] = InstanceManager::getInstance($class);
-        }
+        throw new Exception("No accessor defined.");
+    }
 
-        // Avoid class aliasing if it already exists
-        if (!class_exists('real_' . $class)) {
-            class_alias($class, 'real_' . $class);
-        }
+    public static function __callStatic($method, $args)
+    {
+        $instance = static::resolveFacadeInstance();
+        return $instance->$method(...$args);
+    }
 
-        // Return the stored instance
-        return self::$instances['real_' . $class];
+    protected static function resolveFacadeInstance()
+    {
+        $accessor = static::getFacadeAccessor();
+        if (is_object($accessor)) return $accessor;
+        return InstanceManager::getInstance($accessor);
     }
 }

@@ -2,6 +2,7 @@
 
 use App\EXPE\Foundation\Manager\ClassManager;
 use App\Foundation\Http\Route;
+use App\Foundation\Model;
 use App\Http\Controllers\test;
 use App\Support\Facades\Request;
 
@@ -9,14 +10,15 @@ Route::get('/', function () {
    return view('index');
 });
 
-// Route::get('/testting', function () {
+Route::get('/testting', function () {
 
-//    safe(fn() => throw new Exception('Oops!'), [], $result, true, true, function (Throwable $e, array $debug) {
-//       echo "Auto-injected exception: " . $e->getMessage() . "\n<pre>";
-//       var_export($debug);
-//       echo '</pre>';
-//    }, false, false, true);
-// });
+   // safe(fn() => throw new Exception('Oops!'), [], $result, true, true, function (Throwable $e, array $debug) {
+   //    echo "Auto-injected exception: " . $e->getMessage() . "\n<pre>";
+   //    var_export($debug);
+   //    echo '</pre>';
+   // }, false, false, true);
+   throw new Model();
+});
 
 Route::get('/raw', function () {
    return view('raw');

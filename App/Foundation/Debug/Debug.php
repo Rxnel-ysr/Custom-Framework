@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Debug;
 
+use ErrorException;
 use Throwable;
 
 class Debugger
@@ -55,7 +56,7 @@ class Debugger
 
     public static function handleError(int $errno, string $errstr, string $errfile, int $errline)
     {
-        $errorData = new \ErrorException($errstr, 0, $errno, $errfile, $errline);
+        $errorData = new ErrorException($errstr, 0, $errno, $errfile, $errline);
         self::dumpErr($errorData);
     }
 
@@ -68,7 +69,7 @@ class Debugger
     {
         $error = error_get_last();
         if ($error !== null) {
-            $errorData = new \ErrorException(
+            $errorData = new ErrorException(
                 $error['message'],
                 0,
                 $error['type'],
@@ -83,7 +84,7 @@ class Debugger
     {
         $message = "\n[ERROR] " . get_class($e) . ' | Code: ' . $e->getCode()
             . "\nMessage: " . $e->getMessage()
-            . "\nFile: " . $e->getFile() . ' (Line: ' . $e->getLine() . ')'
+            . "\nFile: " . $e->getFile() . '(' . $e->getLine() . ')'
             . "\nTrace:\n" . $e->getTraceAsString() . "\n";
 
         if ($e->getPrevious() !== null) {
@@ -171,13 +172,13 @@ class Debugger
         $add_new_class;
         $trace;
 
-        if (ob_get_length()) {
-            ob_end_clean();  // Use ob_end_clean() instead of ob_clean() to discard and close the buffer
-        }
+        // if (ob_get_length()) {
+        //     ob_end_clean();  // Use ob_end_clean() instead of ob_clean() to discard and close the buffer
+        // }
         require_once self::$error_page;
-        if (ob_get_length()) {
-            ob_end_flush();  // Flush output safely
-        }
+        // if (ob_get_length()) {
+        //     ob_end_flush();  // Flush output safely
+        // }
         exit(1);
     }
 }

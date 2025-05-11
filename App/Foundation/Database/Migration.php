@@ -6,19 +6,41 @@ namespace App\Foundation\Database;
 
 use App\Debug\Debugger;
 use App\Foundation\Database\Connection;
+use Exception;
 
 require_once 'Connection.php';
 
+$root = dirname(__DIR__, 4);
+
 abstract class Migration
 {
+
+    private static array $setting;
+
     abstract public function up();
 
     abstract public function down();
 
+    private static function init(array $setting = [
+        'database_record' => '/path/to/database/record.php',
+        'migration' => '/path/to/migrations'
+    ])
+    {
+        $dummy = [
+            'database_record' => '/path/to/database/record.php',
+            'migration' => '/path/to/migrations'
+        ];
+        if ($setting == $dummy) {
+            throw new Exception('Migration: Please provided setting first');
+        }
+
+        self::$setting = $setting;
+    }
+
     public static function getRecord()
     {
         try {
-            return require DATABASE . 'record/record.php';
+            return require $root . '/database/record/record.php';
         } catch (\Throwable $e) {
             Debugger::dumpErr($e);
         }
@@ -27,7 +49,7 @@ abstract class Migration
     public static function getCurrentRecord()
     {
         try {
-            $records = require DATABASE . 'record/record.php';
+            $records = require self::$setting['database_record'];
             return $records[$records['current']];
         } catch (\Throwable $e) {
             Debugger::dumpErr($e);
@@ -44,12 +66,12 @@ abstract class Migration
         }
 
         $content = "<?php\n\nreturn " . var_export($records, true) . ";\n";
-        file_put_contents(DATABASE . 'record/record.php', $content);
+        file_put_contents(self::$setting['database_record'], $content);
     }
 
     public static function migrate()
     {
-        $files = glob(MIGRATIONS . '*.php');
+        $files = glob(self::$setting['migration'] . DIRECTORY_SEPARATOR . '*.php');
         $records = Migration::getRecord();
 
         if ($records['current'] > -1) {
@@ -104,7 +126,7 @@ abstract class Migration
 
     public static function dropAll()
     {
-        $files = glob(MIGRATIONS . '*.php');
+        $files = glob(self::$setting['migration'] . DIRECTORY_SEPARATOR . '*.php');
 
         if (empty($files)) {
             echo 'Nothing to drop.' . PHP_EOL;
@@ -120,7 +142,7 @@ abstract class Migration
 
     public static function dropAndReapplyAll()
     {
-        $files = glob(MIGRATIONS . '*.php');
+        $files = glob(self::$setting['migration'] . DIRECTORY_SEPARATOR . '*.php');
 
         if (empty($files)) {
             echo 'Nothing to migrate.' . PHP_EOL;
@@ -145,7 +167,7 @@ abstract class Migration
         $records['current'] = (int) $records['current'] + 1;
 
         $content = "<?php\n\nreturn " . var_export($records, true) . ";\n";
-        file_put_contents(DATABASE . 'record/record.php', $content);
+        file_put_contents(self::$setting['database_record'], $content);
     }
 
     public static function goToPrevMigrationsAndUnset()
@@ -178,7 +200,7 @@ abstract class Migration
             echo '';
 
             $content = "<?php\n\nreturn " . var_export($records, true) . ";\n";
-            file_put_contents(DATABASE . 'record/record.php', $content);
+            file_put_contents(self::$setting['database_record'], $content);
         } catch (\ParseError $e) {
             Debugger::dumpErr($e);
         } catch (\Throwable $e) {
@@ -212,7 +234,7 @@ class Schema
     }
 }
 
-class Blueprint
+class Blueprint extends Connection
 {
     private $pdo;
     private $stmt;

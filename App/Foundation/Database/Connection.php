@@ -6,11 +6,11 @@ namespace App\Foundation\Database;
 
 use PDO;
 
-require_once FOUNDATION . 'Helpers/Env.php';
 
 class Connection
 {
     protected static ?PDO $PDO = null;
+    protected static array $config;
 
     /**
      * Returns a singleton instance of the PDO connection.
@@ -22,9 +22,10 @@ class Connection
         // try {
         if (self::$PDO === null) {
 
-            $config = require_once CONFIG . 'database.php';
+            $config = require_once dirname(__DIR__,3) . '/config/database.php';
             $dbType = env('DB_TYPE', $config['default']);
             $config = $config[$dbType];
+            self::$config = $config;
 
             if ($dbType === 'sqlite') {
                 $dsn = "sqlite:" . $config['database'];

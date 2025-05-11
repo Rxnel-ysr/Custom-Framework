@@ -4,10 +4,11 @@ use App\Foundation\Guard\CSRF;
 use App\Foundation\Http\Response;
 use App\Foundation\Manager\InstanceManager;
 
-$logFile = dirname(dirname(dirname(__DIR__))) . '/storage/logs/server.log';
-$resources = dirname(dirname(dirname(__DIR__))) . '/resources/';
-$views = dirname(dirname(dirname(__DIR__))) . '/resources/views';
-$ErrorPage = dirname(dirname(dirname(__DIR__))) . '/App/Core/error.php';
+$root = dirname(__DIR__, 3);
+$logFile = $root . '/storage/logs/server.log';
+$resources = $root . '/resources/';
+$views = $root . '/resources/views';
+$ErrorPage = $root . '/App/Core/error.php';
 $requestUri = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH);
 
 class Utils
@@ -209,7 +210,7 @@ function printAsJson($data, $additionalOption = 0)
 function env($name, $default = false)
 {
     $result = getenv($name);
-    return $result != false ? $result : $default;
+    return $result ?: $default;
 }
 
 /**
@@ -296,6 +297,7 @@ function dd(...$args)
 
     exit;
 }
+
 
 function convert_object($obj)
 {

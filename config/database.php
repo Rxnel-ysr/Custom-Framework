@@ -1,8 +1,9 @@
 <?php
+$root = dirname(__DIR__, 2);
 return [
     'default' => 'sqlite',
     'sqlite' => [
-        'database' => DATABASE . 'database.sqlite'
+        'database' =>  $root . '/database/database.sqlite'
     ],
     'mysql' => [
         'host' => env('DB_HOST', '127.0.0.1'),

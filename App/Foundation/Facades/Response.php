@@ -3,7 +3,6 @@
 namespace App\Support\Facades;
 
 use App\Support\Facades\Facade;
-use BadMethodCallException;
 
 /**
  * @method self status(int $code)
@@ -17,12 +16,8 @@ use BadMethodCallException;
  */
 class Response extends Facade
 {
-    public static function __callStatic($name, $arguments)
+    protected static function getFacadeAccessor()
     {
-        $instance = self::getInstance(\App\Foundation\Http\Response::class);
-        if (method_exists($instance, $name)) {
-            return call_user_func([$instance, $name], ...$arguments);
-        }
-        throw new BadMethodCallException('Method ' . $name . ' is not available on  App\Support\Facades\Response::class');
+        return \App\Foundation\Http\Response::class;
     }
 }

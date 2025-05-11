@@ -83,23 +83,18 @@ Command::register(
 Command::register(
     'clean-views',
     function () {
-        $views_disk = new Disk(dirname(dirname(__DIR__)) . '/storage/cache/views');
+        $views_disk = new Disk(dirname(__DIR__, 2) . '/storage/cache/views');
         $views_disk->cleanDir();
     },
-    'cv'
+    'cv',
+    'Clean all cached compiled views'
 );
 
 Command::register(
     'test',
     function () {
         //   print_r(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS));
-        $disk = new Disk(dirname(dirname(__DIR__)) . '/storage/cache');
-        $arr = [
-            'alok',
-            'name' => 'njya'
-        ];
-
-        echo $disk;
+        echo dirname(__DIR__, 5);
     },
     't',
     'Testing field of a command'

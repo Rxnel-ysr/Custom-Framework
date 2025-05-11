@@ -53,13 +53,13 @@ function backRoute($uri, $part): void
 function includeView($view, array $data = [])
 {
     extract($data);
-    return Compile::compile(str_replace('.', DIRECTORY_SEPARATOR, $view) . '.rx.php');
+    return Compile::compile(str_replace('.', DIRECTORY_SEPARATOR, $view));
 }
 
 function view($view, array $data = [])
 {
     extract($data);
-    return Compile::compile(str_replace('.', DIRECTORY_SEPARATOR, $view) . '.rx.php');
+    return Compile::compile(str_replace('.', DIRECTORY_SEPARATOR, $view));
 }
 
 function asset(string $path): string
@@ -520,8 +520,7 @@ function scanForClasses($directory, $ignore_dirs = [], $ignore_files = [], $exce
             ], '', $content);
 
             // Remove all string literals (single & double quotes)
-            $cleanedContent = preg_replace('/(["\'])(?:\\\1|.)*?\1/s', '', $cleanedContent);
-            $cleanedContent = str_replace('new class', '', $cleanedContent);
+            $cleanedContent = preg_replace(['/new class/', '/(["\'])(?:\\\1|.)*?\1/s'], ['', ''], $cleanedContent);
             // Capture namespace (if exists)
             preg_match('/namespace\s+([\w\\\\]+);/i', $cleanedContent, $namespace);
 

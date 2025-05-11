@@ -8,5 +8,4 @@ if (StaticFile::serve(__DIR__, $_SERVER['REQUEST_URI'])) {
     return false;
 }
 
-$app = require_once __DIR__ . '/App/Core/bootstrap.php';
-$app->start();
+(require_once __DIR__ . '/App/Core/bootstrap.php')->start();
