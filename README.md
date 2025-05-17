@@ -1,6 +1,4 @@
-# README
-
-## DunnoTheNameYet (Working Title)
+# DunnoTheNameYet (Working Title)
 
 This is a microframework without any dependency to Composer.
 
