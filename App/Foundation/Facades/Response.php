@@ -16,7 +16,7 @@ use App\Support\Facades\Facade;
  */
 class Response extends Facade
 {
-    protected static function getFacadeAccessor()
+    protected static function getFacadeAccessor(): string|object
     {
         return \App\Foundation\Http\Response::class;
     }

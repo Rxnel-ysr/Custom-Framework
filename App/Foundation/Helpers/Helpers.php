@@ -10,7 +10,7 @@ use App\Foundation\Manager\InstanceManager;
  * Will include given views when the URL is matched or execute a callback.
  * @deprecated
  */
-function route($uri, $viewOrCallback): void
+function route_($uri, $viewOrCallback): void
 {
     global $views;
     global $requestUri;
@@ -50,16 +50,9 @@ function backRoute($uri, $part): void
     }
 }
 
-function includeView($view, array $data = [])
-{
-    extract($data);
-    return Compile::compile(str_replace('.', DIRECTORY_SEPARATOR, $view));
-}
-
 function view($view, array $data = [])
 {
-    extract($data);
-    return Compile::compile(str_replace('.', DIRECTORY_SEPARATOR, $view));
+    return Compile::compile(str_replace('.', DIRECTORY_SEPARATOR, $view), $data);
 }
 
 function asset(string $path): string
@@ -273,7 +266,7 @@ function get_precise_type(mixed $var): string
  *
  * @return mixed The result of the function execution.
  */
-function callFuncWithParams(callable|string|array $func, bool $strict = false, bool $auto_resolve = false, mixed ...$params)
+function callFuncWithParams(callable|string|array $func, bool $strict = false, bool $auto_resolve = false, array $params = [])
 {
     $args = [];
     // var_dump($func);

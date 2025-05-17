@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Foundation\Database;
 
+use App\Foundation\Manager\InstanceManager;
 use PDO;
 
 
@@ -11,6 +12,11 @@ class Connection
 {
     protected static ?PDO $PDO = null;
     protected static array $config;
+
+    public static function set(array $config)
+    {
+        self::$config = $config;
+    }
 
     /**
      * Returns a singleton instance of the PDO connection.
@@ -21,8 +27,7 @@ class Connection
     {
         // try {
         if (self::$PDO === null) {
-
-            $config = require_once dirname(__DIR__,3) . '/config/database.php';
+            $config = self::$config;
             $dbType = env('DB_TYPE', $config['default']);
             $config = $config[$dbType];
             self::$config = $config;

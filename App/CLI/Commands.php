@@ -3,7 +3,19 @@
 use App\Foundation\CLI\Command;
 use App\Foundation\Database\Migration;
 use App\EXPE\Foundation\Manager\ClassManager;
+use App\Foundation\Database\Connection;
+use App\Foundation\Http\Route;
 use App\Foundation\System\Disk;
+
+$root = dirname(__DIR__, 2);
+
+$migrationSetup = [
+    fn() => Connection::set(require_once "$root/config/database.php"),
+    fn() => Migration::init([
+        'database_record' => "$root/database/record/record.php",
+        'migration' => "$root/database/migrations",
+    ]),
+];
 
 Command::register(
     'help',
@@ -11,6 +23,10 @@ Command::register(
     'h',
     'Show help message then exit.'
 );
+
+Command::register('s', function(){
+    var_dump(Connection::getInstance());
+},'','',[],$migrationSetup);
 
 Command::register(
     'start',
@@ -27,21 +43,28 @@ Command::register(
     'migrate',
     fn() => Migration::migrate(),
     'm',
-    'Run then migrations'
+    'Run then migrations',
+    [],
+    $migrationSetup
 );
 
 Command::register(
     'migrate:dropAll',
     fn() => Migration::dropAll(),
     'mda',
-    'Dropping all the migrations'
+    'Dropping all the migrations',
+    [],
+    $migrationSetup
+
 );
 
 Command::register(
     'migrate:fresh',
     fn() => Migration::dropAndReapplyAll(),
     'mf',
-    'Dropping all the migrations then reapply them'
+    'Dropping all the migrations then reapply them',
+    [],
+    $migrationSetup
 );
 
 Command::register(
@@ -93,8 +116,7 @@ Command::register(
 Command::register(
     'test',
     function () {
-        //   print_r(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS));
-        echo dirname(__DIR__, 5);
+        Route::init([]);
     },
     't',
     'Testing field of a command'

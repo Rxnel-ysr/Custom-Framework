@@ -59,12 +59,14 @@ class Command
         // die;
 
         foreach ($command['dependencies'] as $alias => $dependency) {
-            if (strpos($dependency, '.php') === false) {
+            if (is_string($dependency) && strpos($dependency, '.php') === false) {
                 require_once ClassManager::getClassFile($dependency);
 
                 if (!is_numeric($alias)) {
                     class_alias($dependency, $alias);
                 }
+            } elseif (is_callable($dependency)) {
+                call_user_func($dependency);
             } else {
                 require_once $dependency;
             }

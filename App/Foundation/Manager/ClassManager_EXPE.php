@@ -4,7 +4,6 @@ namespace App\EXPE\Foundation\Manager;
 
 use Exception;
 use ReflectionUnionType;
-use Throwable;
 
 class ClassManager
 {
@@ -43,6 +42,8 @@ class ClassManager
             throw new Exception('Please define path first');
         }
         if (!self::$is_initialized) {
+            // var_dump($setting);
+            // exit;
             self::$classes = require self::$setting['classmap'];
             self::$cache_classes = require self::$setting['cache_classmap'];
             self::$is_initialized = true;

@@ -6,7 +6,7 @@ use App\Foundation\Model;
 
 class User extends Model
 {
-    protected $table = 'posts';
+    protected $table = 'users';
 
     protected $fillable = [
         'name',

@@ -87,8 +87,19 @@ class Request
         return $_SERVER['REQUEST_METHOD'];
     }
 
-    public static function capture(){
-        return $_SERVER['REQUEST_URI'];
+    public static function capture(): self
+    {
+        return new self;
+    }
+
+    public static function url()
+    {
+        return strtok($_SERVER['REQUEST_URI'], '?');
+    }
+
+    public static function urlQuery()
+    {
+        return $_SERVER['QUERY_STRING'];
     }
 
     /**

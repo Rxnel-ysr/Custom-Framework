@@ -1,10 +1,16 @@
 <?php
 
 use App\EXPE\Foundation\Manager\ClassManager;
+use App\Foundation\Http\Request;
+use App\Foundation\Http\Response;
 use App\Foundation\Http\Route;
+use App\Foundation\Manager\InstanceManager;
 use App\Foundation\Model;
+use App\Foundation\System\Disk;
+use App\Foundation\System\File;
 use App\Http\Controllers\test;
-use App\Support\Facades\Request;
+
+use function App\Http\Middlewares\auk;
 
 Route::get('/', function () {
    return view('index');
@@ -22,7 +28,19 @@ Route::get('/testting', function () {
 
 Route::get('/raw', function () {
    return view('raw');
-});
+})->name('raw');
+
+Route::get('/file', fn() => view('file'));
+Route::post('/file', function (Request $req, Response $res) {
+
+   // dd($req->file('someFile'));
+   $file = new File($req->file('someFile')['tmp_name']);
+   $file = $file->read();
+   $disk = InstanceManager::getInstance('appDisk');
+
+   $disk->write('result.txt', $file);
+   $res->serve($disk->path('result.txt'), 'image/jpeg');
+})->name('fileEnd');
 
 Route::get('/destroy', function () {
    while (true) {
@@ -30,18 +48,28 @@ Route::get('/destroy', function () {
    }
 });
 
-Route::get('/user',function(Request $req){
-   return Utils::getUserInfo();
+Route::group(['prefix' => '/aya', 'middleware' => ['auk' => fn() => auk()]], function () {
+   Route::get('/1', fn() => "Aya 1");
+   Route::get('/2', fn() => "Aya 2");
+   Route::get('/3', fn() => "Aya 3");
 });
 
-Route::get('/list',function(){
-return response()->json(Route::routeList());
+Route::get('/list', function () {
+   // response()->json(Route::routeList());
+   dd(Route::routeList());
 });
 
-Route::delete('/form-endpoint',function(){
-    print_r(Request::all());
+// Route::get('/test', [test::class, 'test']);
+Route::resource('/test', test::class);
+
+Route::get('/getMethod', fn() => 'get');
+Route::put('/putMethod', fn() => 'put');
+Route::post('/postMethod', fn() => 'post');
+Route::delete('/deleteMethod', fn() => 'delete');
+
+Route::fallback(function () {
+   // response(404)->json(['message' => 'Its weird']);
+   return    dd(Route::routeList());
 });
 
-Route::get('/test', [test::class, 'test']);
-
-Route::fallback(fn()=>response(404)->json(['msg'=>"Not found dude"]));
+// Route::debugTree();

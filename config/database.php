@@ -1,7 +1,8 @@
 <?php
-$root = dirname(__DIR__, 2);
+$root = dirname(__DIR__, 1);
+
 return [
-    'default' => 'sqlite',
+    'default' => 'mysql',
     'sqlite' => [
         'database' =>  $root . '/database/database.sqlite'
     ],

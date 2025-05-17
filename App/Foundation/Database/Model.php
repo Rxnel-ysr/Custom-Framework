@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Foundation;
 
-require_once 'QueryBuilder.php';
+require_once 'QueryBuilder_EXPE.php';
 
-use App\Foundation\Database\QueryBuilder;
+use App\EXPE\Foundation\Database\QueryBuilder;
 use ArrayIterator;
 use Countable;
 use ErrorException;

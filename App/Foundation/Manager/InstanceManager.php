@@ -31,6 +31,19 @@ class InstanceManager
     }
 
     /**
+     * Retrieve a singleton instance of the given class.
+     *
+     * @param string $key The class name or key identifier.
+     * @param object Instance to be keep
+     * @return object The singleton instance of the requested class.
+     */
+    public static function setInstance(string $key, object $instance): object
+    {
+        self::$instances[$key] = $instance;
+        return self::$instances[$key];
+    }
+
+    /**
      * Remove an instance from the storage (reset it).
      *
      * @param string $key The class name or key identifier.

@@ -1,8 +1,11 @@
 <?php
 
 use App\Foundation\Guard\CSRF;
+use App\Foundation\Http\Request;
 use App\Foundation\Http\Response;
+use App\Foundation\Http\Route;
 use App\Foundation\Manager\InstanceManager;
+use App\Foundation\Support\Collection;
 
 $root = dirname(__DIR__, 3);
 $logFile = $root . '/storage/logs/server.log';
@@ -124,6 +127,23 @@ function response($code = 200): Response
         $instance->status($code);
     }
     return $instance;
+}
+
+function request($name = null, $default = null): Request|string|int|array|null
+{
+    $instance = InstanceManager::getInstance('App\\Foundation\\Http\\Request');
+    if ($name) return $instance->input($name, $default);
+    return $instance;
+}
+
+function collect(array $item)
+{
+    return new Collection(($item));
+}
+
+function route($name, array $parameters = [])
+{
+    return Route::route($name, $parameters);
 }
 
 function config(string $path)

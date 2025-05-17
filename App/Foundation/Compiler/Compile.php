@@ -32,7 +32,10 @@ class Compile
         '/@extends\s*\((.*?)\)/s' => '<?php rx_extends($1) ?>',
         '/@section\s*\((.*?)\)/s' => '<?php rx_start_section($1) ?>',
         '/@yield\s*\((.*?)\)/s' => '<?php rx_yield($1) ?>',
-        '/@endsection/' => '<?php rx_end_section() ?>',
+        '/@endsection\b/' => '<?php rx_end_section() ?>',
+        '/@push\s*\((.*?)\)/s' => '<?php rx_append_stack($1) ?>',
+        '/@stacks\s*\((.*?)\)/s' => '<?php rx_stacks($1) ?>',
+        '/@endpush\b/' => '<?php rx_end_stack() ?>',
         '/@while\s*\((.*?)\)/s' => '<?php while($1): ?>',
         '/@endwhile\b/' => '<?php endwhile; ?>',
         '/@php\b/' => "<?php\n",
@@ -82,11 +85,13 @@ class Compile
         self::$user_callbacks[$name] = [$func, $type !== 'void'];
     }
 
-    public static function compile($path)
+    public static function compile($path, $data)
     {
         if (!file_exists($viewPath = self::$views_dir . DIRECTORY_SEPARATOR . $path . self::$ext)) {
             throw new Exception('View not found [' . $$viewPath . '], Are you sure its ends with .rx.php ?');
         }
+
+        extract($data);
 
         $cachePath = self::$cache_dir . DIRECTORY_SEPARATOR . md5($path);
 
@@ -98,6 +103,9 @@ class Compile
 
         if (file_exists($cachePath) && filemtime($cachePath) >= filemtime($viewPath)) {
             return require_once $cachePath;
+            // ob_start();
+            // require_once $cachePath;
+            // return ob_get_clean();
         }
 
         $template = file_get_contents($viewPath);
@@ -113,11 +121,13 @@ class Compile
 
         $combined = array_merge(self::$directive, $user_directive);
 
-
         $compiled = preg_replace(array_keys($combined), array_values($combined), $template);
 
         file_put_contents($cachePath, $compiled);
 
         return require_once $cachePath;
+        // ob_start();
+        // require_once $cachePath;
+        // return ob_get_clean();
     }
 }

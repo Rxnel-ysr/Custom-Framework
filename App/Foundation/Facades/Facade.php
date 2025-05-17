@@ -3,16 +3,23 @@
 namespace App\Support\Facades;
 
 use App\Foundation\Manager\InstanceManager;
-use Exception;
 
 abstract class Facade
 {
-    protected static function getFacadeAccessor()
-    {
-        throw new Exception("No accessor defined.");
-    }
+    /**
+     * Define facade accessor
+     * 
+     * @return string|object Must return a class-string or instance or a class
+     */
+    abstract protected static function getFacadeAccessor(): string|object;
 
     public static function __callStatic($method, $args)
+    {
+        $instance = static::resolveFacadeInstance();
+        return $instance->$method(...$args);
+    }
+
+    public function __call($method, $args)
     {
         $instance = static::resolveFacadeInstance();
         return $instance->$method(...$args);

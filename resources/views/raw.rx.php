@@ -12,7 +12,7 @@
         <h1>testing validations</h1>
         <form action="/form-endpoint" method="POST">
             @csrf
-            @method('DELETE')
+            @method('')
             <label for="name">Name:</label>
             <input type="text" name="name" id="name">
             <label for="password">Password:</label>

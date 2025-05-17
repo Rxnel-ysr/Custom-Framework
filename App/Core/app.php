@@ -4,20 +4,24 @@ use App\Foundation\Guard\RateLimiter;
 use App\Foundation\Helpers\Env;
 use App\Foundation\Http\Request;
 use App\Foundation\Http\Route;
+// use App\EXPE\Foundation\Http\Route;
 
 class App
 {
-    private Request $request;
     private array $dependencies = [];
     private array $dependency_names = [];
-    private array $configs = [];
+    public array $configs = [];
     private array $router = [];
     public string $root;
 
-    public function __construct(string $root, Request $request)
+    public function __construct(string $root)
     {
         $this->root = $root;
-        $this->request = $request;
+    }
+
+    public function getConfig(string $key): mixed
+    {
+        return $this->configs[$key] ?? null;
     }
 
     public function withDependencies(array $dependencies): self
@@ -53,7 +57,7 @@ class App
     }
 
 
-    public function start(): void
+    public function handle(Request $request)
     {
         foreach ($this->dependencies as $dependency) {
             require_once $this->root . $dependency;
@@ -62,7 +66,7 @@ class App
         Env::load($this->configs['env']);
         load([$this->root . '/App/Http/Controllers']);
 
-        $requestUri = $this->request->capture();
+        $requestUri = $request->url();
         $rateLimiterConfig = config($this->configs['rate_limiter']);
         $apiPrefix = '/' . trim($this->router['api_prefix'], '/') . '/';
 
@@ -86,11 +90,12 @@ class App
         require_once $this->root . "/App/Http/Middlewares/{$middleware}";
         require_once $this->root . '/' . ltrim($routeFile, '/');
 
-        if ($this->request->method() === 'OPTIONS') {
+        if ($request->method() === 'OPTIONS') {
             response()->json(['options' => ['GET', 'POST', 'PUT', 'DELETE']]);
             exit;
         }
 
-        error_log('Request done within: ' . timeExecution(fn() => Route::dispatch($requestUri)));
+        // error_log('Request done within: ' . timeExecution(fn() => Route::dispatch($requestUri)));
+        Route::dispatch($requestUri);
     }
 }

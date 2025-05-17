@@ -21,7 +21,7 @@ abstract class Migration
 
     abstract public function down();
 
-    private static function init(array $setting = [
+    public static function init(array $setting = [
         'database_record' => '/path/to/database/record.php',
         'migration' => '/path/to/migrations'
     ])
@@ -39,11 +39,7 @@ abstract class Migration
 
     public static function getRecord()
     {
-        try {
-            return require $root . '/database/record/record.php';
-        } catch (\Throwable $e) {
-            Debugger::dumpErr($e);
-        }
+        return require self::$setting['database_record'];
     }
 
     public static function getCurrentRecord()
@@ -245,17 +241,15 @@ class Blueprint extends Connection
     private $comment = null;
     private $collate;
     private $charset;
-    private $db_type;
-    private $config;
+    protected $db_type;
 
     public function __construct(string $table_name)
     {
         $this->table_name = $table_name;
         $this->pdo = Connection::getInstance();
-        $this->collate = env('DB_COLLATION', 'utf8mb4_general_ci');
-        $this->charset = env('DB_CHARSET', 'utf8mb4');
-        $this->config = require CONFIG . 'database.php';
-        $this->db_type = env('DB_TYPE', $this->config['default']);
+        $this->collate = env('DB_COLLATION', self::$config['collation'] ?? null);
+        $this->charset = env('DB_CHARSET', self::$config['charset'] ?? null);
+        $this->db_type = env('DB_TYPE', self::$config['db_type'] ?? null);
     }
 
     public function build()

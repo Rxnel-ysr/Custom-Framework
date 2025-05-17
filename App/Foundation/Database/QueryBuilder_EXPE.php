@@ -14,7 +14,7 @@ use stdClass;
 class QueryBuilder extends Connection
 {
     use Strings;
-    
+
     # Base var
     private $query;
     protected $table;
@@ -40,7 +40,7 @@ class QueryBuilder extends Connection
      */
     public function __construct()
     {
-        $this->pdo = self::getInstance();
+        $this->pdo = Connection::getInstance();
     }
 
     public function fillable($fillable = [])
@@ -79,9 +79,9 @@ class QueryBuilder extends Connection
     /**
      * 
      */
-    private function decideSelect()
+    private function decideSelect(?array $columns = null)
     {
-        return (!empty($this->columns) ? implode(', ', $this->columns) : '*');
+        return empty($columns) ? (!empty($this->columns) ? implode(', ', $this->columns) : '*') : implode(',',$columns);
     }
 
     protected function filterColumns($columns = [])
@@ -355,15 +355,14 @@ class QueryBuilder extends Connection
      * Get all record within array and inside array there is all of object from query
      * 
      */
-    public function get($skipRelations = false)
+    public function get($columns = null, $skipRelations = false)
     {
         try {
-            $query = ($this->usedSelect ? '' : 'SELECT ') . $this->decideSelect() . ' FROM ' . $this->table;
-            if (!empty($this->relations) || !$skipRelations) {
-                foreach($this->relations as $table => $relation){
-                     
-                }
-            }
+            $query = ($this->usedSelect ? '' : 'SELECT ') . $this->decideSelect($columns) . ' FROM ' . $this->table;
+            // if (!empty($this->relations) || !$skipRelations) {
+            //     foreach ($this->relations as $table => $relation) {
+            //     }
+            // }
 
             error_log($this->getRequestIp() . $query . $this->query);
             error_log($this->getRequestIp() . 'Parameter: ' . json_encode($this->bindings));
@@ -372,7 +371,7 @@ class QueryBuilder extends Connection
             $this->stmt->execute($this->bindings);
             $this->resetQuery();
 
-            $res = $this->stmt->fetchAll(\PDO::FETCH_OBJ) ?: [];
+            return $res = $this->stmt->fetchAll(\PDO::FETCH_OBJ) ?: [];
         } catch (\PDOException $e) {
             Debugger::dumpErr($e);
             return [];

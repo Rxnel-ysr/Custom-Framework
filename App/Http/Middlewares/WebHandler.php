@@ -2,7 +2,7 @@
 namespace App\Http\Middlewares;
 
 function auk(){
-    if(1 < 1){
+    if(1 == 1){
         echo 'Got u';
         return false;
     }
