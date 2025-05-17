@@ -59,7 +59,7 @@ class Response
         exit;
     }
 
-    public function serve(string $filePath, ?string $mimeType = 'text/plain')
+    public function serve(string $filePath, ?string $mimeType = null)
     {
         if (!file_exists($filePath)) {
             http_response_code(404);
@@ -67,7 +67,7 @@ class Response
         }
 
         $this->withHeaders()
-            ->contentType($mimeType)
+            ->contentType($mimeType?: mime_content_type($filePath))
             ->contentDisposition('inline', basename($filePath))
             ->contentLength(filesize($filePath));
 

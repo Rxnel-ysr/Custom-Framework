@@ -1,6 +1,7 @@
 <?php
 
 use App\EXPE\Foundation\Manager\ClassManager;
+use App\Foundation\Http\HttpHeaders;
 use App\Foundation\Http\Request;
 use App\Foundation\Http\Response;
 use App\Foundation\Http\Route;
@@ -9,6 +10,8 @@ use App\Foundation\Model;
 use App\Foundation\System\Disk;
 use App\Foundation\System\File;
 use App\Http\Controllers\test;
+use App\Models\User;
+use App\Support\Facades\DB;
 
 use function App\Http\Middlewares\auk;
 
@@ -48,15 +51,29 @@ Route::get('/destroy', function () {
    }
 });
 
-Route::group(['prefix' => '/aya', 'middleware' => ['auk' => fn() => auk()]], function () {
+Route::group(['prefix' => '/aya'], function () {
    Route::get('/1', fn() => "Aya 1");
    Route::get('/2', fn() => "Aya 2");
    Route::get('/3', fn() => "Aya 3");
 });
 
+Route::get('/user', function(){
+   $disk = InstanceManager::getInstance('appDisk');
+   response()->serve($disk->path('public/result.txt'));
+   // return dd(Utils::getUserInfo());
+});
+
+Route::get('/serve-file', function(Request $req){
+   $disk = InstanceManager::getInstance('appDisk');
+   response()->serve($disk->path($req->query('file')));
+});
+
 Route::get('/list', function () {
    // response()->json(Route::routeList());
-   dd(Route::routeList());
+   // $user = new User();
+   // dd(Route::routeList(),$user,$req->all(),new Response());
+   // return response()->json(DB::table('users')->get());
+   return dd(Route::dump());
 });
 
 // Route::get('/test', [test::class, 'test']);
@@ -69,7 +86,7 @@ Route::delete('/deleteMethod', fn() => 'delete');
 
 Route::fallback(function () {
    // response(404)->json(['message' => 'Its weird']);
-   return    dd(Route::routeList());
+   return dd(Route::dump());
 });
 
 // Route::debugTree();

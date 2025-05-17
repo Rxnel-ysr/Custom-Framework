@@ -1,6 +1,7 @@
 <?php
 
 use App\Foundation\Guard\CSRF;
+use App\Foundation\Http\HttpHeaders;
 use App\Foundation\Http\Request;
 use App\Foundation\Http\Response;
 use App\Foundation\Http\Route;
@@ -127,6 +128,11 @@ function response($code = 200): Response
         $instance->status($code);
     }
     return $instance;
+}
+
+function http(): HttpHeaders
+{
+    return new HttpHeaders();
 }
 
 function request($name = null, $default = null): Request|string|int|array|null
@@ -283,7 +289,12 @@ function timeExecution(callable $func, &$result = null): float
     return (hrtime(true) - $start) / 1.0e6;
 }
 
-function dd(...$args)
+function dd($arg, ...$args)
+{
+    return Type::dd($arg, ...$args);
+}
+
+function ddd(...$args)
 {
     echo '<style>
             body { background: #111; color: #0f0; font-family: monospace; padding: 10px; }
@@ -302,7 +313,7 @@ function dd(...$args)
     foreach ($args as $index => $arg) {
         $dumpId = 'dump_' . uniqid();
         echo "<div class='dump-container'>";
-        echo "<div class='dump-header' onclick='toggleDump(\"$dumpId\")'> Dump #$index (click to expand)</div>";
+        echo "<div class='dump-header' onclick='toggleDump(\"$dumpId\")' style='user-select: none;'> Dump #$index (click to expand)</div>";
         echo "<div class='dump-content' id='$dumpId'><pre>";
 
         // Convert objects before exporting

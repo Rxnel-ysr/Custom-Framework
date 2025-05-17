@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Foundation\Http;
 
 use App\Debug\Debugger;
@@ -27,6 +28,7 @@ class Route
 
     // Group stack for nested groups
     private static array $groupStack = [];
+    private static array $appliedGroup = [];
 
     // Current group attributes
     private static array $currentGroup = [
@@ -230,6 +232,12 @@ class Route
         return new self();
     }
 
+    public static function patch(string $url, callable|array $action, array|string $middleware = []): self
+    {
+        self::add('PATCH', $url, $action, (array) $middleware);
+        return new self();
+    }
+
     public static function put(string $url, callable|array $action, array|string $middleware = []): self
     {
         self::add('PUT', $url, $action, (array) $middleware);
@@ -257,17 +265,18 @@ class Route
         self::$groupStack[] = self::$currentGroup;
 
         // Merge new attributes
-        self::$currentGroup = [
+        self::$appliedGroup[] = self::$currentGroup = [
             'prefix' => trim(self::$currentGroup['prefix'] . '/' . trim($attributes['prefix'] ?? '', '/'), '/'),
             'middleware' => array_merge(self::$currentGroup['middleware'], $attributes['middleware'] ?? []),
             'namespace' => self::$currentGroup['namespace'] . '\\' . trim($attributes['namespace'] ?? '', '\\'),
         ];
 
+
         // Execute the callback
         call_user_func($callback);
 
         // Restore previous group attributes
-        self::$currentGroup = array_pop(self::$groupStack);
+        self::$currentGroup  = array_pop(self::$groupStack);
     }
 
     // Reverse routing
@@ -331,9 +340,24 @@ class Route
         return self::$routeList;
     }
 
-    public static function namedRoutes()
+    public static function namedRouteList()
     {
         return self::$namedRoutes;
+    }
+
+    public static function stackList()
+    {
+        return self::$appliedGroup;
+    }
+
+    public static function dump()
+    {
+        return [
+            'routes' => self::$routeList,
+            'named_routes' => self::$namedRoutes,
+            'stacks' => self::$appliedGroup,
+
+        ];
     }
 
     public static function fallback(callable|array $callback)

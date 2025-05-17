@@ -1,5 +1,6 @@
 <?php
 
+use App\App;
 use App\Debug\Debugger;
 use App\EXPE\Foundation\Manager\ClassManager;
 use App\Foundation\Compiler\Compile;
@@ -16,16 +17,18 @@ $root = dirname(__DIR__, 2);
 // var_dump(file_exists($root . '/config/classes.php'));
 // die();
 
+
 require_once $root . '/App/Foundation/Manager/ClassManager_EXPE.php';
 require_once $root . '/App/Foundation/Compiler/Compile.php';
 require_once $root . '/App/Foundation/Helpers/Utility.php';
 require_once $root . '/App/Foundation/Helpers/Helpers.php';
-require_once $root . '/App/Http/RadixRoute.php';
 
 // echo $root . '<br>';
 $dependencies = require_once $root . '/config/app.php';
 $configs = require_once $root . '/config/config.php';
 $database = require_once $root . '/config/database.php';
+$router = require_once $root . '/config/router.php';
+$router_path = require_once $root . '/config/router_path.php';
 $router_plugins = require_once $root . '/config/router_plugins.php' ?? [];
 // echo $root . '<br>';
 
@@ -37,6 +40,12 @@ ClassManager::initAutoloader(true);
 
 Env::load($root . '/config/.env');
 Debugger::init(true, E_ALL & ~E_WARNING, $root . '/App/Core/error.php', true, $root . '/storage/logs/debug.log');
+
+if (!in_array($router['router'], $router['choices'])) {
+    throw new Exception('Invalid choice: ' . $router['router'] . ' for routing');
+}
+
+require_once $router_path[$router['router']];
 
 
 Compile::init(

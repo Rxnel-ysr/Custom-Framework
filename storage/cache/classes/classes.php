@@ -40,4 +40,5 @@ return array (
   'App\\Debug\\Debugger' => '/App/Foundation/Debug/Debug.php',
   'extends' => '/database/migrations/2025_03_16_test.php',
   'TestErrHandler' => '/test/TestErrorHandler.php',
+  'App\\Support\\Facades\\DB' => '/App/Foundation/Facades/DB.php',
 );

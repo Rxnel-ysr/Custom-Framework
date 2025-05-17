@@ -8,6 +8,7 @@ use App\Support\Facades\Facade;
  * @method static getBearerToken
  * @method static array all()
  * @method static array only(array $keys)
+ * @mixin \App\Foundation\Http\Request::class
  */
 class Request extends Facade
 {

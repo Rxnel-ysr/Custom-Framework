@@ -1,10 +1,15 @@
 <?php
 
+namespace App;
+
 use App\Foundation\Guard\RateLimiter;
 use App\Foundation\Helpers\Env;
 use App\Foundation\Http\Request;
 use App\Foundation\Http\Route;
+use InvalidArgumentException;
+
 // use App\EXPE\Foundation\Http\Route;
+
 
 class App
 {
@@ -16,7 +21,7 @@ class App
 
     public function __construct(string $root)
     {
-        $this->root = $root;
+        $this->root = DIRECTORY_SEPARATOR . trim($root, DIRECTORY_SEPARATOR);
     }
 
     public function getConfig(string $key): mixed
@@ -60,7 +65,7 @@ class App
     public function handle(Request $request)
     {
         foreach ($this->dependencies as $dependency) {
-            require_once $this->root . $dependency;
+            require_once $this->root . DIRECTORY_SEPARATOR . $dependency;
         }
 
         Env::load($this->configs['env']);
@@ -91,11 +96,12 @@ class App
         require_once $this->root . '/' . ltrim($routeFile, '/');
 
         if ($request->method() === 'OPTIONS') {
-            response()->json(['options' => ['GET', 'POST', 'PUT', 'DELETE']]);
-            exit;
+            return response()->json(['options' => ['GET', 'HEAD', 'POST', 'PATCH', 'PUT', 'DELETE']]);
+            // exit;
         }
 
         // error_log('Request done within: ' . timeExecution(fn() => Route::dispatch($requestUri)));
+        // echo '<br>' . timeExecution(fn() => Route::dispatch($requestUri)) . 'ms';
         Route::dispatch($requestUri);
     }
 }
