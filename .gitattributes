@@ -1,3 +1,6 @@
+*.rx.php linguist-language=PHP
+*.php linguist-language=PHP
+* linguist-detectable=true
 *.js linguist-vendored
 *.css linguist-vendored
 *.log linguist-vendored
