@@ -23,7 +23,7 @@ require_once __DIR__ . '/App/Foundation/Helpers/Helpers.php';
 // require_once ROOT . 'test/memory.php';
 Env::load(__DIR__ . '/config/.env');
 
-ClassManager::init(__DIR__, false, false, [
+ClassManager::set(__DIR__, false, false, [
     'classmap' => __DIR__ . '/config/classes.php',
     'cache_classmap' => __DIR__ . '/storage/cache/classes/classes.php',
 ]);

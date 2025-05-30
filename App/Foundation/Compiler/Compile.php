@@ -13,6 +13,7 @@ class Compile
     private static string $cache_dir;
     private static string $views_dir;
     private static array $directive = [
+        '/\{\{--\s*(.*?)\s*--\}\}/' =>  '<?= \'<!-- $1 -->\' ?>',
         '/\{\{\s*(.*?)\s*\}\}/' =>  '<?= htmlspecialchars($1) ?>',
         '/\{\!\!\s*(.*?)\s*\!\!\}/' =>  '<?= $1 ?>',
         '/@csrf\b/' => '<?= \\App\\Foundation\\Guard\\CSRF::csrf() ?>',
@@ -87,15 +88,16 @@ class Compile
 
     public static function compile($path, $data)
     {
-        if (!file_exists($viewPath = self::$views_dir . DIRECTORY_SEPARATOR . $path . self::$ext)) {
-            throw new Exception('View not found [' . $$viewPath . '], Are you sure its ends with .rx.php ?');
+        $viewPath = self::$views_dir . DIRECTORY_SEPARATOR . $path . self::$ext;
+        if (!file_exists($viewPath)) {
+            // die('Hi');
+            throw new Exception('View not found [ ' . str_replace([self::$views_dir.DIRECTORY_SEPARATOR,self::$ext],['',''],$viewPath) . ' ], Are you sure its ends with ' . self::$ext .' ?');
         }
 
         extract($data);
 
         $cachePath = self::$cache_dir . DIRECTORY_SEPARATOR . md5($path);
 
-        // Ensure the cache directory exists
         $cacheDir = dirname($cachePath);
         if (!is_dir($cacheDir)) {
             mkdir($cacheDir, 0777, true);

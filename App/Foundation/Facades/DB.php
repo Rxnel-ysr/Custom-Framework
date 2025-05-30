@@ -5,9 +5,9 @@ namespace App\Support\Facades;
 use App\Support\Facades\Facade;
 
 /**
- * @mixin class App\Foundation\Database\QueryBuilder
- * @method static mixed __callStatic(string $method, array $args)
- * @method static mixed __call(string $method, array $args)
+ * @method static \App\EXPE\Foundation\Database\QueryBuilder table($name)
+ * @mixin \App\EXPE\Foundation\Database\QueryBuilder
+ * @extends Facade<\App\EXPE\Foundation\Database\QueryBuilder>
  */
 class DB extends Facade
 {

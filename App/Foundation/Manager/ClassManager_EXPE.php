@@ -21,7 +21,7 @@ class ClassManager
      *
      * @return void
      */
-    public static function init(
+    public static function set(
         string $root,
         bool $debug = true,
         bool $is_web = false,
@@ -80,6 +80,19 @@ class ClassManager
     public static function getClassFile(string $class)
     {
         return self::$classes[$class] ?? false;
+    }
+
+    /**
+     * Load all class from mapping
+     * 
+     * @return int Total or registered classes
+     */
+    public static function loadAllClass()
+    {
+        foreach (self::$classes as $class) {
+            require_once self::$root . DIRECTORY_SEPARATOR . $class;
+        }
+        return count(self::$classes);
     }
 
     /**

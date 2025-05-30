@@ -4,6 +4,7 @@ namespace App\Foundation\Http;
 
 use App\Debug\Debugger;
 use Closure;
+use RouterInterface;
 
 class RadixNode
 {
@@ -15,7 +16,7 @@ class RadixNode
     public bool $isParam = false;
 }
 
-class Route
+class Route implements RouterInterface
 {
     private static RadixNode $root;
     private static array $globalMiddleware = [];
@@ -373,7 +374,7 @@ class Route
         }
 
         if (is_callable($action)) {
-            $result = callFuncWithParams($action, true, true, $params);
+            $result = callFuncWithParams($action, $params,true, true);
             if (is_string($result)) {
                 echo $result;
                 exit;

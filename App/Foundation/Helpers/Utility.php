@@ -1,12 +1,9 @@
 <?php
 
 use App\Foundation\Guard\CSRF;
-use App\Foundation\Http\HttpHeaders;
-use App\Foundation\Http\Request;
-use App\Foundation\Http\Response;
-use App\Foundation\Http\Route;
+use App\Foundation\Http\{Request, HttpHeaders, Response, Route};
 use App\Foundation\Manager\InstanceManager;
-use App\Foundation\Support\Collection;
+use App\Foundation\Support\{Collection, Type};
 
 $root = dirname(__DIR__, 3);
 $logFile = $root . '/storage/logs/server.log';

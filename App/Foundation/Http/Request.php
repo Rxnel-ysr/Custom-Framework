@@ -116,12 +116,22 @@ class Request
     /**
      * Retrieve an uploaded file from $_FILES.
      *
-     * @param string $key The file input name.
-     * @return array|null The uploaded file data or null if not found.
+     * @param string $key The file input name
+     * @param string|null $option Consist of tmp, name, size, type, error
+     * @return ($option is null ? array{tmp_name: string, name: string, size: int, type: string, error: int} : string|int|null) The uploaded file data or null if not found
+     * @phpstan-return ($option is null ? array : string|int|null)
+     * @psalm-return ($option is null ? array : string|int|null)
      */
-    public static function file($key)
+    public static function file(string $key, ?string $option = null): mixed
     {
-        return $_FILES[$key] ?? null;
+        $options = [
+            'tmp' => 'tmp_name',
+            'name' => 'name',
+            'size' => 'size',
+            'type' => 'type',
+            'error' => 'error'
+        ];
+        return (!$option ? $_FILES[$key] : $_FILES[$key][$options[$option]]) ?? null;
     }
 
     /**

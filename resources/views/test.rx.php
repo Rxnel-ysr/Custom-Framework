@@ -2,6 +2,9 @@
 
 @section('content')
 <?php
+http_response_code(200);
+?>
+<?php
 $data = ['yusron', 'ronel', 'rexarion'];
 ?>
 <h1>{{ $message }}</h1>
@@ -13,6 +16,7 @@ $data = ['yusron', 'ronel', 'rexarion'];
         <input type="text" name="name">
         <button>Send</button>
     </form>
+    {{-- Haiz this is a comment --}}
 </ul>
 @endsection
 

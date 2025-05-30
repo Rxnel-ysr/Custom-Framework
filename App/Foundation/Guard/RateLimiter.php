@@ -51,7 +51,7 @@ class RateLimiter
 
     private function banUser()
     {
-        file_put_contents($this->storage_path_dir . "cache/rate-limiter/{$this->type}_ban_{$this->ip}.log", time() + $this->banTime);
+        file_put_contents($this->storage_path_dir . "/cache/rate-limiter/{$this->type}_ban_{$this->ip}.log", time() + $this->banTime);
     }
 
     private function loadRequests()

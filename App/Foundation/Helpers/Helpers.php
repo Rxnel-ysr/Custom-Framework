@@ -260,72 +260,171 @@ function get_precise_type(mixed $var): string
  *
  * @param callable|string|array $func The function, method, or callable array to invoke.
  * @param bool $auto_resolve Whether to automatically resolve class dependencies.
- * @param mixed ...$params Parameters to pass to the function.
+ * @param mixed $params Parameters to pass to the function.
  *
  * @throws InvalidArgumentException If the callable is invalid or required parameters are missing.
  *
  * @return mixed The result of the function execution.
  */
-function callFuncWithParams(callable|string|array $func, bool $strict = false, bool $auto_resolve = false, array $params = [])
-{
+// function callFuncWithParams(callable|string|array $func, bool $strict = false, bool $auto_resolve = false, array $params = [])
+// {
+//     $args = [];
+//     // var_dump($func);
+
+//     if (is_callable($func)) {
+//         if (is_array($func)) {
+//             $ref = new ReflectionMethod($func[0], $func[1]);
+//         } elseif (is_string($func) && function_exists($func)) {
+//             $ref = new ReflectionFunction($func);
+//         } else {
+//             $ref = new ReflectionFunction($func);
+//         }
+//     } else {
+//         throw new InvalidArgumentException('Invalid callable provided.');
+//     }
+
+//     $isAssoc = !empty($params) && !is_numeric(array_keys($params)[0]);
+//     // error_log('Is assoc: '.var_export($isAssoc,true));
+
+//     foreach ($ref->getParameters() as $i => $param) {
+//         // error_log("I = $i");
+//         if ($auto_resolve) $i--;
+//         // error_log("I = $i");
+//         // error_log('Param: '.$param);
+//         // error_log("Length of param" . count($params));
+//         // error_log(isset($params[$i]) ? "isset for $i" : "Not set for $i");
+//         $name = $param->getName();
+//         $type = $param->getType();
+
+//         if ($auto_resolve && $type && !$type->isBuiltin()) {
+//             $className = $type->getName();
+//             // error_log('Called auto resolve:'.var_export( $className,true));
+//             $args[] = InstanceManager::getInstance($className);
+//         } elseif ($isAssoc && array_key_exists($name, $params)) {
+//             $args[] = $params[$name];
+//         } elseif (!$isAssoc && isset($params[$i])) {
+//             // error_log('This enter here: '.$params[$i]);
+//             if ($strict && $type && $type->isBuiltin()) {
+//                 if (get_debug_type($params[$i]) === $type->getName()) {
+//                     $args[] = $params[$i];
+//                 } else {
+//                     throw new InvalidArgumentException("Type mismatch for parameter: $name");
+//                 }
+//             } else {
+//                 // error_log('CIhut: '.$params[$i]);
+//                 $args[] = $params[$i];
+//             }
+//         } elseif ($param->isOptional()) {
+//             $args[] = $param->getDefaultValue();
+//         } else {
+//             throw new InvalidArgumentException("Missing required parameter: $name");
+//         }
+//     }
+//     // error_log('This is args: '.var_export($args,true));
+//     // // die;
+
+//     return $ref instanceof ReflectionFunction
+//         ? $ref->invokeArgs($args)
+//         : $ref->invokeArgs(is_array($func) ? $func[0] : null, $args);
+// }
+
+/**
+ * Executes a callable with intelligent parameter resolution.
+ *
+ * Supports:
+ * - Dependency injection (auto-resolution of class instances)
+ * - Strict type checking
+ * - Both associative and indexed parameters
+ * - Method calls on objects
+ *
+ * @param callable|array|string $callable Function/method to execute
+ * @param array $params Parameters (associative or indexed)
+ * @param bool $strict Enable strict type checking
+ * @param bool $autoResolve Enable DI auto-resolution
+ * @return mixed Execution result
+ * @throws InvalidArgumentException|ReflectionException
+ */
+function callFuncWithParams(
+    callable|array|string $callable,
+    array $params = [],
+    bool $strict = false,
+    bool $autoResolve = false
+) {
+    // Normalize callable format
+    if (is_string($callable) && str_contains($callable, '::')) {
+        $callable = explode('::', $callable);
+    }
+
+    // Create reflection object
+    $reflection = is_array($callable)
+        ? new ReflectionMethod($callable[0], $callable[1])
+        : new ReflectionFunction($callable);
+
     $args = [];
-    // var_dump($func);
+    $isAssoc = array_is_list($params) === false;
 
-    if (is_callable($func)) {
-        if (is_array($func)) {
-            $ref = new ReflectionMethod($func[0], $func[1]);
-        } elseif (is_string($func) && function_exists($func)) {
-            $ref = new ReflectionFunction($func);
-        } else {
-            $ref = new ReflectionFunction($func);
+    foreach ($reflection->getParameters() as $index => $param) {
+        $paramName = $param->getName();
+        $paramType = $param->getType();
+
+        // Dependency injection
+        if ($autoResolve && $paramType instanceof ReflectionNamedType && !$paramType->isBuiltin()) {
+            $args[] = InstanceManager::getInstance($paramType->getName());
+            continue;
         }
-    } else {
-        throw new InvalidArgumentException('Invalid callable provided.');
-    }
 
-    $isAssoc = !empty($params) && !is_numeric(array_keys($params)[0]);
-    // error_log('Is assoc: '.var_export($isAssoc,true));
-
-    foreach ($ref->getParameters() as $i => $param) {
-        // error_log("I = $i");
-        if ($auto_resolve) $i--;
-        // error_log("I = $i");
-        // error_log('Param: '.$param);
-        // error_log("Length of param" . count($params));
-        // error_log(isset($params[$i]) ? "isset for $i" : "Not set for $i");
-        $name = $param->getName();
-        $type = $param->getType();
-
-        if ($auto_resolve && $type && !$type->isBuiltin()) {
-            $className = $type->getName();
-            // error_log('Called auto resolve:'.var_export( $className,true));
-            $args[] = InstanceManager::getInstance($className);
-        } elseif ($isAssoc && array_key_exists($name, $params)) {
-            $args[] = $params[$name];
-        } elseif (!$isAssoc && isset($params[$i])) {
-            // error_log('This enter here: '.$params[$i]);
-            if ($strict && $type && $type->isBuiltin()) {
-                if (get_debug_type($params[$i]) === $type->getName()) {
-                    $args[] = $params[$i];
-                } else {
-                    throw new InvalidArgumentException("Type mismatch for parameter: $name");
-                }
-            } else {
-                // error_log('CIhut: '.$params[$i]);
-                $args[] = $params[$i];
-            }
-        } elseif ($param->isOptional()) {
+        // Parameter value resolution
+        if ($isAssoc && array_key_exists($paramName, $params)) {
+            $value = $params[$paramName];
+        } elseif (!$isAssoc && array_key_exists($index, $params)) {
+            $value = $params[$index];
+        } elseif ($param->isDefaultValueAvailable()) {
             $args[] = $param->getDefaultValue();
+            continue;
         } else {
-            throw new InvalidArgumentException("Missing required parameter: $name");
+            throw new InvalidArgumentException("Missing required parameter: $paramName");
         }
-    }
-    // error_log('This is args: '.var_export($args,true));
-    // // die;
 
-    return $ref instanceof ReflectionFunction
-        ? $ref->invokeArgs($args)
-        : $ref->invokeArgs(is_array($func) ? $func[0] : null, $args);
+        // Type validation
+        if ($strict && $paramType) {
+            validateParameterType($value, $paramType, $paramName);
+        }
+
+        $args[] = $value;
+    }
+
+    return $reflection instanceof ReflectionFunction
+        ? $reflection->invokeArgs($args)
+        : $reflection->invokeArgs(
+            is_object($callable[0]) ? $callable[0] : null,
+            $args
+        );
+}
+
+/**
+ * Strict type validation helper.
+ */
+function validateParameterType(mixed $value, ReflectionType $type, string $paramName): void
+{
+    $valueType = get_debug_type($value);
+    
+    if ($type instanceof ReflectionUnionType) {
+        if (!in_array($valueType, array_map(fn($t) => $t->getName(), $type->getTypes()))) {
+            throw new InvalidArgumentException(sprintf(
+                'Parameter "%s" requires one of: %s, got %s',
+                $paramName,
+                implode('|', array_map(fn($t) => $t->getName(), $type->getTypes())),
+                $valueType
+            ));
+        }
+    } elseif ($type instanceof ReflectionNamedType && $valueType !== $type->getName()) {
+        throw new InvalidArgumentException(sprintf(
+            'Parameter "%s" requires %s, got %s',
+            $paramName,
+            $type->getName(),
+            $valueType
+        ));
+    }
 }
 
 /**
@@ -365,7 +464,7 @@ function safe(
         }
 
         $params = is_array($parameter) ? $parameter : [$parameter];
-        $result = callFuncWithParams($closure, $strict, $autoResolve, ...$params);
+        $result = callFuncWithParams($closure, $params, $strict, $autoResolve);
 
         if ($full_debug) {
             $debug['end_time'] = hrtime(true);

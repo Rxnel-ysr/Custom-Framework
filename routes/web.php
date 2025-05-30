@@ -1,14 +1,10 @@
 <?php
 
 use App\EXPE\Foundation\Manager\ClassManager;
-use App\Foundation\Http\HttpHeaders;
-use App\Foundation\Http\Request;
-use App\Foundation\Http\Response;
-use App\Foundation\Http\Route;
+use App\Foundation\Http\{RouteRequest, Request, Response, HttpHeaders, Route};
 use App\Foundation\Manager\InstanceManager;
 use App\Foundation\Model;
-use App\Foundation\System\Disk;
-use App\Foundation\System\File;
+use App\Foundation\System\{File, Disk};
 use App\Http\Controllers\test;
 use App\Models\User;
 use App\Support\Facades\DB;
@@ -19,74 +15,90 @@ Route::get('/', function () {
    return view('index');
 });
 
-Route::get('/testting', function () {
+// Route::get('/testting', function () {
 
-   // safe(fn() => throw new Exception('Oops!'), [], $result, true, true, function (Throwable $e, array $debug) {
-   //    echo "Auto-injected exception: " . $e->getMessage() . "\n<pre>";
-   //    var_export($debug);
-   //    echo '</pre>';
-   // }, false, false, true);
-   throw new Model();
-});
+//    // safe(fn() => throw new Exception('Oops!'), [], $result, true, true, function (Throwable $e, array $debug) {
+//    //    echo "Auto-injected exception: " . $e->getMessage() . "\n<pre>";
+//    //    var_export($debug);
+//    //    echo '</pre>';
+//    // }, false, false, true);
+//    throw new Model();
+// });
 
-Route::get('/raw', function () {
-   return view('raw');
-})->name('raw');
+// Route::get('/raw', function () {
+//    return view('raw');
+// })->name('raw');
 
-Route::get('/file', fn() => view('file'));
-Route::post('/file', function (Request $req, Response $res) {
+// Route::get('/rx-text', function(Request $req){
+//    $message = $req->query('message','Hi');
+//    return view('test',compact('message'));
+// });
 
-   // dd($req->file('someFile'));
-   $file = new File($req->file('someFile')['tmp_name']);
-   $file = $file->read();
-   $disk = InstanceManager::getInstance('appDisk');
+// Route::get('/file', fn() => view('file'));
+// Route::post('/file', function (Request $req, Response $res) {
 
-   $disk->write('result.txt', $file);
-   $res->serve($disk->path('result.txt'), 'image/jpeg');
-})->name('fileEnd');
+//    // dd($req->file('someFile'));
+//    $file = new File($req->file('someFile')['tmp_name']);
+//    $file = $file->read();
+//    $disk = InstanceManager::getInstance('appDisk');
 
-Route::get('/destroy', function () {
-   while (true) {
-      echo "hi";
-   }
-});
+//    $disk->write('result.txt', $file);
+//    $res->serve($disk->path('result.txt'), 'image/jpeg');
+// })->name('fileEnd');
 
-Route::group(['prefix' => '/aya'], function () {
-   Route::get('/1', fn() => "Aya 1");
-   Route::get('/2', fn() => "Aya 2");
-   Route::get('/3', fn() => "Aya 3");
-});
+// Route::get('/destroy', function () {
+//    while (true) {
+//       echo "hi";
+//    }
+// });
 
-Route::get('/user', function(){
-   $disk = InstanceManager::getInstance('appDisk');
-   response()->serve($disk->path('public/result.txt'));
-   // return dd(Utils::getUserInfo());
-});
+// Route::group(['prefix' => '/aya'], function () {
+//    Route::get('/1', fn() => "Aya 1");
+//    Route::get('/2', fn() => "Aya 2");
+//    Route::get('/3', fn() => "Aya 3");
+// });
 
-Route::get('/serve-file', function(Request $req){
-   $disk = InstanceManager::getInstance('appDisk');
-   response()->serve($disk->path($req->query('file')));
-});
+// Route::get('/user', function () {
+//    $disk = InstanceManager::getInstance('appDisk');
+//    response()->serve($disk->path('public/result.txt'));
+//    // return dd(Utils::getUserInfo());
+// });
 
-Route::get('/list', function () {
+// Route::get('/serve-file', function (Request $req) {
+//    $disk = InstanceManager::getInstance('appDisk');
+//    response()->serve($disk->path($req->query('file')));
+// });
+
+Route::get('/up/{id:\d}', function ($id) {
    // response()->json(Route::routeList());
    // $user = new User();
    // dd(Route::routeList(),$user,$req->all(),new Response());
    // return response()->json(DB::table('users')->get());
-   return dd(Route::dump());
+   // $totalClasses = ClassManager::loadAllClass();
+   // echo (hrtime(true) - START) / 1.0e6 . 'ms<br>';
+   // echo 'With: '. $totalClasses . ' classes loaded';
+   echo $id;
+   
 });
 
-// Route::get('/test', [test::class, 'test']);
-Route::resource('/test', test::class);
+// // Route::get('/test', [test::class, 'test']);
+// Route::resource('/test', test::class);
 
-Route::get('/getMethod', fn() => 'get');
-Route::put('/putMethod', fn() => 'put');
-Route::post('/postMethod', fn() => 'post');
-Route::delete('/deleteMethod', fn() => 'delete');
+// Route::get('/getMethod', fn() => 'get');
+// Route::put('/putMethod', fn() => 'put');
+// Route::post('/postMethod', fn() => 'post');
+// Route::delete('/deleteMethod', fn() => 'delete');
 
-Route::fallback(function () {
-   // response(404)->json(['message' => 'Its weird']);
-   return dd(Route::dump());
-});
+// Route::get('/debug',function(){
+//    $debug = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
+//    echo '<pre>';
+//    var_dump($debug,http_response_code());
+//    echo '</pre>';
+// });
 
-// Route::debugTree();
+// Route::fallback(function () {
+//    // response(404)->json(['message' => 'Its weird']);
+//    return dd(Route::dump(),Route::debugPatterns());
+// });
+
+// // Route::debugTree();

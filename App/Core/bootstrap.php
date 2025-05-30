@@ -10,64 +10,84 @@ use App\Foundation\Http\Request;
 use App\Foundation\Manager\InstanceManager;
 use App\Foundation\System\Disk;
 
-$root = dirname(__DIR__, 2);
+// Define root path once
+const BASE_PATH = __DIR__ . '/../../';
 
-// echo $root . '<br>';
+// Load Core
+require_once BASE_PATH . 'App/Foundation/Manager/ClassManager_EXPE.php';
+require_once BASE_PATH . 'App/Foundation/Compiler/Compile.php';
+require_once BASE_PATH . 'App/Foundation/Helpers/Utility.php';
+require_once BASE_PATH . 'App/Foundation/Helpers/Helpers.php';
 
-// var_dump(file_exists($root . '/config/classes.php'));
-// die();
+// Load Configuration Files
+$cfg = [
+    'dependencies'    => require BASE_PATH . 'config/app.php',
+    'config'          => require BASE_PATH . 'config/config.php',
+    'database'        => require BASE_PATH . 'config/database.php',
+    'router'          => require BASE_PATH . 'config/router.php',
+    'router_path'     => require BASE_PATH . 'config/router_path.php',
+    'router_plugins'  => require BASE_PATH . 'config/router_plugins.php' ?? [],
+];
 
-
-require_once $root . '/App/Foundation/Manager/ClassManager_EXPE.php';
-require_once $root . '/App/Foundation/Compiler/Compile.php';
-require_once $root . '/App/Foundation/Helpers/Utility.php';
-require_once $root . '/App/Foundation/Helpers/Helpers.php';
-
-// echo $root . '<br>';
-$dependencies = require_once $root . '/config/app.php';
-$configs = require_once $root . '/config/config.php';
-$database = require_once $root . '/config/database.php';
-$router = require_once $root . '/config/router.php';
-$router_path = require_once $root . '/config/router_path.php';
-$router_plugins = require_once $root . '/config/router_plugins.php' ?? [];
-// echo $root . '<br>';
-
-ClassManager::init($root, false, true, [
-    'classmap' => "$root/config/classes.php",
-    'cache_classmap' => "$root/storage/cache/classes/classes.php",
+// Init Class Manager
+ClassManager::set(BASE_PATH, true, true, [
+    'classmap'      => BASE_PATH . 'config/classes.php',
+    'cache_classmap' => BASE_PATH . 'storage/cache/classes/classes.php',
 ]);
 ClassManager::initAutoloader(true);
 
-Env::load($root . '/config/.env');
-Debugger::init(true, E_ALL & ~E_WARNING, $root . '/App/Core/error.php', true, $root . '/storage/logs/debug.log');
+// Load Environment
+Env::load(BASE_PATH . 'config/.env');
 
+// Init Debugger
+Debugger::init(
+    isWeb: true,
+    errorLevel: E_ALL & ~E_WARNING,
+    error_page: BASE_PATH . 'App/Core/error.php',
+    store_at_log: true,
+    log_file: BASE_PATH . 'storage/logs/debug.log'
+);
+
+// Validate Routing
+$router = $cfg['router'];
 if (!in_array($router['router'], $router['choices'])) {
-    throw new Exception('Invalid choice: ' . $router['router'] . ' for routing');
+    throw new InvalidArgumentException("Invalid router: {$router['router']}");
 }
 
-require_once $router_path[$router['router']];
+// Boot the route handler
+require_once $cfg['router_path'][$router['router']];
 
-
+// Compile Views
 Compile::init(
-    "$root/resources/views",
-    "$root/storage/cache/views",
-    '.rx.php'
+    views_dir: BASE_PATH . 'resources/views',
+    cache_dir: BASE_PATH . 'storage/cache/views',
+    file_ext: '.rx.php'
 );
-$disk = new Disk($root . '/public');
+
+// System Resources
+$disk = new Disk(BASE_PATH . 'public');
 $request = new Request();
-$app = new App(root: $root)
+
+// Initialize App
+$app = (new App(root: BASE_PATH))
     ->withRouting([
-        'web' => '/routes/web.php',
-        'api' => '/routes/api.php',
+        'web'       => '/routes/web.php',
+        'api'       => '/routes/api.php',
         'api_prefix' => 'api',
-        'plugins' => $router_plugins
-    ])->withConfig([
-        'database' => $database,
-        ...$configs
+        'plugins'   => $cfg['router_plugins'],
     ])
-    ->withDependencies($dependencies);
+    ->withConfig([
+        'database' => $cfg['database'],
+        ...$cfg['config']
+    ])
+    ->withDependencies($cfg['dependencies']);
+
+// Inject Instances
 InstanceManager::setInstance('app', $app);
 InstanceManager::setInstance('appDisk', $disk);
-Connection::set($database);
 
+// Setup Database
+Connection::set($cfg['database']);
+
+// Return the ready App instance
 return $app;

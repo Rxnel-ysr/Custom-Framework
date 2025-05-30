@@ -7,6 +7,7 @@ use App\Foundation\Model;
 class User extends Model
 {
     protected $table = 'users';
+    protected $primary = 'id';
 
     protected $fillable = [
         'name',

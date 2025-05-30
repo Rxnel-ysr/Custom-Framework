@@ -4,6 +4,7 @@ namespace App\TEST\Foundation\Http;
 
 use App\Debug\Debugger;
 use Closure;
+use RouterInterface;
 
 class TrieNode
 {
@@ -13,7 +14,7 @@ class TrieNode
     public array $middleware = [];
 }
 
-class Route
+class Route implements RouterInterface
 {
     private static TrieNode $root;
     private static array $globalMiddleware = [];
@@ -263,7 +264,7 @@ class Route
 
         if (is_callable($action)) {
             // dd($action,$params);
-            $result = callFuncWithParams($action, true,  true, $params);
+            $result = callFuncWithParams($action, $params, true,  true);
             // var_dump(is_string($result));
             // var_dump($result);
             if (is_string($result)) {

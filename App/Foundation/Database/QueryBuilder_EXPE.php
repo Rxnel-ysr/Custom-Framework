@@ -371,7 +371,7 @@ class QueryBuilder extends Connection
             $this->stmt->execute($this->bindings);
             $this->resetQuery();
 
-            return $res = $this->stmt->fetchAll(\PDO::FETCH_OBJ) ?: [];
+            return new static($this->stmt->fetchAll(\PDO::FETCH_OBJ) ?: []);
         } catch (\PDOException $e) {
             Debugger::dumpErr($e);
             return [];

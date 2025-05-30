@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\EXPE\Foundation\Manager\ClassManager;
 use App\Foundation\Http\Controller;
+use App\Foundation\Http\Request as HttpRequest;
 use App\Foundation\Http\Route;
 use App\Models\User;
+use App\Support\Facades\DB;
 use App\Support\Facades\Request;
 use App\Support\Facades\Response;
 
@@ -99,7 +101,11 @@ class Test extends Controller
 
     public function index()
     {
-        return "This is index";
+        $user = new User();
+        $users = $user->first();
+        // $users->getProp()
+
+        return response()->json($users);
     }
     public function show($id)
     {

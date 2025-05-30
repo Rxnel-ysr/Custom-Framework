@@ -1,13 +1,15 @@
 <?php
 
-use App\Foundation\Http\Request;
-use App\Foundation\Http\StaticFile;
+declare(strict_types=1);
+define('START', hrtime(true));
 
-require_once __DIR__ . '/App/Foundation/Http/StaticFile.php';
+use App\Foundation\Http\{StaticFile, Request};
 
-if (StaticFile::serve(__DIR__, $_SERVER['REQUEST_URI'])) {
-    return false;
+require __DIR__ . '/App/Foundation/Http/StaticFile.php';
+
+if (StaticFile::serve(__DIR__, $_SERVER['REQUEST_URI'], __DIR__ . '/storage/cache')) {
+    exit;
 }
 
-(require_once __DIR__ . '/App/Core/bootstrap.php')
+(require __DIR__ . '/App/Core/bootstrap.php')
     ->handle(Request::capture());

@@ -4,6 +4,7 @@ use App\Foundation\CLI\Command;
 use App\Foundation\Database\Migration;
 use App\EXPE\Foundation\Manager\ClassManager;
 use App\Foundation\Database\Connection;
+use App\Foundation\Http\HttpHeaders;
 use App\Foundation\Http\Route;
 use App\Foundation\System\Disk;
 
@@ -116,7 +117,9 @@ Command::register(
 Command::register(
     'test',
     function () {
-        Route::init([]);
+        $header = new HttpHeaders();
+        $res = $header->contentType('application/json')->contentLength(40)->contentDescription('This is just test')->buildToArray();
+        var_dump($res);
     },
     't',
     'Testing field of a command'

@@ -24,9 +24,15 @@ class App
         $this->root = DIRECTORY_SEPARATOR . trim($root, DIRECTORY_SEPARATOR);
     }
 
-    public function getConfig(string $key): mixed
+    /**
+     * @param string|null $key
+     * @return mixed[]|mixed|null
+     */
+    public function getConfig(?string $key = null): mixed
     {
-        return $this->configs[$key] ?? null;
+        return $key !== null
+            ? ($this->configs[$key] ?? null)
+            : $this->configs;
     }
 
     public function withDependencies(array $dependencies): self
@@ -64,6 +70,7 @@ class App
 
     public function handle(Request $request)
     {
+        // ob_start();
         foreach ($this->dependencies as $dependency) {
             require_once $this->root . DIRECTORY_SEPARATOR . $dependency;
         }
@@ -92,8 +99,8 @@ class App
         $middleware = $isApi ? 'ApiHandler.php' : 'WebHandler.php';
         $routeFile = $isApi ? $this->router['api'] : $this->router['web'];
 
-        require_once $this->root . "/App/Http/Middlewares/{$middleware}";
-        require_once $this->root . '/' . ltrim($routeFile, '/');
+        require $this->root . "/App/Http/Middlewares/{$middleware}";
+        require $this->root . '/' . ltrim($routeFile, '/');
 
         if ($request->method() === 'OPTIONS') {
             return response()->json(['options' => ['GET', 'HEAD', 'POST', 'PATCH', 'PUT', 'DELETE']]);
@@ -103,5 +110,7 @@ class App
         // error_log('Request done within: ' . timeExecution(fn() => Route::dispatch($requestUri)));
         // echo '<br>' . timeExecution(fn() => Route::dispatch($requestUri)) . 'ms';
         Route::dispatch($requestUri);
+        // $res = ob_get_clean();
+        // file_put_contents($this->root . '/public/result.txt',$res);
     }
 }

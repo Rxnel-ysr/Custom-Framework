@@ -74,7 +74,7 @@ class Command
 
         if (is_callable($command['command'])) {
             // var_dump($command);
-            return callFuncWithParams($command['command'], false, true, ...$command['params']);
+            return callFuncWithParams($command['command'], $command['params'],false, true);
         }
 
         if (is_string($command['command'])) {
