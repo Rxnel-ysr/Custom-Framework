@@ -12,6 +12,11 @@ use App\Support\Facades\DB;
 use function App\Http\Middlewares\auk;
 
 Route::get('/', function () {
+   // return dd(Route::dump(), Route::debugPatterns());
+   // echo '<pre>';
+   // print_r([Route::debugPatterns(), $_SERVER['REQUEST_URI']]);
+   // echo '</pre>';
+   // return 0;
    return view('index');
 });
 
@@ -52,6 +57,20 @@ Route::get('/', function () {
 //    }
 // });
 
+Route::get('/download', function () {
+   $disk = InstanceManager::getInstance('appDisk');
+
+   return response()->download($disk->path('Design-A3.pdf'));
+});
+
+Route::get('/test/{name:\d}', function ($name) {
+   return "Your name is $name only one";
+});
+
+Route::get('/test/{name:\d+}', function ($name) {
+   return "Your name is $name, and many";
+});
+
 // Route::group(['prefix' => '/aya'], function () {
 //    Route::get('/1', fn() => "Aya 1");
 //    Route::get('/2', fn() => "Aya 2");
@@ -78,7 +97,6 @@ Route::get('/up/{id:\d}', function ($id) {
    // echo (hrtime(true) - START) / 1.0e6 . 'ms<br>';
    // echo 'With: '. $totalClasses . ' classes loaded';
    echo $id;
-   
 });
 
 // // Route::get('/test', [test::class, 'test']);
@@ -96,9 +114,9 @@ Route::get('/up/{id:\d}', function ($id) {
 //    echo '</pre>';
 // });
 
-// Route::fallback(function () {
-//    // response(404)->json(['message' => 'Its weird']);
-//    return dd(Route::dump(),Route::debugPatterns());
-// });
+Route::fallback(function () {
+   // response(404)->json(['message' => 'Its weird']);
+   return dd(Route::dump(),Route::debugPatterns());
+});
 
 // // Route::debugTree();

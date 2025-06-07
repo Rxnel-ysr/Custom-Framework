@@ -71,37 +71,55 @@ class Route implements RouterInterface
                 continue; // Skip empty segments
             }
 
-            if (preg_match('/^{([a-zA-Z0-9_]+)(?::(.+))?}/', $segment, $matches)) {
+            // $parts = explode(':', $segment, 2);
+
+            // if (count($parts) > 1) {
+            //     $paramKeys[] = $parts[0];
+            // }
+
+            // '/^{([a-zA-Z0-9_]+)(?::(.+))?}/'
+
+            if (preg_match('/^{([a-zA-Z0-9_]+)(?::([^:}]+))?}$/', $segment, $matches)) {
                 $paramName = $matches[1];
                 $paramPattern = $matches[2] ?? '[^/]+';
 
                 // Properly handle regex patterns
-                if (
-                    !preg_match('/^\(.*\)/', $paramPattern) &&
-                    !preg_match('/^\[.*\]/', $paramPattern)
-                ) {
-                    $paramPattern = preg_quote($paramPattern, '/');
-                }
+                // if (
+                //     !preg_match('/^\(.*\)/', $paramPattern) &&
+                //     !preg_match('/^\[.*\]/', $paramPattern)
+                // ) {
+                //     $paramPattern = preg_quote($paramPattern, '/');
+                // }
 
+                $regexPattern .= '\/(?P<' . $paramName . '>' . $paramPattern . ')';
+                // echo 'Param name: '.$paramName . '<br>';
+                // // echo 'Param pattern: ' .$paramPattern . '<br>';
+                // echo 'Regex pattern: ' . htmlspecialchars($regexPattern) . '<br>';
+
+                // echo 'Regex pattern: ' .$regexPattern . '<br>';
                 $paramKeys[] = $paramName;
-                $regexPattern .= '/(?P<' . $paramName . '>' . $paramPattern . ')';
             } else {
-                $regexPattern .= '/' . preg_quote($segment, '/');
+                $regexPattern .= '#^' . preg_quote($segment, '/');
             }
+
+            // echo $regexPattern . '<br>';
+            // echo  'END<br>';
+
         }
 
-        // Handle empty path (homepage)
         if (empty($regexPattern)) {
-            $regexPattern = '/';
+            $regexPattern = '#^\/$#';
+        } else {
+            $regexPattern =  $regexPattern . '$#';
         }
 
-        $regexPattern =  $regexPattern . '/';
 
         return [
             'pattern' => $regexPattern,
             'paramKeys' => $paramKeys
         ];
     }
+
     public static function add(string $method, string $url, callable|array $action, array $middleware = [])
     {
         self::$lastRoute = null;
@@ -307,7 +325,9 @@ class Route implements RouterInterface
 
     public static function dispatch(string $requestUri)
     {
-        $requestUri = self::normalizePath($requestUri);
+        $requestUri = trim($requestUri, '/');
+        empty($requestUri) && $requestUri = '/';
+        // echo 'Request uri: ' . $requestUri . '<br>';
         $method = self::getRequestMethod();
 
         if (!isset(self::$routes[$method])) {
@@ -318,6 +338,7 @@ class Route implements RouterInterface
         }
 
         foreach (self::$routes[$method] as $route) {
+            // echo 'Dispatch: ' . htmlspecialchars($route['pattern']) . '<br>';
             // echo $route['pattern'];
             // continue;
             if (preg_match($route['pattern'], $requestUri, $matches)) {
