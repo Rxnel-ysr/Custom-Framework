@@ -1,6 +1,6 @@
 <?php
 
-namespace App\TEST\Foundation\Http;
+namespace App\Foundation\Http;
 
 use App\Debug\Debugger;
 use Closure;
@@ -16,7 +16,9 @@ class TrieNode
 
 class Route implements RouterInterface
 {
+    public static string $name = 'TrieRouter';
     private static TrieNode $root;
+    private static string $dirRoot;
     private static array $globalMiddleware = [];
     private static array $routeMiddleware = [];
     private static null|array|Closure $fallback = null;
@@ -35,9 +37,10 @@ class Route implements RouterInterface
         'namespace' => '',
     ];
 
-    public static function init(array $plugins = [])
+    public static function init(?string $root = null, array $plugins = [])
     {
         self::$root = new TrieNode();
+        self::$dirRoot = $root ?? $_SERVER['DOCUMENT_ROOT'] ?? null;
         self::$plugins = $plugins;
     }
 

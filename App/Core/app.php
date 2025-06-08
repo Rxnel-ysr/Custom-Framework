@@ -63,7 +63,7 @@ class App
 
         $this->router['api_prefix'] ??= 'api/';
 
-        Route::init($specs['plugins'] ?? []);
+        Route::init($this->root, $specs['plugins'] ?? []);
         return $this;
     }
 

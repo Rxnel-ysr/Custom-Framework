@@ -20,6 +20,11 @@ Route::get('/', function () {
    return view('index');
 });
 
+Route::get('/route', function () {
+   return dd(Route::$name, get_declared_classes());
+   // die;
+});
+
 // Route::get('/testting', function () {
 
 //    // safe(fn() => throw new Exception('Oops!'), [], $result, true, true, function (Throwable $e, array $debug) {
@@ -88,15 +93,8 @@ Route::get('/test/{name:\d+}', function ($name) {
 //    response()->serve($disk->path($req->query('file')));
 // });
 
-Route::get('/up/{id:\d}', function ($id) {
-   // response()->json(Route::routeList());
-   // $user = new User();
-   // dd(Route::routeList(),$user,$req->all(),new Response());
-   // return response()->json(DB::table('users')->get());
-   // $totalClasses = ClassManager::loadAllClass();
-   // echo (hrtime(true) - START) / 1.0e6 . 'ms<br>';
-   // echo 'With: '. $totalClasses . ' classes loaded';
-   echo $id;
+Route::get('/up', function () {
+   echo (hrtime(true) - START) / 1.0e6 . 'ms<br>';
 });
 
 // // Route::get('/test', [test::class, 'test']);
@@ -116,7 +114,7 @@ Route::get('/up/{id:\d}', function ($id) {
 
 Route::fallback(function () {
    // response(404)->json(['message' => 'Its weird']);
-   return dd(Route::dump(),Route::debugPatterns());
+   return dd(Route::dump(), Route::debugPatterns());
 });
 
 // // Route::debugTree();

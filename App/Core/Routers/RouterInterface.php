@@ -2,6 +2,7 @@
 
 interface RouterInterface
 {
+    public static function init(?string $root = null, array $plugins = []);
     /** Add new route */
     public static function add(string $method, string $url, callable|array $action, array $middleware = []);
     /** Dispatch router */

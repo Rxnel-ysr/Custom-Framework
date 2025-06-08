@@ -18,7 +18,9 @@ class RadixNode
 
 class Route implements RouterInterface
 {
+    public static string $name = 'RadixRouter';
     private static RadixNode $root;
+    private static string $dirRoot;
     private static array $globalMiddleware = [];
     private static array $routeMiddleware = [];
     private static null|array|Closure $fallback = null;
@@ -38,9 +40,10 @@ class Route implements RouterInterface
         'namespace' => '',
     ];
 
-    public static function init(array $plugins = [])
+    public static function init(?string $root = null, array $plugins = [])
     {
         self::$root = new RadixNode();
+        self::$dirRoot = $root ?? $_SERVER['DOCUMENT_ROOT'] ?? null;
         self::$plugins = $plugins;
     }
 
@@ -374,7 +377,7 @@ class Route implements RouterInterface
         }
 
         if (is_callable($action)) {
-            $result = callFuncWithParams($action, $params,true, true);
+            $result = callFuncWithParams($action, $params, true, true);
             if (is_string($result)) {
                 echo $result;
                 exit;

@@ -9,6 +9,8 @@ use Throwable;
 
 class Route implements RouterInterface
 {
+    public static string $name = 'RegexRouter';
+    private static string $dirRoot;
     private static array $routes = [];
     private static array $globalMiddleware = [];
     private static array $routeMiddleware = [];
@@ -29,8 +31,9 @@ class Route implements RouterInterface
         'namespace' => '',
     ];
 
-    public static function init(array $plugins = [])
+    public static function init(?string $root = null, array $plugins = [])
     {
+        self::$dirRoot = $root ?? $_SERVER['DOCUMENT_ROOT'] ?? null;
         self::$plugins = $plugins;
     }
 
@@ -143,7 +146,7 @@ class Route implements RouterInterface
         $paramKeys = $parsed['paramKeys'];
 
         // Store the route
-        self::$routes[$method][] = [
+        self::$routes[$method][$fullUrl] = [
             'pattern' => $regexPattern,
             'action' => $action,
             'middleware' => $middleware,
@@ -337,6 +340,35 @@ class Route implements RouterInterface
             return Debugger::showErrorPage(404, 'Not found');
         }
 
+        if(isset(self::$routes[$method][$requestUri])){
+            // echo 'Here';
+            // die;
+            $res = self::$routes[$method][$requestUri];
+
+            foreach (self::$plugins as $fn) {
+                $fn();
+            }
+
+            $middleware = array_merge(self::$globalMiddleware, $res['middleware'] ?? []);
+
+            foreach ($middleware as $m) {
+                if (is_callable($m)) {
+                    $response = call_user_func($m);
+                    if ($response !== true) {
+                        return $response;
+                    }
+                } elseif (is_string($m)) {
+                    $middlewareInstance = new $m();
+                    $response = $middlewareInstance->handle();
+                    if ($response !== true) {
+                        return $response;
+                    }
+                }
+            }
+
+            return self::execute($res['action'],[]);
+        }
+
         foreach (self::$routes[$method] as $route) {
             // echo 'Dispatch: ' . htmlspecialchars($route['pattern']) . '<br>';
             // echo $route['pattern'];
@@ -377,6 +409,61 @@ class Route implements RouterInterface
                 return self::execute($route['action'], $orderedParams);
             }
         }
+
+        // $routes = self::$routes[$method];
+        // $patterns = array_column($routes, 'pattern');
+
+        // $matchResults = safe_bulk_match($patterns, $requestUri, 0.05); // 30ms per regex
+        // $matchedIndex = null;
+        // $tempInt = 0;
+        // // var_dump($matchResults);
+        // // die;
+
+        // foreach ($matchResults as $i => $result) {
+        //     if ($result === true) {
+        //         $matchedIndex = $i;
+        //         break;
+        //     }
+        //     $tempInt++;
+        // }
+        // // echo $matchedIndex;
+        // // die;
+
+        // if ($matchedIndex === null) {
+        //     return Debugger::showErrorPage(404, 'Not found');
+        // }
+
+        // $route = $routes[$tempInt];
+        // preg_match($route['pattern'], $requestUri, $matches);
+        // $params = array_filter($matches, 'is_string', ARRAY_FILTER_USE_KEY);
+
+        // $orderedParams = [];
+        // foreach ($route['paramKeys'] as $key) {
+        //     if (isset($params[$key])) {
+        //         $orderedParams[$key] = $params[$key];
+        //     }
+        // }
+
+        // foreach (self::$plugins as $fn) {
+        //     $fn();
+        // }
+
+        // $middleware = array_merge(self::$globalMiddleware, $route['middleware'] ?? []);
+
+        // foreach ($middleware as $m) {
+        //     if (is_callable($m)) {
+        //         $response = call_user_func($m);
+        //         if ($response !== true) return $response;
+        //     } elseif (is_string($m)) {
+        //         $middlewareInstance = new $m();
+        //         $response = $middlewareInstance->handle();
+        //         if ($response !== true) return $response;
+        //     }
+        // }
+
+        // return self::execute($route['action'], $orderedParams);
+
+
         // die;
 
         if (isset(self::$fallback)) {

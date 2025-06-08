@@ -15,6 +15,7 @@ const BASE_PATH = __DIR__ . '/../../';
 
 // Load Core
 require_once BASE_PATH . 'App/Foundation/Manager/ClassManager_EXPE.php';
+require_once BASE_PATH . 'App/Core/Routers/RouterInterface.php';
 require_once BASE_PATH . 'App/Foundation/Compiler/Compile.php';
 require_once BASE_PATH . 'App/Foundation/Helpers/Utility.php';
 require_once BASE_PATH . 'App/Foundation/Helpers/Helpers.php';
@@ -29,12 +30,26 @@ $cfg = [
     'router_plugins'  => require BASE_PATH . 'config/router_plugins.php' ?? [],
 ];
 
+// Validate Routing
+$router = $cfg['router'];
+// echo $cfg['router_path'][$router['router']]. '<br>';
+// var_dump($router['router']);
+// exit;
+if (!in_array($router['router'], $router['choices'])) {
+    throw new InvalidArgumentException("Invalid router: {$router['router']}");
+}
+
+// Boot the route handler
+require_once $cfg['router_path'][$router['router']];
+
+
 // Init Class Manager
 ClassManager::set(BASE_PATH, true, true, [
     'classmap'      => BASE_PATH . 'config/classes.php',
     'cache_classmap' => BASE_PATH . 'storage/cache/classes/classes.php',
 ]);
 ClassManager::initAutoloader(true);
+
 
 // Load Environment
 Env::load(BASE_PATH . 'config/.env');
@@ -47,16 +62,6 @@ Debugger::init(
     store_at_log: true,
     log_file: BASE_PATH . 'storage/logs/debug.log'
 );
-
-// Validate Routing
-$router = $cfg['router'];
-if (!in_array($router['router'], $router['choices'])) {
-    throw new InvalidArgumentException("Invalid router: {$router['router']}");
-}
-
-// Boot the route handler
-require_once $cfg['router_path'][$router['router']];
-
 // Compile Views
 Compile::init(
     views_dir: BASE_PATH . 'resources/views',

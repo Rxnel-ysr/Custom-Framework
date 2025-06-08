@@ -631,6 +631,55 @@ function scanForClasses($directory, $ignore_dirs = [], $ignore_files = [], $exce
     return $classes;
 }
 
+function safe_bulk_match(array $patterns, string $subject, float $timeout = 0.05): array
+{
+    $results = [];
+
+    foreach ($patterns as $pattern) {
+        $cmd = escapeshellcmd(PHP_BINARY) . ' -r ' . escapeshellarg('
+            $r = preg_match("' . addslashes($pattern) . '", ' . var_export($subject, true) . ');
+            echo $r === false ? "error" : ($r === 1 ? "true" : "false");
+        ');
+
+        $proc = proc_open($cmd, [
+            1 => ['pipe', 'w'],
+            2 => ['pipe', 'w'],
+        ], $pipes);
+
+        $start = microtime(true);
+        $output = '';
+        $error = '';
+        $status = 'timeout';
+
+        if (is_resource($proc)) {
+            stream_set_blocking($pipes[1], false);
+            stream_set_blocking($pipes[2], false);
+
+            while (microtime(true) - $start < $timeout) {
+                $output .= stream_get_contents($pipes[1]);
+                $error  .= stream_get_contents($pipes[2]);
+
+                $status_arr = proc_get_status($proc);
+                if (!$status_arr['running']) {
+                    $status = trim($output) === 'true';
+                    break;
+                }
+
+                usleep(1000);
+            }
+
+            proc_terminate($proc);
+            fclose($pipes[1]);
+            fclose($pipes[2]);
+        }
+
+        $results[$pattern] = $status;
+    }
+
+    return $results;
+}
+
+
 function isValidClass($class)
 {
     return class_exists($class) || interface_exists($class) || trait_exists($class);
