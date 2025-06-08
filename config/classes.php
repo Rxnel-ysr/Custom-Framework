@@ -48,7 +48,7 @@ return array (
   'App\\Foundation\\System\\File' => 'App/Foundation/System/File.php',
   'App\\Foundation\\System\\Disk' => 'App/Foundation/System/Disk.php',
   'App\\Debug\\ErrorHandler' => 'App/Foundation/Debug/ErrorHandler.php',
-  'App\\Debug\\Debugger' => '/App/Foundation/Debug/Debug.php',
+  'App\\Debug\\Debugger' => 'App/Foundation/Debug/Debug.php',
   'App\\Foundation\\Compiler\\Compile' => 'App/Foundation/Compiler/Compile.php',
   'TestErrHandler' => 'test/TestErrorHandler.php',
 );

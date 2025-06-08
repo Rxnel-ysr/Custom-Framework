@@ -60,7 +60,7 @@ class Route implements RouterInterface
     {
         $segments = explode('/', trim($pattern, '/'));
         $paramKeys = [];
-        $regexPattern = '';
+        $regexPattern = '#^';
 
         // if ($pattern === '/') {
         //     return [
@@ -101,8 +101,8 @@ class Route implements RouterInterface
 
                 // echo 'Regex pattern: ' .$regexPattern . '<br>';
                 $paramKeys[] = $paramName;
-            } else {
-                $regexPattern .= '#^' . preg_quote($segment, '/');
+            }  else{
+                $regexPattern .= preg_quote($segment,'/');
             }
 
             // echo $regexPattern . '<br>';
@@ -110,11 +110,11 @@ class Route implements RouterInterface
 
         }
 
-        if (empty($regexPattern)) {
-            $regexPattern = '#^\/$#';
-        } else {
+        if (! empty($regexPattern)) {
             $regexPattern =  $regexPattern . '$#';
-        }
+        } else{
+            $regexPattern = null;
+        } 
 
 
         return [
@@ -129,8 +129,7 @@ class Route implements RouterInterface
 
         // Apply group prefix
         $url = trim(self::$currentGroup['prefix'] . self::normalizePath($url), '/');
-        $fullUrl = '/' . $url;
-        self::$routeList[$method][] = $fullUrl;
+        self::$routeList[$method][] = '/'.$url;
 
         // Apply group middleware
         $middleware = array_merge(self::$currentGroup['middleware'], $middleware);
@@ -146,17 +145,17 @@ class Route implements RouterInterface
         $paramKeys = $parsed['paramKeys'];
 
         // Store the route
-        self::$routes[$method][$fullUrl] = [
+        self::$routes[$method][$url] = [
             'pattern' => $regexPattern,
             'action' => $action,
             'middleware' => $middleware,
             'paramKeys' => $paramKeys,
-            'url' => $fullUrl
+            'url' => $url
         ];
 
         self::$lastRoute = [
             'method' => $method,
-            'url' => $fullUrl,
+            'url' => $url,
             'action' => $action,
             'middleware' => $middleware
         ];
@@ -328,9 +327,9 @@ class Route implements RouterInterface
 
     public static function dispatch(string $requestUri)
     {
-        $requestUri = trim($requestUri, '/');
-        empty($requestUri) && $requestUri = '/';
+        $requestUri = ($requestUri !== '/') ? trim($requestUri, '/') : $requestUri;
         // echo 'Request uri: ' . $requestUri . '<br>';
+        // die;
         $method = self::getRequestMethod();
 
         if (!isset(self::$routes[$method])) {
@@ -369,7 +368,15 @@ class Route implements RouterInterface
             return self::execute($res['action'],[]);
         }
 
+        // echo '<pre>';
+        // print_r(self::$routes[$method]);
+        // echo '</pre>';
+        // die;
         foreach (self::$routes[$method] as $route) {
+            if($route['pattern'] == null) continue;
+            // echo $route['pattern'];
+            // continue;
+            
             // echo 'Dispatch: ' . htmlspecialchars($route['pattern']) . '<br>';
             // echo $route['pattern'];
             // continue;
@@ -409,6 +416,8 @@ class Route implements RouterInterface
                 return self::execute($route['action'], $orderedParams);
             }
         }
+
+        // die;
 
         // $routes = self::$routes[$method];
         // $patterns = array_column($routes, 'pattern');
