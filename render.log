@@ -1,0 +1,31 @@
+Array
+(
+    [$counter1] => App\Reactive\CounterComponent Object
+        (
+            [id] => App\Reactive\CounterComponent_6849669e9e28a
+            [view:protected] => components/home
+            [states:protected] => Array
+                (
+                    [count] => 0
+                )
+
+        )
+
+    [$counter2] => App\Reactive\CounterComponent Object
+        (
+            [id] => App\Reactive\CounterComponent_6849669e9e295
+            [view:protected] => components/home
+            [states:protected] => Array
+                (
+                    [count] => 10
+                )
+
+        )
+
+    [$counter1->render()] => <div data-reactive data-reactive-name="App\Reactive\CounterComponent_6849669e9e28a" data-reactive-state='{"count":0}'>
+    <h1>This is home</h1>
+
+    <button data-action="switch">Go about</button>
+</div>
+    [$counter2->render()] => 
+)

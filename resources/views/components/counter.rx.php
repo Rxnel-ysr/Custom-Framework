@@ -8,13 +8,20 @@
     @else
     <h1>Nope</h1>
     @endif
+    <h1>other: {{ $count2 }}</h1>
     <div style="display: flex; flex-direction: row;">
         <input
             type="text"
             data-onchange="increment"
             data-attribute="count"
-            name="counter-input"
-            value="{{ $count }}"
-            />
+            id="count-1"
+            value="{{ $count }}" />
+            
+            <input
+            type="text"
+            data-onchange="decrement"
+            data-attribute="count"
+            id="count-2"
+            value="{{ $count2 }}" />
     </div>
 </div>

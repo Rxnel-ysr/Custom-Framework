@@ -53,7 +53,7 @@ class Compile
         '/@endisset\b/' => '<?php endif; ?>',
         '/@empty\s*\((.*?)\)/s' => '<?php if (empty($1)): ?>',
         '/@endempty\b/' => '<?php endif; ?>',
-        '/@endempty\b/' => '<?php endif; ?>',
+        '/@reactive\s*\((.*?)\)/s' => '<?= rx_reactive($1) ?>',
     ];
 
     private static array $user_directive = [];
@@ -106,7 +106,7 @@ class Compile
         }
 
         if (file_exists($cachePath) && filemtime($cachePath) >= filemtime($viewPath)) {
-            return require_once $cachePath;
+            return require $cachePath;
             // ob_start();
             // require_once $cachePath;
             // return ob_get_clean();
@@ -128,7 +128,7 @@ class Compile
 
         file_put_contents($cachePath, $compiled);
 
-        return require_once $cachePath;
+        return require $cachePath;
         // ob_start();
         // require_once $cachePath;
         // return ob_get_clean();

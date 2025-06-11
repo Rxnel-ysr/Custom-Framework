@@ -9,12 +9,12 @@ class CounterComponent extends Reactive
 
     public function increment($count)
     {
-        return $this->states['count'] = $count;
+        return $this->states['count']=$count;
     }
 
     public function decrement($count)
     {
-        return $this->states['count'] = $count;
+        return $this->states['count2']= $count;
     }
 
     public function view(): string

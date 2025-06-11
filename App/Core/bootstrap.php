@@ -10,7 +10,6 @@ use App\Foundation\Http\Request;
 use App\Foundation\Manager\InstanceManager;
 use App\Foundation\Providers\AppServiceProvider;
 use App\Foundation\Reactive\Reactive;
-use App\Foundation\Reactive\ReactiveHandler;
 use App\Foundation\System\Disk;
 
 // Define root path once
@@ -100,7 +99,6 @@ InstanceManager::setInstance('appDisk', $disk);
 AppServiceProvider::boot();
 AppServiceProvider::register();
 
-ReactiveHandler::init();
 
 // Setup Database
 Connection::set($cfg['database']);

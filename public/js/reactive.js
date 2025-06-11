@@ -49,6 +49,7 @@ class ReactiveComponent {
         this.el = el;
         this.id = el.dataset.reactiveName;
         this.state = this.parseState(el.dataset.reactiveState);
+        this._pendingFocus = null;
         this.bindEvents();
     }
 
@@ -139,7 +140,7 @@ class ReactiveComponent {
                 *     }
                 * });
                 */
-                
+
                 const debouncedHandler = debounce(handleInputEvent, 200);
 
                 if (inputTypes.checked.includes(input.type.toLowerCase())) {
@@ -157,24 +158,26 @@ class ReactiveComponent {
     }
 
     async update(html, state = {}) {
+
+        const activeElement = document.activeElement;
+        if (activeElement && this.el.contains(activeElement)) {
+            this._pendingFocus = {
+                id: activeElement.id,
+                name: activeElement.name,
+                tagName: activeElement.tagName,
+                type: activeElement.type,
+                value: activeElement.value,
+                selectionStart: activeElement.selectionStart,
+                selectionEnd: activeElement.selectionEnd,
+                componentId: this.id
+            };
+        }
+
+
         if (state) {
             this.state = state;
             this.el.dataset.reactiveState = JSON.stringify(state);
         }
-
-        const focusInfo = document.activeElement && this.el.contains(document.activeElement)
-            ? {
-                id: document.activeElement.id,
-                name: document.activeElement.name,
-                tagName: document.activeElement.tagName,
-                type: document.activeElement.type,
-                value: document.activeElement.value,
-                selectionStart: document.activeElement.selectionStart,
-                selectionEnd: document.activeElement.selectionEnd,
-                cursorPosition: this.getCursorPosition(document.activeElement)
-            } : this._pendingFocus || null;
-
-        const componentRect = this.el.getBoundingClientRect();
 
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, 'text/html');
@@ -183,19 +186,23 @@ class ReactiveComponent {
 
         if (newInner) {
             this.el.innerHTML = newInner.innerHTML;
+        } else {
+            this.el.innerHTML = html;
         }
+        
+        const scrollTop = this.el.scrollTop;
+        this.el.scrollTop = scrollTop;
 
-        await new Promise(resolve => requestAnimationFrame(resolve));
+
         this.bindEvents();
 
-        if (focusInfo) await this.restoreFocus(focusInfo);
 
-        const newRect = this.el.getBoundingClientRect();
-        if (componentRect.top !== newRect.top) {
-            window.scrollBy(0, newRect.top - componentRect.top);
+        if (this._pendingFocus) {
+            await new Promise(resolve => setTimeout(resolve, 50));
+            this.restoreFocus();
         }
     }
-    
+
 
     getCursorPosition(element) {
         if (!element) return null;
@@ -221,78 +228,70 @@ class ReactiveComponent {
     }
 
 
-    async restoreFocus(focusInfo) {
-        if (!focusInfo) return;
+    restoreFocus() {
+        if (!this._pendingFocus) return;
 
-        let elementToFocus = null;
 
-        if (focusInfo.id) {
-            elementToFocus = document.getElementById(focusInfo.id);
+        if (this._pendingFocus.componentId && this._pendingFocus.componentId !== this.id) {
+            console.debug('Focus belongs to different component, skipping');
+            this._pendingFocus = null;
+            return;
         }
 
-        if (!elementToFocus && focusInfo.name) {
-            const candidates = document.getElementsByName(focusInfo.name);
+        const { id, name, tagName, type, value, selectionStart, selectionEnd } = this._pendingFocus;
+        let elementToFocus = null;
+
+
+        const searchRoot = this.el;
+
+
+        if (id) {
+            elementToFocus = searchRoot.querySelector(`#${id}`);
+        }
+
+
+        if (!elementToFocus && name) {
+            const candidates = searchRoot.querySelectorAll(`${tagName}[name="${name}"]`);
             if (candidates.length > 0) {
-                if (focusInfo.type === 'radio') {
-                    elementToFocus = Array.from(candidates).find(el =>
-                        el.value === focusInfo.value
-                    ) || candidates[0];
+                if (type === 'radio') {
+                    elementToFocus = Array.from(candidates).find(el => el.value === value) || candidates[0];
                 } else {
                     elementToFocus = candidates[0];
                 }
             }
         }
 
-        if (elementToFocus && this.el.contains(elementToFocus)) {
 
-            await new Promise(resolve => {
-                const check = () => {
-                    if (document.body.contains(elementToFocus)) {
-                        elementToFocus.focus();
-                        resolve();
-                    } else {
-                        requestAnimationFrame(check);
-                    }
-                };
-                check();
-            });
-
-
-            if (focusInfo.cursorPosition) {
-                if (focusInfo.cursorPosition.type === 'input') {
-
-                    try {
-                        elementToFocus.setSelectionRange(
-                            focusInfo.cursorPosition.start,
-                            focusInfo.cursorPosition.end,
-                            focusInfo.cursorPosition.direction
-                        );
-                    } catch (e) {
-                        console.debug('Cursor position restore failed', e);
-                    }
-                } else if (focusInfo.cursorPosition.type === 'contenteditable') {
-
-                    const selection = window.getSelection();
-                    selection.removeAllRanges();
-                    selection.addRange(focusInfo.cursorPosition.range);
-                }
-            }
-
-
-            if (focusInfo.value !== undefined &&
-                elementToFocus.value !== focusInfo.value) {
-                elementToFocus.value = focusInfo.value;
-
-
-                if (focusInfo.cursorPosition?.type === 'input') {
-                    elementToFocus.setSelectionRange(
-                        focusInfo.cursorPosition.start,
-                        focusInfo.cursorPosition.end,
-                        focusInfo.cursorPosition.direction
-                    );
-                }
+        if (!elementToFocus && tagName) {
+            const candidates = searchRoot.querySelectorAll(tagName);
+            if (candidates.length > 0) {
+                elementToFocus = candidates[0];
             }
         }
+
+        if (elementToFocus) {
+
+            if (this.el.contains(elementToFocus)) {
+                elementToFocus.focus();
+
+                if (value !== undefined && elementToFocus.value !== value) {
+                    elementToFocus.value = value;
+                }
+
+                if (typeof selectionStart === 'number' && typeof selectionEnd === 'number' &&
+                    elementToFocus.setSelectionRange) {
+                    try {
+                        elementToFocus.setSelectionRange(selectionStart, selectionEnd);
+                    } catch (e) {
+                        console.debug('Could not restore selection range', e);
+                    }
+                }
+            } else {
+                console.warn('Attempted to focus element outside component', elementToFocus);
+            }
+        }
+
+        this._pendingFocus = null;
     }
 
 }

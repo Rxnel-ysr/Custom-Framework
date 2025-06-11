@@ -111,6 +111,7 @@ class App
         InstanceManager::setInstance('App\Foundation\Http\Request', $request);
         // error_log('Request done within: ' . timeExecution(fn() => Route::dispatch($requestUri)));
         // echo '<br>' . timeExecution(fn() => Route::dispatch($requestUri)) . 'ms';
+        ob_start();
         Route::dispatch($requestUri);
         // $res = ob_get_clean();
         // file_put_contents($this->root . '/public/result.txt',$res);

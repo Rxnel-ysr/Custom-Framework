@@ -354,6 +354,18 @@ function minifyContent($content)
     return trim($content);
 }
 
+function safeEncode(string $filename, string $prefix = 'sfe:'): string
+{
+    return rtrim(strtr(base64_encode($prefix . $filename), '+/', '-_'), '=');
+}
+
+function safeDecode(string $encoded, string $prefix = 'sfe:'): ?string
+{
+    $decoded = base64_decode(strtr($encoded, '-_', '+/'), true);
+    return str_starts_with($decoded, $prefix) ? substr($decoded, 6) : null;
+}
+
+
 // function serveMinifiedFile($requestUri)
 // {
 //     $file = ROOT . $requestUri;

@@ -4,9 +4,13 @@
 @php
 http_response_code(200);
 $data = ['yusron', 'ronel', 'rexarion'];
+$counter1 = new \App\Reactive\CounterComponent(['count' => 'alok','count2' => 'alok']);
+$counter2 = new \App\Reactive\Oka(['name' => 'Ronel']);
+
 @endphp
 <h1>{{ $message }}</h1>
 @say($message)
+
 <ul>
     @foreach($data as $i)
     <li>{{ $i }}</li>
@@ -17,7 +21,9 @@ $data = ['yusron', 'ronel', 'rexarion'];
     </form>
     {{-- Haiz this is a comment --}}
 </ul>
-@reactive('CounterComponent', ['count' => 'Ronel is handsome'])
+
+{!! $counter2->render() !!}
+
 
 @endsection
 

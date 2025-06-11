@@ -82,6 +82,11 @@ class Debugger
 
     public static function dumpErr(Throwable $e, bool $ignore = false, bool $dump_at_terminal = false, bool $use_other_backtrace = false, ?array $backtrace = null, ?string &$message = null)
     {
+        // ob_clean();
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+
         $message = "\n[ERROR] " . get_class($e) . ' | Code: ' . $e->getCode()
             . "\nMessage: " . $e->getMessage()
             . "\nFile: " . $e->getFile() . '(' . $e->getLine() . ')'
@@ -116,10 +121,6 @@ class Debugger
                     $trace
                     // getBoolEnv('AUTO_LOAD_USER_PATH_DEFINED_CLASS')
                 );
-            }
-            if (ob_get_length()) {
-                ob_end_flush();
-                ob_end_clean();
             }
             exit(1);
         }
