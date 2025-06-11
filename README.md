@@ -18,5 +18,4 @@ Purely using native PHP and some Headaches
 - Bunch of TODO comments
 
 # Attention!
-Still on development(i guess?), so there is still no command for generating controller, view, model, etc... You can still create them by yourself though
-there is maybe some bug that I didn't know yet, you can help me mention it at issue... or not? well whatever
+Still on development(i guess?), so there is still no command for generating controller, view, model, etc... You can still create them by yourself though. There is maybe some bug that I didn't know yet, you can help me mention it at issue... or not? well whatever
