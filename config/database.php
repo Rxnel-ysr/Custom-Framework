@@ -2,7 +2,7 @@
 $root = dirname(__DIR__, 1);
 
 return [
-    'default' => 'mysql',
+    'default' => 'sqlite',
     'sqlite' => [
         'database' =>  $root . '/database/database.sqlite'
     ],
