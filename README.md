@@ -81,8 +81,8 @@ Purely using native PHP and some Headaches
 
 ---
 
-🧠 **Note:** Project still includes some experimental elements (like `swoole.so`), not yet functional.
-
-
 # Attention!
 Still on development(i guess?), so there is still no command for generating controller, view, model, etc... You can still create them by yourself though. There is maybe some bug that might I didn't know yet, you can help me mention it at issue... or not? well whatever
+---
+
+🧠 **Note:** Project still includes some experimental elements (like `swoole.so`), not yet functional. And some of Database related features may not yet fully working.
