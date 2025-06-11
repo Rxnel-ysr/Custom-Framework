@@ -17,14 +17,6 @@ class AppServiceProvider
             echo $message;
         });
 
-        /**
-         * Register Rx directive
-         */
-        Rx::register('reactive', function ($component, $state): void {
-            $component = 'App\Reactive\\' .$component;
-            $instance = new $component($state);
-            echo ReactiveHandler::register($instance->id, $instance)->render();
-        });
     }
 
     public static function boot(): void

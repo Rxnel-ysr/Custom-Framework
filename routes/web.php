@@ -123,42 +123,6 @@ Route::get('/up', function (Request $req) {
 //    echo '</pre>';
 // });
 
-/**
- * Route registration
- */
-Route::post('/__reactive', function (Request $request) {
-   // 1. Get raw JSON data (since the frontend sends `application/json`)
-   $data = $request->json();
-
-   // 2. Extract reactive metadata
-   $componentName = $data['__component_name'] ?? null;
-   $action = $data['__component_action'] ?? null;
-   $states = $data['__component_states'] ?? [];
-   $params = array_diff_key($data, [
-      '__component_name' => true,
-      '__component_action' => true,
-      '__component_states' => true,
-   ]);
-
-   // 3. Debugging (optional)
-
-   // return response()->json($data);
-   // return response()->json(compact('componentName', 'action', 'states', 'params'));
-
-   // 4. Handle the component logic
-   if (!class_exists($componentName)) {
-      return response()->json([
-         'message' => 'Component not found',
-         'component' => $componentName,
-      ], 404);
-   }
-
-   $component = new $componentName($states);
-   // return response()->json($component->states);
-   // $component->
-   return $component->handle($action, ...$params);
-});
-
 Route::fallback(function () {
    return response(404)->json(['message' => 'Not found']);
    // return dd(Route::dump(), Route::debugPatterns());
