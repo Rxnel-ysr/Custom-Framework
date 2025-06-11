@@ -8,6 +8,21 @@ use App\Foundation\Http\Route;
 use App\Support\Facades\Rx;
 use Exception;
 
+class ReactiveHandler
+{
+    protected static bool $initialized = false;
+
+    public static function init()
+    {
+        self::$initialized = true;
+    }
+
+    public static function isInitialized()
+    {
+        return self::$initialized;
+    }
+}
+
 class Reactive
 {
     public string $id;
@@ -25,14 +40,31 @@ class Reactive
 
     public function render()
     {
-        // try {
+        $reativejs = asset('js/reactive.js');
+
+        $injector = <<<HTML
+        <script>
+        (function() {
+            window.addEventListener('load', () => {
+                const s = document.createElement('script');
+                s.src = "{$reativejs}";
+                s.type = "text/javascript";
+                s.onload = () => Reactive?.init?.();
+                s.onerror = () => alert('Failed to load reactive.js');
+                document.body.appendChild(s);
+                
+                const self = document.currentScript;
+                self?.parentNode?.removeChild(self);
+            });
+        })();
+        </script>
+        HTML;
+
         ob_start();
         Compile::compile($this->view, ['id' => $this->id, 'currentStates' => $this->states, ...$this->states]);
-        return ob_get_clean();
-        // } catch (\Throwable $e) {
-        //     return "<!-- render error: {$e->getMessage()} -->";
-        // }
-
+        $res = ob_get_clean() . (ReactiveHandler::isInitialized() ? '' : $injector);
+        ReactiveHandler::init();
+        return $res;
     }
 
     public function view(): string
@@ -57,4 +89,3 @@ class Reactive
         ]);
     }
 }
-

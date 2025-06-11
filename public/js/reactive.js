@@ -189,7 +189,7 @@ class ReactiveComponent {
         } else {
             this.el.innerHTML = html;
         }
-        
+
         const scrollTop = this.el.scrollTop;
         this.el.scrollTop = scrollTop;
 
@@ -295,5 +295,3 @@ class ReactiveComponent {
     }
 
 }
-
-document.addEventListener('DOMContentLoaded', () => Reactive.init());

@@ -4,7 +4,7 @@
 @php
 http_response_code(200);
 $data = ['yusron', 'ronel', 'rexarion'];
-$counter1 = new \App\Reactive\CounterComponent(['count' => 'alok','count2' => 'alok']);
+$counter1 = new \App\Reactive\Oka(['name' => 'cihuy']);
 $counter2 = new \App\Reactive\Oka(['name' => 'Ronel']);
 
 @endphp
@@ -22,13 +22,13 @@ $counter2 = new \App\Reactive\Oka(['name' => 'Ronel']);
     {{-- Haiz this is a comment --}}
 </ul>
 
+{!! $counter1->render() !!}
 {!! $counter2->render() !!}
 
 
 @endsection
 
 @push('scripts')
-<script src="{{ asset('js/reactive.js') }}"></script>
 <script>
     console.log('Are this gonna work?');
 </script>
