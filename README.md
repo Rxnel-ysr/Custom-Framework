@@ -1,3 +1,6 @@
+![PHP](https://img.shields.io/badge/PHP-8.2+-8892BF?style=flat&logo=php)
+![No Composer](https://img.shields.io/badge/Zero-Composer-lightgrey)
+
 # DunnoTheNameYet (Working Title)
 
 A dependency-free PHP microframework that runs on:
