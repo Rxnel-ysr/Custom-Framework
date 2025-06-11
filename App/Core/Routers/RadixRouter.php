@@ -16,6 +16,9 @@ class RadixNode
     public bool $isParam = false;
 }
 
+/**
+ * Radix Router
+ */
 class Route implements RouterInterface
 {
     public static string $name = 'RadixRouter';

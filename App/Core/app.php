@@ -6,6 +6,7 @@ use App\Foundation\Guard\RateLimiter;
 use App\Foundation\Helpers\Env;
 use App\Foundation\Http\Request;
 use App\Foundation\Http\Route;
+use App\Foundation\Manager\InstanceManager;
 use InvalidArgumentException;
 
 // use App\EXPE\Foundation\Http\Route;
@@ -94,7 +95,7 @@ class App
             $rateLimiterConfig[$scope]['ban_time']
         );
 
-        $limiter->check();
+        !str_starts_with($requestUri, '/__') && $limiter->check();
 
         $middleware = $isApi ? 'ApiHandler.php' : 'WebHandler.php';
         $routeFile = $isApi ? $this->router['api'] : $this->router['web'];
@@ -107,6 +108,7 @@ class App
             // exit;
         }
 
+        InstanceManager::setInstance('App\Foundation\Http\Request', $request);
         // error_log('Request done within: ' . timeExecution(fn() => Route::dispatch($requestUri)));
         // echo '<br>' . timeExecution(fn() => Route::dispatch($requestUri)) . 'ms';
         Route::dispatch($requestUri);

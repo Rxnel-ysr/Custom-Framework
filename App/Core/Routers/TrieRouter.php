@@ -14,6 +14,9 @@ class TrieNode
     public array $middleware = [];
 }
 
+/**
+ * Trie Router
+ */
 class Route implements RouterInterface
 {
     public static string $name = 'TrieRouter';

@@ -83,16 +83,28 @@ class ClassManager
     }
 
     /**
-     * Load all class from mapping
+     * Load all classes from mapping except those specified
      * 
-     * @return int Total or registered classes
+     * @param array $excepts Array of class names to exclude from loading
+     * @return int Total of registered classes that were attempted to load
      */
-    public static function loadAllClass()
+    public static function loadAllClass(array $excepts = [])
     {
+        $loadedCount = 0;
+
         foreach (self::$classes as $class) {
-            require_once self::$root . DIRECTORY_SEPARATOR . $class;
+            // Skip if this class is in the excepts list
+            if (in_array($class, $excepts, true)) {
+                continue;
+            }
+
+            if (! class_exists($class, false)) {
+                require_once self::$root . DIRECTORY_SEPARATOR . $class;
+                $loadedCount++;
+            }
         }
-        return count(self::$classes);
+
+        return $loadedCount;
     }
 
     /**

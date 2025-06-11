@@ -256,7 +256,7 @@ function get_precise_type(mixed $var): string
 
 
 /**
- * Calls a function with the given parameters, supporting automatic dependency resolution.
+ * Calls a function with the given parameters, supporting automatic depency resolution.
  *
  * @param callable|string|array $func The function, method, or callable array to invoke.
  * @param bool $auto_resolve Whether to automatically resolve class dependencies.
@@ -407,7 +407,7 @@ function callFuncWithParams(
 function validateParameterType(mixed $value, ReflectionType $type, string $paramName): void
 {
     $valueType = get_debug_type($value);
-    
+
     if ($type instanceof ReflectionUnionType) {
         if (!in_array($valueType, array_map(fn($t) => $t->getName(), $type->getTypes()))) {
             throw new InvalidArgumentException(sprintf(
@@ -630,6 +630,163 @@ function scanForClasses($directory, $ignore_dirs = [], $ignore_files = [], $exce
 
     return $classes;
 }
+
+function translateRegex(string $regex): string
+{
+    // Normalize the regex string first
+    $regex = trim($regex);
+
+    // Handle delimiters and modifiers more robustly
+    if (preg_match('/^([#~\/])(.*?)\1([imsxADSUXJu]*)$/', $regex, $matches)) {
+        $regex = $matches[2];
+        if (!empty($matches[3])) {
+            $regex .= ' [with modifiers: ' . str_split($matches[3]) . ']';
+        }
+    }
+
+    $patterns = [
+        // ---------------------------------------------------------------------
+        // Most Complex Patterns (Highest Priority)
+        // ---------------------------------------------------------------------
+        // Recursion and Subroutines
+        '/\\\\R/'            => ' [recursion to entire pattern] ',
+        '/\\\\g\<([^>]+)\>/' => ' [subroutine call to named group "$1"] ',
+        '/\\\\g\'([^\']+)\'/' => ' [subroutine call to named group "$1"] ',
+        '/\\\\g\{([^}]+)\}/' => ' [subroutine call to named group "$1"] ',
+
+        // Conditionals
+        '/\(\?\(([^)]+)\)\)/' => ' [conditional: if $1] ',
+        '/\(\?\(\'([^\']+)\'\)\)/' => ' [conditional on named group "$1"] ',
+        '/\(\?\(\<([^>]+)\>\)\)/' => ' [conditional on named group "$1"] ',
+        '/\(\?\((\d+)\)\)/' => ' [conditional on group $1] ',
+
+        // Named Backreferences (complex before simple)
+        '/\\\\k\{([^}]+)\}/' => ' [named backreference to group "$1"] ',
+        '/\\\\k\'([^\']+)\'/' => ' [named backreference to group "$1"] ',
+        '/\\\\k\<([^>]+)\>/' => ' [named backreference to group "$1"] ',
+        '/\\\\g\{-(\d+)\}/' => ' [relative backreference ($1 groups prior)] ',
+        '/\\\\g\{(\d+)\}/' => ' [backreference to group $1] ',
+        '/\\\\(\d+)/'    => ' [backreference to group $1] ',
+
+        // Unicode Properties
+        '/\\\\p\{([^}]+)\}/' => ' [unicode character property "$1"] ',
+        '/\\\\P\{([^}]+)\}/' => ' [negated unicode character property "$1"] ',
+
+        // Mode Modifiers & Comments
+        '/\(\?#([^)]+)\)/' => ' [comment: $1] ',
+        '/\(\?([idmsuxUX]+)-:\)/' => ' [inline modifier group (disable $1)] ',
+        '/\(\?([idmsuxUX]+):\)/' => ' [inline modifier group ($1)] ',
+        '/\(\?-([idmsuxUX]+)\)/' => ' [mode modifier (disable $1)] ',
+        '/\(\?([idmsuxUX]+)\)/' => ' [mode modifier: $1] ',
+
+        // Lookarounds (complex groups)
+        '/\(\?<=/'       => ' [positive lookbehind] ',
+        '/\(\?<!/'       => ' [negative lookbehind] ',
+        '/\(\?=/'        => ' [positive lookahead] ',
+        '/\(\?!/'        => ' [negative lookahead] ',
+
+        // Named Groups (complex before simple)
+        '/\(\?\'\'([a-zA-Z0-9_]+)\'\'\)?/' => ' [named capture group "$1"] ',
+        '/\(\?<([a-zA-Z0-9_]+)>\)?/'   => ' [named capture group "$1"] ',
+        '/\(\?P<([a-zA-Z0-9_]+)>\)?/' => ' [named capture group "$1"] ',
+        '/\(\?>/'        => ' [atomic group] ',
+        '/\(\?:/'        => ' [non-capturing group] ',
+        '/\((?!\?)/'     => ' [capturing group] ',
+
+        // Quantifiers (possessive/lazy before greedy)
+        '/\{(\d+),(\d+)\}/' => ' [between $1 and $2 times] ',
+        '/\{(\d+),\}/'      => ' [at least $1 times] ',
+        '/\{,(\d+)\}/'      => ' [at most $1 times] ',
+        '/\{(\d+)\}/'       => ' [exactly $1 times] ',
+        '/\{\}/'            => ' [empty quantifier] ',
+        '/(?<!\\\\)\*\+/'   => ' [zero or more times (possessive)] ',
+        '/(?<!\\\\)\+\+/'   => ' [one or more times (possessive)] ',
+        '/(?<!\\\\)\?\+/'   => ' [zero or one time (possessive)] ',
+        '/(?<!\\\\)\*?\?/'  => ' [zero or more times (lazy)] ',
+        '/(?<!\\\\)\+\?/'   => ' [one or more times (lazy)] ',
+        '/(?<!\\\\)\?\?/'   => ' [zero or one time (lazy)] ',
+        '/(?<!\\\\)\*/'     => ' [zero or more times] ',
+        '/(?<!\\\\)\+/'     => ' [one or more times] ',
+        '/(?<!\\\\)\?/'     => ' [zero or one time] ',
+
+        // Character Classes (negated before normal)
+        '/\[\^([^\]]+)\]/' => ' [negated character class: $1] ',
+        '/\[([^\]]+)\]/'   => ' [character class: $1] ',
+        '/\[\^\]/'         => ' [negated empty character class] ',
+        '/\[\]/'           => ' [empty character class] ',
+        '/\[\^/'           => ' [start of negated character class] ',
+        '/\[\[:\]\]/'      => ' [POSIX character class] ',
+
+        // Predefined Character Classes
+        '/\\\\N/'        => ' [any character except newline] ',
+        '/\\\\R/'        => ' [any linebreak sequence] ',
+        '/\\\\V/'        => ' [non-vertical whitespace] ',
+        '/\\\\v/'        => ' [vertical whitespace] ',
+        '/\\\\H/'        => ' [non-horizontal whitespace] ',
+        '/\\\\h/'        => ' [horizontal whitespace] ',
+        '/\\\\S/'        => ' [non-whitespace character] ',
+        '/\\\\s/'        => ' [whitespace character] ',
+        '/\\\\W/'        => ' [non-word character] ',
+        '/\\\\w/'        => ' [word character] ',
+        '/\\\\D/'        => ' [non-digit] ',
+        '/\\\\d/'        => ' [digit] ',
+
+        // Anchors and Boundaries
+        '/\\\\K/'        => ' [reset match start] ',
+        '/\\\\B/'        => ' [non-word boundary] ',
+        '/\\\\b/'        => ' [word boundary] ',
+        '/\\\\G/'        => ' [start of match attempt] ',
+        '/\\\\z/'        => ' [absolute end of string] ',
+        '/\\\\Z/'        => ' [end of string] ',
+        '/\\\\A/'        => ' [start of string] ',
+        '/(?<!\\\\)\$/'  => ' [end of line] ',
+        '/(?<!\\\\)\^/'  => ' [start of line] ',
+
+        // ---------------------------------------------------------------------
+        // Simple Patterns (Lowest Priority)
+        // ---------------------------------------------------------------------
+        // Escaped Literals
+        '/\\\\\\\\/'    => ' [literal backslash] ',
+        '/\\\\\./'      => ' [literal dot] ',
+        '/\\\\-/'       => ' [literal dash] ',
+        '/\\\\\//'      => ' [literal slash] ',
+        '/\\\\\*/'      => ' [literal asterisk] ',
+        '/\\\\\+/'      => ' [literal plus] ',
+        '/\\\\\?/'      => ' [literal question mark] ',
+        '/\\\\\{/'      => ' [literal opening brace] ',
+        '/\\\\\}/'      => ' [literal closing brace] ',
+        '/\\\\\|/'      => ' [literal pipe] ',
+        '/\\\\\(/'      => ' [literal opening parenthesis] ',
+        '/\\\\\)/'      => ' [literal closing parenthesis] ',
+        '/\\\\\[/'      => ' [literal opening bracket] ',
+        '/\\\\\]/'      => ' [literal closing bracket] ',
+        '/\\\\\^/'      => ' [literal caret] ',
+        '/\\\\\$/'      => ' [literal dollar] ',
+
+        // Basic Metacharacters
+        '/(?<!\\\\)\./' => ' [any character except newline] ',
+        '/(?<!\\\\)\|/' => ' [alternation (OR)] ',
+    ];
+
+    $explanation = $regex;
+
+    // Apply all patterns at once for better performance
+    $explanation = preg_replace(array_keys($patterns), array_values($patterns), $explanation);
+
+    // Clean up the explanation
+    $cleanup = [
+        '/\s+/' => ' ',
+        '/ , /' => ', ',
+        '/ \[/' => '[',
+        '/\] /' => ']'
+
+    ];
+    $explanation = preg_replace(array_keys($cleanup), array_values($cleanup), $explanation);  // Remove space after ]
+
+    return trim($explanation, " ,\t\n\r\0\x0B");
+}
+
+
 
 function safe_bulk_match(array $patterns, string $subject, float $timeout = 0.05): array
 {

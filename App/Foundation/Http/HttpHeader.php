@@ -45,6 +45,12 @@ class HttpHeaders
         $this->headers['Content-Length'] = $bytes;
         return $this;
     }
+    
+    public function contentRange(int $fileSize, ?int $startBytes = null, ?int $endBytes = null)
+    {
+        $this->headers['Content-Range'] = 'bytes ' . ($startBytes && $endBytes ? $startBytes . '-' . $endBytes : '*') . '/' . $fileSize;
+        return $this;
+    }
 
     public function contentDescription(string $description)
     {

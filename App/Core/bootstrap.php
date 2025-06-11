@@ -8,6 +8,9 @@ use App\Foundation\Database\Connection;
 use App\Foundation\Helpers\Env;
 use App\Foundation\Http\Request;
 use App\Foundation\Manager\InstanceManager;
+use App\Foundation\Providers\AppServiceProvider;
+use App\Foundation\Reactive\Reactive;
+use App\Foundation\Reactive\ReactiveHandler;
 use App\Foundation\System\Disk;
 
 // Define root path once
@@ -15,6 +18,7 @@ const BASE_PATH = __DIR__ . '/../../';
 
 // Load Core
 require_once BASE_PATH . 'App/Foundation/Manager/ClassManager_EXPE.php';
+require_once BASE_PATH . 'App/Providers/AppServiceProvider.php';
 require_once BASE_PATH . 'App/Core/Routers/RouterInterface.php';
 require_once BASE_PATH . 'App/Foundation/Compiler/Compile.php';
 require_once BASE_PATH . 'App/Foundation/Helpers/Utility.php';
@@ -29,18 +33,6 @@ $cfg = [
     'router_path'     => require BASE_PATH . 'config/router_path.php',
     'router_plugins'  => require BASE_PATH . 'config/router_plugins.php' ?? [],
 ];
-
-// Validate Routing
-$router = $cfg['router'];
-// echo $cfg['router_path'][$router['router']]. '<br>';
-// var_dump($router['router']);
-// exit;
-if (!in_array($router['router'], $router['choices'])) {
-    throw new InvalidArgumentException("Invalid router: {$router['router']}");
-}
-
-// Boot the route handler
-require_once $cfg['router_path'][$router['router']];
 
 
 // Init Class Manager
@@ -62,6 +54,19 @@ Debugger::init(
     store_at_log: true,
     log_file: BASE_PATH . 'storage/logs/debug.log'
 );
+
+// Validate Routing
+$router = $cfg['router'];
+// echo $cfg['router_path'][$router['router']]. '<br>';
+// var_dump($router['router']);
+// exit;
+if (!in_array($router['router'], $router['choices'])) {
+    throw new InvalidArgumentException("Invalid router: {$router['router']}");
+}
+
+// Boot the route handler
+require_once $cfg['router_path'][$router['router']];
+
 // Compile Views
 Compile::init(
     views_dir: BASE_PATH . 'resources/views',
@@ -90,6 +95,12 @@ $app = (new App(root: BASE_PATH))
 // Inject Instances
 InstanceManager::setInstance('app', $app);
 InstanceManager::setInstance('appDisk', $disk);
+
+// Boot and Register provider
+AppServiceProvider::boot();
+AppServiceProvider::register();
+
+ReactiveHandler::init();
 
 // Setup Database
 Connection::set($cfg['database']);

@@ -1,13 +1,12 @@
 @extends('parentTest')
 
 @section('content')
-<?php
+@php
 http_response_code(200);
-?>
-<?php
 $data = ['yusron', 'ronel', 'rexarion'];
-?>
+@endphp
 <h1>{{ $message }}</h1>
+@say($message)
 <ul>
     @foreach($data as $i)
     <li>{{ $i }}</li>
@@ -18,9 +17,12 @@ $data = ['yusron', 'ronel', 'rexarion'];
     </form>
     {{-- Haiz this is a comment --}}
 </ul>
+@reactive('CounterComponent', ['count' => 'Ronel is handsome'])
+
 @endsection
 
 @push('scripts')
+<script src="{{ asset('js/reactive.js') }}"></script>
 <script>
     console.log('Are this gonna work?');
 </script>

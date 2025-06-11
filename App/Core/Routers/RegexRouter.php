@@ -7,6 +7,9 @@ use Closure;
 use RouterInterface;
 use Throwable;
 
+/**
+ * Regex Router
+ */
 class Route implements RouterInterface
 {
     public static string $name = 'RegexRouter';
@@ -147,6 +150,7 @@ class Route implements RouterInterface
         // Store the route
         self::$routes[$method][$url] = [
             'pattern' => $regexPattern,
+            'patternExplanation' => translateRegex($regexPattern),
             'action' => $action,
             'middleware' => $middleware,
             'paramKeys' => $paramKeys,
@@ -327,7 +331,7 @@ class Route implements RouterInterface
 
     public static function dispatch(string $requestUri)
     {
-        $requestUri = ($requestUri !== '/') ? trim($requestUri, '/') : $requestUri;
+        $requestUri = trim($requestUri, '/');
         // echo 'Request uri: ' . $requestUri . '<br>';
         // die;
         $method = self::getRequestMethod();
@@ -499,6 +503,7 @@ class Route implements RouterInterface
                 $debug[$method][] = [
                     'url' => $route['url'],
                     'pattern' => $route['pattern'],
+                    'patternExplanation' => $route['patternExplanation'],
                     'paramKeys' => $route['paramKeys']
                 ];
             }

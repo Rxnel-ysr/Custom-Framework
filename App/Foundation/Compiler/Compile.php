@@ -17,6 +17,7 @@ class Compile
         '/\{\{\s*(.*?)\s*\}\}/' =>  '<?= htmlspecialchars($1) ?>',
         '/\{\!\!\s*(.*?)\s*\!\!\}/' =>  '<?= $1 ?>',
         '/@csrf\b/' => '<?= \\App\\Foundation\\Guard\\CSRF::csrf() ?>',
+        '/@json\s*\((.*?)\)/s' => '<?= json_encode($1) ?>',
         '/@if\s*\((.*?)\)/s' => '<?php if ($1): ?>',
         '/@elseif\s*\((.*?)\s*\)/s' => '<?php elseif ($1): ?>',
         '/@else\b/' => '<?php else: ?>',
@@ -52,6 +53,7 @@ class Compile
         '/@endisset\b/' => '<?php endif; ?>',
         '/@empty\s*\((.*?)\)/s' => '<?php if (empty($1)): ?>',
         '/@endempty\b/' => '<?php endif; ?>',
+        '/@endempty\b/' => '<?php endif; ?>',
     ];
 
     private static array $user_directive = [];
@@ -76,14 +78,14 @@ class Compile
 
         $reflection = new ReflectionFunction($func);
         if (!$type = $reflection->getReturnType()) {
-            throw new Exception('Rx template callbacks must specify return type using \':\'');
+            throw new Exception('Rx template callbacks must specify return type using \': returnType\'');
         }
 
 
         $hasArgs =  $reflection->getNumberOfParameters() > 0;
         $directive = $hasArgs ?  '/@' . $name . '\s*\((.*?)\)/s' : '/@' . $name . '\b/';
         self::$user_directive[$name] = [$directive, $hasArgs];
-        self::$user_callbacks[$name] = [$func, $type !== 'void'];
+        self::$user_callbacks[$name] = [$func, ! in_array($type, ['void', 'never'])];
     }
 
     public static function compile($path, $data)
@@ -91,7 +93,7 @@ class Compile
         $viewPath = self::$views_dir . DIRECTORY_SEPARATOR . $path . self::$ext;
         if (!file_exists($viewPath)) {
             // die('Hi');
-            throw new Exception('View not found [ ' . str_replace([self::$views_dir.DIRECTORY_SEPARATOR,self::$ext],['',''],$viewPath) . ' ], Are you sure its ends with ' . self::$ext .' ?');
+            throw new Exception('View not found [ ' . str_replace([self::$views_dir . DIRECTORY_SEPARATOR, self::$ext], ['', ''], $viewPath) . ' ], Are you sure its ends with ' . self::$ext . ' ?');
         }
 
         extract($data);
@@ -115,7 +117,6 @@ class Compile
         $user_directive = [];
         foreach (self::$user_directive as $name => $directive) {
             $res = self::$user_callbacks[$name];
-            $callback = $res[0];
             $hasReturn = $res[1];
             $callback = $directive[1] ? 'App\\Foundation\\Compiler\\Compile::dispatch(\'' . $name . '\',$1)' : 'App\\Foundation\\Compiler\\Compile::dispatch(\'' . $name . '\')';
             $user_directive[$directive[0]] = $hasReturn ? '<?= ' . $callback . ' ?>' : '<?php ' . $callback . ' ?>';

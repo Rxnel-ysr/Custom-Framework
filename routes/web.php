@@ -1,9 +1,10 @@
 <?php
 
 use App\EXPE\Foundation\Manager\ClassManager;
-use App\Foundation\Http\{RouteRequest, Request, Response, HttpHeaders, Route};
+use App\Foundation\Http\{RouteRequest, Request, Response, HttpHeaders, Route, StaticRequest};
 use App\Foundation\Manager\InstanceManager;
 use App\Foundation\Model;
+use App\Foundation\Reactive\ReactiveHandler;
 use App\Foundation\System\{File, Disk};
 use App\Http\Controllers\test;
 use App\Models\User;
@@ -18,7 +19,7 @@ Route::get('/', function () {
    // echo '</pre>';
    // return 0;
    return view('index');
-});
+})->name('home');
 
 Route::get('/route', function () {
    return dd(Route::$name, get_declared_classes());
@@ -62,18 +63,27 @@ Route::get('/route', function () {
 //    }
 // });
 
-Route::get('/download', function () {
-   $disk = InstanceManager::getInstance('appDisk');
+Route::get('/stream', function (Request $req) {
+   // $disk = InstanceManager::getInstance('appDisk');
 
-   return response()->download($disk->path('Design-A3.pdf'));
+   $new = new Request();
+   return response()->json(['message' => spl_object_id($req) === spl_object_id(InstanceManager::getInstance('App\Foundation\Http\Request'))]);
 });
 
-Route::get('/test/{name:\d}', function ($name) {
-   return "Your name is $name only one";
+Route::get('/test', function (Request $req) {
+   // echo '<pre>';
+   // debug_print_backtrace();
+   // echo '</pre>';
+   // die;
+   return view('test', ['message' => $req->query('message', 'No message')]);
 });
 
-Route::get('/test/{name:\d+}', function ($name) {
-   return "Your name is $name, and many";
+Route::get('/test/{name:\w}', function ($name) {
+   return "Your name is $name, only 1 char";
+});
+
+Route::get('/test/{name:\w*?}', function ($name) {
+   return "Your name is $name, many chars";
 });
 
 // Route::group(['prefix' => '/aya'], function () {
@@ -93,8 +103,9 @@ Route::get('/test/{name:\d+}', function ($name) {
 //    response()->serve($disk->path($req->query('file')));
 // });
 
-Route::get('/up', function () {
-   echo (hrtime(true) - START) / 1.0e6 . 'ms<br>';
+Route::get('/up', function (Request $req) {
+   // echo (hrtime(true) - START) / 1.0e6 . 'ms<br>';
+   return response()->json(['server' => $_SERVER, 'ok' => InstanceManager::getInstance('ok')]);
 });
 
 // // Route::get('/test', [test::class, 'test']);
@@ -112,9 +123,45 @@ Route::get('/up', function () {
 //    echo '</pre>';
 // });
 
+/**
+ * Route registration
+ */
+Route::post('/__reactive', function (Request $request) {
+   // 1. Get raw JSON data (since the frontend sends `application/json`)
+   $data = $request->json();
+
+   // 2. Extract reactive metadata
+   $componentName = $data['__component_name'] ?? null;
+   $action = $data['__component_action'] ?? null;
+   $states = $data['__component_states'] ?? [];
+   $params = array_diff_key($data, [
+      '__component_name' => true,
+      '__component_action' => true,
+      '__component_states' => true,
+   ]);
+
+   // 3. Debugging (optional)
+
+   // return response()->json($data);
+   // return response()->json(compact('componentName', 'action', 'states', 'params'));
+
+   // 4. Handle the component logic
+   if (!class_exists($componentName)) {
+      return response()->json([
+         'message' => 'Component not found',
+         'component' => $componentName,
+      ], 404);
+   }
+
+   $component = new $componentName($states);
+   // return response()->json($component->states);
+   // $component->
+   return $component->handle($action, ...$params);
+});
+
 Route::fallback(function () {
-   // response(404)->json(['message' => 'Its weird']);
-   return dd(Route::dump(), Route::debugPatterns());
+   return response(404)->json(['message' => 'Not found']);
+   // return dd(Route::dump(), Route::debugPatterns());
 });
 
 // // Route::debugTree();
