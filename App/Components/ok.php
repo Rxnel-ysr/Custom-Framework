@@ -6,9 +6,10 @@ use App\Foundation\Reactive\Reactive;
 
 class Oka extends Reactive
 {
-    public function sync($name)
+    public function switch()
     {
-        $this->states['name'] = $name;
+        $this->states['home'] = !$this->states['home'];
+        $this->setView(($this->states['home'] ? 'components.home' : 'components.about'));
     }
 
     public function view(): string

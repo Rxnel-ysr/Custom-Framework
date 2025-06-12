@@ -2,10 +2,8 @@
 
 @section('content')
 @php
-http_response_code(200);
+http_response_code(201);
 $data = ['yusron', 'ronel', 'rexarion'];
-$counter1 = new \App\Reactive\Oka(['name' => 'cihuy']);
-$counter2 = new \App\Reactive\Oka(['name' => 'Ronel']);
 
 @endphp
 <h1>{{ $message }}</h1>
@@ -22,20 +20,22 @@ $counter2 = new \App\Reactive\Oka(['name' => 'Ronel']);
     {{-- Haiz this is a comment --}}
 </ul>
 
-{!! $counter1->render() !!}
-{!! $counter2->render() !!}
+@reactive('Lists', ['lists' => [], 'temp'=>'ok'])
+
+{{ $name??'' }}
+
 
 
 @endsection
 
 @push('scripts')
-<script>
+<script nonce="{{ $_nonce }}">
     console.log('Are this gonna work?');
 </script>
 @endpush
 
 @push('scripts')
-<script>
+<script nonce="{{ $_nonce }}">
     console.log('Thiss too??');
 </script>
 @endpush

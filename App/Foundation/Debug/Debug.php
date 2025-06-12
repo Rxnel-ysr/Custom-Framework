@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Debug;
 
+use App\Support\Facades\DI;
 use ErrorException;
 use Throwable;
 
@@ -172,6 +173,7 @@ class Debugger
         $btnTextContent;
         $add_new_class;
         $trace;
+        $_nonce = DI::get('nonce');
 
         // if (ob_get_length()) {
         //     ob_end_clean();  // Use ob_end_clean() instead of ob_clean() to discard and close the buffer

@@ -54,7 +54,7 @@ class CSRF
         ];
 
         if (!isset($_COOKIE['CSRF-TOKEN-' . $form_key])) {
-            self::setSecureCookie('CSRF-TOKEN-' . $form_key, $token, $unixTime);
+            // self::setSecureCookie('CSRF-TOKEN-' . $form_key, $token, $unixTime);
             // error_log('Created cookie: CSRF-TOKEN-' . $form_key);
         }
 
@@ -74,7 +74,7 @@ class CSRF
         
         $key = $_POST['csrf_key'] ?? null;
         $token = $_POST['csrf_'] ?? null;
-        $cookieToken = $_COOKIE['CSRF-TOKEN-' . $key] ?? null;
+        // $cookieToken = $_COOKIE['CSRF-TOKEN-' . $key] ?? null;
         // error_log('Validating request');
 
         if (!$key || !$token || !isset($_SESSION['csrf_tokens'][$key])) {
@@ -101,11 +101,11 @@ class CSRF
             throw new Exception('CSRF validation failed');
         }
         
-        if (!$cookieToken || !hash_equals($csrfData['token'], $cookieToken)) {
-            http_response_code(403);
-            self::obliterate();
-            throw new Exception('CSRF validation failed');
-        }
+        // if (!$cookieToken || !hash_equals($csrfData['token'], $cookieToken)) {
+        //     http_response_code(403);
+        //     self::obliterate();
+        //     throw new Exception('CSRF validation failed');
+        // }
 
         // unset($_SESSION['csrf_tokens'][$key]);
         self::obliterate();
@@ -127,7 +127,7 @@ class CSRF
     {
         foreach ($_SESSION['csrf_tokens'] as $key => $_) {
             unset($_SESSION['csrf_tokens'][$key]);
-            self::expireCookie('CSRF-TOKEN-' . $key);
+            // self::expireCookie('CSRF-TOKEN-' . $key);
             // error_log('Deleted used CSRF token and cookie: ' . $key);
         }
     }

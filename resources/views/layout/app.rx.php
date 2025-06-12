@@ -24,15 +24,6 @@ $exclude_navigation = $exclude_nav ?? false;
 
 <body>
 
-    <script>
-        console.log(<?= $jsFile
-                        ? '"JavaScript file loaded at:\n' . addslashes($jsFile) . '"'
-                        : '"JavaScript file not found"' ?>);
-        console.log(<?= $cssFile
-                        ? '"CSS file loaded at:\n' . addslashes($cssFile) . '"'
-                        : '"CSS file not found"' ?>);
-    </script>
-
     <?php if (!$exclude_navigation) { ?>
         <!-- navbar daur ulang -->
         <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
@@ -63,7 +54,7 @@ $exclude_navigation = $exclude_nav ?? false;
             </div>
         </nav>
 
-        <style>
+        <style nonce="{{ $_nonce }}">
             .navbar-dark.bg-dark {
                 background-color: #1e1e1e;
                 box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
@@ -142,14 +133,45 @@ $exclude_navigation = $exclude_nav ?? false;
                 text-decoration: none;
                 color: #f0f0f0;
             }
+
+            footer {
+                background-color: #1e1e1e;
+                /* Dark background */
+                color: #d9d9d9;
+                /* Light text color */
+            }
+
+            footer p {
+                font-size: 0.875rem;
+                /* Smaller font size */
+                letter-spacing: 1px;
+                text-transform: uppercase;
+                margin: 0;
+            }
+
+            footer #footer-text {
+                font-weight: 500;
+            }
+
+            footer #extra-text {
+                font-size: 0.75rem;
+                /* Smaller for extra info */
+                color: #bbb;
+                /* Lighter text */
+            }
+
+            footer a:hover {
+                color: #00b3b3;
+                text-decoration: none;
+            }
         </style>
+        @stacks('styles')
 
     <?php } ?>
 
     @yield('content')
 
-    <script src="<?= asset("js/main.js"); ?>"></script>
-
+    
     <!-- Footer daur ulang juga ygy -->
     <footer class="d-flex flex-column fixed-bottom bg-dark text-center text-white py-3 z-2" id="dynamic-footer">
         <div class="container" id="text-section">
@@ -157,55 +179,11 @@ $exclude_navigation = $exclude_nav ?? false;
         </div>
     </footer>
 
-    <script>
+    <script src="<?= asset("js/main.js"); ?>" nonce="{{ $_nonce }}"></script>
+    <script nonce="{{ $_nonce }}">
         const currentYear = new Date().getFullYear();
         document.getElementById("current-year").textContent = currentYear;
-        // document.addEventListener('DOMContentLoaded', function() {
-        //     if (!localStorage.getItem('user_id')) {
-        //         alert('Please log in first.');
-        //         window.location.href = '/login';
-        //     }
-        // });
-        // document.getElementById('logout-btn').addEventListener('click', function() {
-        //     localStorage.removeItem('user_id');
-        //     alert('You have been logged out.');
-        //     window.location.href = '/login';
-        // });
     </script>
-
-    <style>
-        footer {
-            background-color: #1e1e1e;
-            /* Dark background */
-            color: #d9d9d9;
-            /* Light text color */
-        }
-
-        footer p {
-            font-size: 0.875rem;
-            /* Smaller font size */
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            margin: 0;
-        }
-
-        footer #footer-text {
-            font-weight: 500;
-        }
-
-        footer #extra-text {
-            font-size: 0.75rem;
-            /* Smaller for extra info */
-            color: #bbb;
-            /* Lighter text */
-        }
-
-        footer a:hover {
-            color: #00b3b3;
-            text-decoration: none;
-        }
-    </style>
-
 
 </body>
 

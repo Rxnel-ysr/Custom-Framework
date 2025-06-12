@@ -836,7 +836,6 @@ function safe_bulk_match(array $patterns, string $subject, float $timeout = 0.05
     return $results;
 }
 
-
 function isValidClass($class)
 {
     return class_exists($class) || interface_exists($class) || trait_exists($class);

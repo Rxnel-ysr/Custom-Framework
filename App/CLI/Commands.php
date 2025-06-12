@@ -7,6 +7,7 @@ use App\Foundation\Database\Connection;
 use App\Foundation\Http\HttpHeaders;
 use App\Foundation\Http\Route;
 use App\Foundation\System\Disk;
+use App\Support\Facades\Rx;
 
 $root = dirname(__DIR__, 2);
 
@@ -25,9 +26,9 @@ Command::register(
     'Show help message then exit.'
 );
 
-Command::register('s', function(){
+Command::register('s', function () {
     var_dump(Connection::getInstance());
-},'','',[],$migrationSetup);
+}, '', '', [], $migrationSetup);
 
 Command::register(
     'start',
@@ -73,6 +74,173 @@ Command::register(
     fn() => Migration::goToPrevMigrationsAndUnset(),
     'mr',
     'Rolling back the migrations'
+);
+
+
+Command::register(
+    'make:controller',
+    function () use ($root) {
+        $name = Command::parameter(2, 'Name of controller: ', '', 'string');
+        $isResource = Command::parameter(3, '', 'no') === '-r';
+
+        $fileName = $root . '/App/Http/Controllers/' . str_replace('.', DIRECTORY_SEPARATOR, $name) . '.php';
+        if (file_exists($fileName)) {
+            echo "[WARN] Controller already exist [$name]";
+            exit(1);
+        }
+
+        $controllerRessource = <<<PHP
+        <?php
+
+        namespace App\Http\Controllers;
+
+        use App\Foundation\Http\Request;
+
+        class $name extends Controller
+        {
+
+            /**
+             * Display a listing of the resource.
+             */
+            public function index()
+            {
+                //
+            }
+
+            /**
+             * Show the form for creating a new resource.
+             */
+            public function create()
+            {
+                //
+            }
+
+            /**
+             * Store a newly created resource in storage.
+             */
+            public function store(GTKRequest \$request)
+            {
+                //
+            }
+
+            /**
+             * Display the specified resource.
+             */
+            public function show(string \$id)
+            {
+                //
+            }
+
+            /**
+             * Show the form for editing the specified resource.
+             */
+            public function edit(string \$id)
+            {
+                //
+            }
+
+            /**
+             * Update the specified resource in storage.
+             */
+            public function update(Request \$request, string \$id)
+            {
+                //
+            }
+
+            /**
+             * Remove the specified resource from storage.
+             */
+            public function destroy(string \$id)
+            {
+                //
+            }
+        }
+
+        PHP;
+
+        $controller = <<<PHP
+        <?php
+
+        namespace App\Http\Controllers;
+
+        use App\Foundation\Http\Request;
+
+        class $name extends Controller
+        {
+            //
+        }
+
+        PHP;
+
+        file_put_contents($fileName, $isResource ? $controllerRessource : $controller);
+        echo '[INFO] Created controller [' . str_replace($root, '', $fileName) . ']' . PHP_EOL;
+    },
+    'mr',
+    'Rolling back the migrations'
+);
+
+
+Command::register(
+    'make:component',
+    function () use ($root) {
+        $name = Command::parameter(2, 'Name of component: ', '', 'string');
+        $fileName = $root . '/App/Components/' . str_replace('.', DIRECTORY_SEPARATOR, $name) . '.php';
+        if (file_exists($fileName)) {
+            echo "[WARN] Component already exist [$name]";
+            exit(1);
+        }
+        $componentFilename = $root . '/resources/views/components/' . str_replace('.', DIRECTORY_SEPARATOR, $name) . Rx::getExt();
+
+        $component = <<<PHP
+        <?php
+
+        namespace App\Reactive;
+
+        use App\Foundation\Reactive\Reactive;
+
+        class $name extends Reactive
+        {
+
+            public function increment()
+            {
+                return \$this->states['count']++;
+            }
+
+            public function view(): string
+            {
+                return 'components.$name';
+            }
+        }
+
+        PHP;
+
+        $componentView = <<<PHP
+        <div data-reactive data-reactive-name="{{ \$id }}" data-reactive-state='@json(\$currentStates)'>
+            <h1>Count: {{ \$count }}</h1>
+
+            <button data-action="increment">+1</button>
+        </div>
+
+        PHP;
+
+        $dirname = dirname($fileName);
+        if (!is_dir($dirname)) {
+            mkdir($dirname, 0755, true);
+        }
+
+        $dirname = dirname($componentFilename);
+        if (!is_dir($dirname)) {
+            mkdir($dirname, 0755, true);
+        }
+
+
+        file_put_contents($fileName, $component);
+        file_put_contents($componentFilename, $componentView);
+        echo '[INFO] Created component [' . str_replace($root, '', $fileName) . ']' . PHP_EOL;
+        echo '[INFO] Created component view [' . str_replace($root, '', $componentFilename) . ']' . PHP_EOL;
+    },
+    'mkc',
+    'Make a new Reactive Component'
 );
 
 

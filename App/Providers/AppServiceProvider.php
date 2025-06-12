@@ -22,7 +22,7 @@ class AppServiceProvider
         Route::post('/__reactive', function (Request $request) {
             $data = $request->json();
 
-            $componentName = strtok($data['__component_name'], '_') ?? null;
+            $componentName = strtok($data['__component_name'] ?? '', '_');
             $action = $data['__component_action'] ?? null;
             $states = $data['__component_states'] ?? [];
             $params = array_diff_key($data, [

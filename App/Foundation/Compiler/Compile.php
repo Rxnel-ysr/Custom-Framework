@@ -4,6 +4,7 @@ namespace App\Foundation\Compiler;
 
 require_once __DIR__ . '/Rx.php';
 
+use App\Support\Facades\DI;
 use Exception;
 use ReflectionFunction;
 
@@ -67,6 +68,11 @@ class Compile
         self::$cache_dir = $cache_dir;
     }
 
+    public static function getExt()
+    {
+        return self::$ext;
+    }
+
 
     public static function dispatch(string $name, mixed ...$args)
     {
@@ -75,7 +81,6 @@ class Compile
 
     public static function register(string $name, callable $func)
     {
-
         $reflection = new ReflectionFunction($func);
         if (!$type = $reflection->getReturnType()) {
             throw new Exception('Rx template callbacks must specify return type using \': returnType\'');
@@ -88,49 +93,75 @@ class Compile
         self::$user_callbacks[$name] = [$func, ! in_array($type, ['void', 'never'])];
     }
 
-    public static function compile($path, $data)
+    /**
+     * Compile view on given path
+     *
+     * @param string $path Path to file to be compiled
+     * @param array $data Data to be extracted inside compiled file
+     * @param bool $return Decide whether to return compiled as string or directly echo it
+     * @return string|void
+     */
+    public static function compile(string $path, array $_extractedData, bool $return = false)
     {
         $viewPath = self::$views_dir . DIRECTORY_SEPARATOR . $path . self::$ext;
         if (!file_exists($viewPath)) {
-            // die('Hi');
             throw new Exception('View not found [ ' . str_replace([self::$views_dir . DIRECTORY_SEPARATOR, self::$ext], ['', ''], $viewPath) . ' ], Are you sure its ends with ' . self::$ext . ' ?');
         }
 
-        extract($data);
+        $_currentFile = self::$cache_dir . DIRECTORY_SEPARATOR . md5($path);
 
-        $cachePath = self::$cache_dir . DIRECTORY_SEPARATOR . md5($path);
-
-        $cacheDir = dirname($cachePath);
+        // Create cache directory if needed, yeah
+        $cacheDir = dirname($_currentFile);
         if (!is_dir($cacheDir)) {
             mkdir($cacheDir, 0777, true);
         }
+        $_nonce = DI::get('nonce');
 
-        if (file_exists($cachePath) && filemtime($cachePath) >= filemtime($viewPath)) {
-            return require $cachePath;
-            // ob_start();
-            // require_once $cachePath;
-            // return ob_get_clean();
+        // Recompile if needed
+        if (!file_exists($_currentFile) || filemtime($_currentFile) < filemtime($viewPath)) {
+            $template = file_get_contents($viewPath);
+
+            $user_directive = [];
+            foreach (self::$user_directive as $name => $directive) {
+                $res = self::$user_callbacks[$name];
+                $hasReturn = $res[1];
+                $callback = $directive[1]
+                    ? 'App\\Foundation\\Compiler\\Compile::dispatch(\'' . $name . '\',$1)'
+                    : 'App\\Foundation\\Compiler\\Compile::dispatch(\'' . $name . '\')';
+                $user_directive[$directive[0]] = $hasReturn
+                    ? '<?= ' . $callback . ' ?>'
+                    : '<?php ' . $callback . ' ?>';
+            }
+
+            $compiled = preg_replace(
+                array_keys(array_merge(self::$directive, $user_directive)),
+                array_values(array_merge(self::$directive, $user_directive)),
+                $template
+            );
+
+            file_put_contents($_currentFile, $compiled);
         }
 
-        $template = file_get_contents($viewPath);
+        // Isolated scope with output control, well, cant be 100% but I'l treat it as feature hahaha...
+        $render = function () use ($_currentFile, $_extractedData, $_nonce) {
+            extract($_extractedData);
+            unset($_extractedData);
+            ob_start();
+            try {
+                require $_currentFile;
+                return ob_get_clean();
+            } catch (\Throwable $e) {
+                ob_end_clean();
+                throw $e;
+            }
+        };
 
-        $user_directive = [];
-        foreach (self::$user_directive as $name => $directive) {
-            $res = self::$user_callbacks[$name];
-            $hasReturn = $res[1];
-            $callback = $directive[1] ? 'App\\Foundation\\Compiler\\Compile::dispatch(\'' . $name . '\',$1)' : 'App\\Foundation\\Compiler\\Compile::dispatch(\'' . $name . '\')';
-            $user_directive[$directive[0]] = $hasReturn ? '<?= ' . $callback . ' ?>' : '<?php ' . $callback . ' ?>';
+        $output = $render();
+
+        if ($return) {
+            return $output;
         }
 
-        $combined = array_merge(self::$directive, $user_directive);
-
-        $compiled = preg_replace(array_keys($combined), array_values($combined), $template);
-
-        file_put_contents($cachePath, $compiled);
-
-        return require $cachePath;
-        // ob_start();
-        // require_once $cachePath;
-        // return ob_get_clean();
+        echo $output;
     }
 }

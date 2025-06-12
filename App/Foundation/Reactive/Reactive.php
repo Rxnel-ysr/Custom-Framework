@@ -5,6 +5,7 @@ namespace App\Foundation\Reactive;
 use App\Foundation\Compiler\Compile;
 use App\Foundation\Http\Request;
 use App\Foundation\Http\Route;
+use App\Support\Facades\DI;
 use App\Support\Facades\Rx;
 use Exception;
 
@@ -41,20 +42,28 @@ class Reactive
     public function render()
     {
         $reativejs = asset('js/reactive.js');
+        $nonce = DI::get('nonce');
 
         $injector = <<<HTML
-        <script>
+        <script id="reactive_loader" nonce="{$nonce}">
         (function() {
             window.addEventListener('load', () => {
-                const s = document.createElement('script');
-                s.src = "{$reativejs}";
-                s.type = "text/javascript";
-                s.onload = () => Reactive?.init?.();
-                s.onerror = () => alert('Failed to load reactive.js');
-                document.body.appendChild(s);
+                const script = document.createElement('script');
+                script.nonce = "{$nonce}";
+                script.type = "text/javascript";
+                script.src = "{$reativejs}";
                 
-                const self = document.currentScript;
-                self?.parentNode?.removeChild(self);
+                script.onload = () => {
+                    Reactive?.init?.();
+                    document.getElementById('reactive_loader')?.remove();
+                };
+                
+                script.onerror = () => {
+                    alert('Cannot loaded reactive.js')
+                    document.getElementById('reactive_loader')?.remove();
+                };
+                
+                document.body.appendChild(script);
             });
         })();
         </script>
@@ -67,6 +76,11 @@ class Reactive
         return $res;
     }
 
+    public function setView($name)
+    {
+        $this->view = str_replace('.', DIRECTORY_SEPARATOR, $name);
+    }
+
     public function view(): string
     {
         throw new Exception(static::class . ': Must define view for component');
@@ -75,7 +89,10 @@ class Reactive
     public function handle(string $_action, mixed ...$args)
     {
         if (!method_exists($this, $_action)) {
-            throw new BadMethodCallException("Method {$_action} not found");
+            return response(404)->json([
+                'component' => $this->id,
+                'message' => 'Method not found: ' . $_action,
+            ]);
         }
 
         $this->$_action(...$args);

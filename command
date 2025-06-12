@@ -20,15 +20,9 @@ require_once __DIR__ . '/App/Foundation/CLI/Command.php';
 require_once __DIR__ . '/App/Foundation/Helpers/Env.php';
 require_once __DIR__ . '/App/Foundation/Helpers/Utility.php';
 require_once __DIR__ . '/App/Foundation/Helpers/Helpers.php';
+require_once __DIR__ . '/App/Core/bootstrap.php';
 // require_once ROOT . 'test/memory.php';
 Env::load(__DIR__ . '/config/.env');
-
-ClassManager::set(__DIR__, false, false, [
-    'classmap' => __DIR__ . '/config/classes.php',
-    'cache_classmap' => __DIR__ . '/storage/cache/classes/classes.php',
-]);
-ClassManager::initAutoloader(true);
-Debugger::init(false, E_ALL & ~E_WARNING, __DIR__ . '/App/Core/error.php');
 
 safe(
     function () {
