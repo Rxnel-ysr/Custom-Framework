@@ -563,62 +563,64 @@ class ClassManager
             if (self::$debug) {
                 error_log('Auto-loader: Using method 7');
             }
-            eval("class $class{
-                private static \$static_data = [];
-                private \$instance_data = [];
-                private static \$static_methods = [];
-                private \$instance_methods = [];
+            // eval(<<<PHP
+            //     class $class{
+            //         private static \$static_data = [];
+            //         private \$instance_data = [];
+            //         private static \$static_methods = [];
+            //         private \$instance_methods = [];
 
-                public static function addStaticMethod(\$name,\$callback)
-                {
-                    self::\$static_methods[\$name] = \$callback;
-                }
-                public static function addInstanceMethod(\$name,\$callback)
-                {
-                    \$this->instance_methods[\$name] = \$callback;
-                }
-                public static function __callStatic(\$name, \$arguments)
-                {
-                    if(isset(self::\$static_methods[\$name])){
-                        return call_user_func(self::\$static_methods[\$name],...\$arguments);
+            //         public static function addStaticMethod(\$name,\$callback)
+            //         {
+            //             self::\$static_methods[\$name] = \$callback;
+            //         }
+            //         public static function addInstanceMethod(\$name,\$callback)
+            //         {
+            //             \$this->instance_methods[\$name] = \$callback;
+            //         }
+            //         public static function __callStatic(\$name, \$arguments)
+            //         {
+            //             if(isset(self::\$static_methods[\$name])){
+            //                 return call_user_func(self::\$static_methods[\$name],...\$arguments);
 
-                    } else if (strpos(\$name, 'get_') === 0) {
+            //             } else if (strpos(\$name, 'get_') === 0) {
 
-                        \$prop = substr(\$name, 4);
-                        return self::\$static_data[\$prop] ?? 'Static property \$prop not found. Even the class it self.';
+            //                 \$prop = substr(\$name, 4);
+            //                 return self::\$static_data[\$prop] ?? 'Static property \$prop not found. Even the class it self.';
 
-                    } elseif (strpos(\$name, 'set_') === 0) {
+            //             } elseif (strpos(\$name, 'set_') === 0) {
 
-                        \$prop = substr(\$name, 4);
-                        self::\$static_data[\$prop] = \$arguments[0];
+            //                 \$prop = substr(\$name, 4);
+            //                 self::\$static_data[\$prop] = \$arguments[0];
 
-                    } else {
-                        echo 'Function of \$name doesn\'t exist. Even the class it self.';
-                    }
+            //             } else {
+            //                 echo 'Function of \$name doesn\'t exist. Even the class it self.';
+            //             }
 
-                }
-                public function __call(\$name, \$arguments)
-                {
-                    if(isset(\$this->instance_methods[\$name])){
-                        return call_user_func(\$this->instance_methods[\$name],...\$arguments);
-                    }
+            //         }
+            //         public function __call(\$name, \$arguments)
+            //         {
+            //             if(isset(\$this->instance_methods[\$name])){
+            //                 return call_user_func(\$this->instance_methods[\$name],...\$arguments);
+            //             }
 
-                    echo 'Function of ' . \$name . ' doesn\'t exist.';
-                }
+            //             echo 'Function of ' . \$name . ' doesn\'t exist.';
+            //         }
 
-                public function __get(\$name) {
-                    return \$this->instance_data[\$name] ?? 'Property \$name doesn\'t exist. Even the class it self.';
-                }
+            //         public function __get(\$name) {
+            //             return \$this->instance_data[\$name] ?? 'Property \$name doesn\'t exist. Even the class it self.';
+            //         }
 
-                public function __set(\$name, \$value) {
-                    \$this->instance_data[\$name] = \$value;
-                }
+            //         public function __set(\$name, \$value) {
+            //             \$this->instance_data[\$name] = \$value;
+            //         }
 
-                public function __toString(){
-                    return 'This class is just temporary class created by method 7';
-                }
-            }");
-            return true;
+            //         public function __toString(){
+            //             return 'This class is just temporary class created by method 7';
+            //         }
+            //     }
+            //     PHP);
+            // return true;
         }
         if (self::$debug) {
             error_log('Auto-loader: Method 7 failed (skipped)');

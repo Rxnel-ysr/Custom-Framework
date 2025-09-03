@@ -26,29 +26,33 @@ require_once BASE_PATH . 'App/Foundation/Compiler/Compile.php';
 require_once BASE_PATH . 'App/Foundation/Helpers/Utility.php';
 require_once BASE_PATH . 'App/Foundation/Helpers/Helpers.php';
 
-// Load Configuration Files
-$cfg = [
-    'dependencies'    => require BASE_PATH . 'config/app.php',
-    'config'          => require BASE_PATH . 'config/config.php',
-    'database'        => require BASE_PATH . 'config/database.php',
-    'router'          => require BASE_PATH . 'config/router.php',
-    'router_path'     => require BASE_PATH . 'config/router_path.php',
-    'router_plugins'  => require BASE_PATH . 'config/router_plugins.php' ?? [],
-    'compiler'        => require BASE_PATH . 'config/compiler.php',
-    'auto-loader'     => require BASE_PATH . 'config/autoloader.php',
-];
 
+// Load Env And Autoloader first config first
+$cfg['auto-loader'] = require BASE_PATH . 'config/autoloader.php';
 
 // Init Class Manager
 ClassManager::set(BASE_PATH, $cfg['auto-loader']['debug'], true, [
     'classmap'      => $cfg['auto-loader']['classmap'],
     'cache_classmap' => $cfg['auto-loader']['cache'],
 ]);
+
 ClassManager::initAutoloader($cfg['auto-loader']['auto-resolve']);
 
+Env::load(BASE_PATH . 'config/.env');
+
+// Load Other Configuration Files
+$cfg = [
+    'dependencies'    => require BASE_PATH . 'config/app.php',
+    'config'          => require BASE_PATH . 'config/config.php',
+    'database'        => require BASE_PATH . 'config/database.php',
+    'router'          => require BASE_PATH . 'config/router.php',
+    'router_path'     => require BASE_PATH . 'config/router_path.php',
+    'router_plugins'  => require BASE_PATH . 'config/router_plugins.php',
+    'compiler'        => require BASE_PATH . 'config/compiler.php',
+    ...$cfg
+];
 
 // Load Environment
-Env::load(BASE_PATH . 'config/.env');
 
 // Init Debugger
 Debugger::init(
@@ -61,7 +65,9 @@ Debugger::init(
 
 if ($isWeb) {
     $nonce = base64_encode(random_bytes(16));
-    header("Content-Security-Policy: default-src 'self'; media-src 'self'; script-src 'self' 'nonce-$nonce'; style-src 'self' 'nonce-$nonce' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com;");
+    if ($_ENV['CSP'] === true) {
+        header("Content-Security-Policy: default-src 'self'; media-src 'self'; script-src 'self' 'nonce-$nonce'; style-src 'self' 'nonce-$nonce' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com;");
+    }
     DI::bind('nonce', fn() => $nonce);
     // Validate Routing
     $router = $cfg['router'];
@@ -88,7 +94,7 @@ $disk = new Disk(BASE_PATH . 'public');
 
 // Initialize App
 $app = (new App(root: BASE_PATH))
-->withRouting([
+    ->withRouting([
         'web'       => '/routes/web.php',
         'api'       => '/routes/api.php',
         'api_prefix' => $cfg['router']['api_prefix'],
@@ -99,7 +105,7 @@ $app = (new App(root: BASE_PATH))
         ...$cfg['config']
     ])
     ->withDependencies($cfg['dependencies']);
-
+    
 // Inject Instances
 InstanceManager::setInstance('app', $app);
 InstanceManager::setInstance('appDisk', $disk);

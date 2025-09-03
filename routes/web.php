@@ -22,8 +22,14 @@ Route::get('/', function () {
 })->name('home');
 
 Route::get('/route', function () {
-   return dd(Route::$name, get_declared_classes());
+   return dd(['route'=> Route::$name, 'route_list' => Route::routeList()], get_declared_classes());
    // die;
+});
+
+Route::get('/raw', function () {
+   // return dd(Route::$name, get_declared_classes());
+   // die;
+   return view('raw');
 });
 
 // Route::get('/testting', function () {
@@ -63,27 +69,39 @@ Route::get('/route', function () {
 //    }
 // });
 
-Route::get('/stream', function (Request $req) {
-   // $disk = InstanceManager::getInstance('appDisk');
-
-   $new = new Request();
-   return response()->json(['message' => spl_object_id($req) === spl_object_id(InstanceManager::getInstance('App\Foundation\Http\Request'))]);
+Route::get('/env', function () {
+   print_rpre($_ENV);
 });
 
-Route::get('/test', function (Request $req) {
+Route::get('/download', function (Request $req) {
+   // $disk = InstanceManager::getInstance('appDisk');
+
+   return response()->download('');
+});
+
+Route::get('/request', function (Request $req) {
+   // $disk = InstanceManager::getInstance('appDisk');
+
+   print_rpre($req->snapshot(), $_COOKIE);
+});
+
+Route::get('/test', function () {
    // echo '<pre>';
    // debug_print_backtrace();
    // echo '</pre>';
+   // echo 'entered';
    // die;
-   return view('test', ['message' => $req->query('message', 'No message')]);
+
+   return view('test');
 });
 
-Route::get('/test/{name:\w}', function ($name) {
+Route::get('/test/{name:.}', function ($name) {
    return "Your name is $name, only 1 char";
 });
 
-Route::get('/test/{name:\w*?}', function ($name) {
-   return "Your name is $name, many chars";
+Route::get('/test/{name:.*?}', function ($name) {
+   $len = mb_strlen($name);
+   return "Your name is $name, $len chars";
 });
 
 // Route::group(['prefix' => '/aya'], function () {
@@ -104,8 +122,8 @@ Route::get('/test/{name:\w*?}', function ($name) {
 // });
 
 Route::get('/up', function (Request $req) {
-   // echo (hrtime(true) - START) / 1.0e6 . 'ms<br>';
-   return response()->json(['server' => $_SERVER, 'ok' => InstanceManager::getInstance('ok')]);
+   $time=  (hrtime(true) - START) / 1.0e6 . 'ms';
+   return response()->json(['server' => $_SERVER, 'serve-time' => $time], true);
 });
 
 // // Route::get('/test', [test::class, 'test']);

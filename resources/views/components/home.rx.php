@@ -1,4 +1,5 @@
-<div data-reactive data-reactive-name="{{ $id }}" data-reactive-state='@json($currentStates)'>
+<div rx:reactive rx:reactive-name="{{ $id }}" rx:state='@json($currentStates)'>
     <h1>Home</h1>
-    <button data-action="switch">Go About</button>
+    <button rx:action="switch">Go About</button>
+    @reactive('CounterComponent', ['count' => 1])
 </div>

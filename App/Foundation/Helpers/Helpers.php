@@ -787,6 +787,13 @@ function translateRegex(string $regex): string
 }
 
 
+function print_rpre(...$something)
+{
+    echo '<pre>';
+    print_r($something);
+    echo '</pre>';
+}
+
 
 function safe_bulk_match(array $patterns, string $subject, float $timeout = 0.05): array
 {
@@ -849,4 +856,49 @@ function getBoolEnv(string $name, $default = false)
 function getArrEnv(string $name, $separator = ',')
 {
     return array_filter(array_map('trim', explode($separator, env($name, ''))), fn($v) => $v !== '');
+}
+
+/**
+ * Retrieves an environment variable with type validation
+ *
+ * @param string $name Name of the environment variable
+ * @param string $type Expected type ('string', 'int', 'float', 'bool', 'array')
+ * @param mixed $default Default value if variable doesn't exist
+ * @return mixed The filtered environment variable or default value
+ * @throws InvalidArgumentException If type validation fails
+ */
+function retrieveEnv(string $name, string $type = 'string', $default = null)
+{
+    $value = env($name, $default);
+
+    // If it's the default value, return as-is
+    if ($value === $default) {
+        return $value;
+    }
+
+    switch (strtolower($type)) {
+        case 'string':
+            return (string) $value;
+        case 'int':
+            $filtered = filter_var($value, FILTER_VALIDATE_INT);
+            if ($filtered === false) {
+                throw new InvalidArgumentException("Environment variable {$name} is not a valid integer");
+            }
+            return $filtered;
+        case 'float':
+            $filtered = filter_var($value, FILTER_VALIDATE_FLOAT);
+            if ($filtered === false) {
+                throw new InvalidArgumentException("Environment variable {$name} is not a valid float");
+            }
+            return $filtered;
+        case 'bool':
+            return filter_var($value, FILTER_VALIDATE_BOOLEAN);
+        case 'array':
+            if (!is_array($value)) {
+                return explode(',', $value);
+            }
+            return $value;
+        default:
+            throw new InvalidArgumentException("Unsupported type {$type} for environment variable {$name}");
+    }
 }

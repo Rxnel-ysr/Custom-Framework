@@ -175,6 +175,7 @@ class Response
             }
         }
 
+
         $length = $end - $start + 1;
         $bytesPerSecond = max(1, $length / ($minutes * 60));
 

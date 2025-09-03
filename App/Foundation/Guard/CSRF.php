@@ -53,10 +53,10 @@ class CSRF
             'expires' => time() + $unixTime
         ];
 
-        if (!isset($_COOKIE['CSRF-TOKEN-' . $form_key])) {
-            // self::setSecureCookie('CSRF-TOKEN-' . $form_key, $token, $unixTime);
-            // error_log('Created cookie: CSRF-TOKEN-' . $form_key);
-        }
+        // if (!isset($_COOKIE['CSRF-TOKEN-' . $form_key])) {
+        //     // self::setSecureCookie('CSRF-TOKEN-' . $form_key, $token, $unixTime);
+        //     // error_log('Created cookie: CSRF-TOKEN-' . $form_key);
+        // }
 
         return ['key' => $form_key, 'token' => $token];
     }

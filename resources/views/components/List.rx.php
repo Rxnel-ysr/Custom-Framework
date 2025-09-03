@@ -1,18 +1,11 @@
-<div data-reactive data-reactive-name="{{ $id }}" data-reactive-state='@json($currentStates)'>
+<div rx:reactive rx:reactive-name="{{ $id }}" rx:state='@json($currentStates)'>
     <ul>
         @foreach($lists as $name)
         <li>{{ $name }}</li>
         @endforeach
     </ul>
 
-    <input type="text" data-oninput="update" data-delay="1000" data-attribute="temp" name="temp" value="{{$temp}}" />
+    <input type="text" rx:oninput="update" rx:delay="5" rx:attribute="temp" name="temp" value="{{$temp}}" />
 
-    <button data-action="add" data-params='{"temp":"<?= $temp ?>"}' id="btn">Add</button>
-
-    <pre>
-    @php
-        $allVariables = get_defined_vars();
-        var_export($allVariables);
-    @endphp
-    </pre>
+    <button rx:action="add" rx:params='@jparam($temp)' id="btn">Add</button>
 </div>

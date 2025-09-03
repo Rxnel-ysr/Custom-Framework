@@ -3,7 +3,6 @@ class Reactive {
 
     static init() {
         console.log('reactive.js initialized');
-        /* this.components.clear(); */
         document.querySelectorAll('[rx\\:reactive]').forEach(el => {
             const component = new ReactiveComponent(el);
             this.components.set(component.id, component);
@@ -23,14 +22,13 @@ class Reactive {
                 headers: {
                     'Content-Type': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
-                    'Accept': 'application/json',
-                    'X-Component-Request': 'true'
+                    'Accept': 'application/json'
                 },
                 body: JSON.stringify({
                     __component_name: componentId,
                     __component_action: action,
                     __component_states: component.getStates(),
-                    params: data
+                    ...data
                 })
             });
 
@@ -98,7 +96,7 @@ class ReactiveComponent {
         };
 
         getElementsToBind('[rx\\:action]').forEach(btn => {
-            console.log('Action:', btn);
+            console.log('Action: ', btn);
 
             btn._hasReactiveBinding = btn._hasReactiveBinding || false;
             if (!btn._hasReactiveBinding) {
@@ -110,7 +108,7 @@ class ReactiveComponent {
                         : {};
                     Reactive.sendAction(this.id, action, params);
                 });
-                /*btn._hasReactiveBinding = true;*/
+                btn._hasReactiveBinding = true;
             }
         });
 
@@ -329,8 +327,6 @@ class ReactiveComponent {
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, 'text/html');
 
-        doc.getElementById('reactive_loader')?.remove();
-
         const newInner = doc.body.firstElementChild;
 
         if (newInner) {
@@ -338,7 +334,6 @@ class ReactiveComponent {
         } else {
             this.el.innerHTML = html;
         }
-        /*Reactive.init();*/
 
         const scrollTop = this.el.scrollTop;
         this.el.scrollTop = scrollTop;

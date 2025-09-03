@@ -2,6 +2,7 @@
 
 namespace App\Foundation\Support;
 
+use App\Support\Facades\DI;
 use DateTime;
 use DateTimeInterface;
 use Traversable;
@@ -498,89 +499,91 @@ class Type
     public static function dd(...$args): void
     {
         // Output styling and scripting
-        echo '<!DOCTYPE html>
-        <html>
-        <head>
-            <title>Debug Dump</title>
-            <meta charset="UTF-8">
-            <style>
-                body { 
-                    background: #111; 
-                    color: #f0f0f0; 
-                    font-family: "Fira Code", "Consolas", monospace; 
-                    padding: 20px; 
-                    line-height: 1.5;
-                }
-                .dump-container { 
-                    background: #1e1e1e; 
-                    padding: 15px; 
-                    border-radius: 5px; 
-                    margin: 15px 0; 
-                    box-shadow: 0 2px 10px rgba(0,0,0,0.5);
-                }
-                .dump-header { 
-                    color: #ff6b6b; 
-                    font-weight: bold; 
-                    margin-bottom: 8px; 
-                    cursor: pointer; 
-                    padding: 8px 12px;
-                    border-radius: 4px;
-                    background: #252525;
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    user-select: none;
-                    transition: background 0.2s;
-                }
-                .dump-header:hover {
-                    background: #2e2e2e;
-                }
-                .dump-content { 
-                    white-space: pre-wrap; 
-                    font-size: 14px; 
-                    display: none; 
-                    padding: 12px; 
-                    border-left: 3px solid #ff6b6b; 
-                    background: #252525;
-                    margin-top: 8px;
-                    border-radius: 0 0 4px 4px;
-                    overflow-x: auto;
-                }
-                .dump-type {
-                    color: #4dabf7;
-                    font-size: 0.85em;
-                    background: rgba(77, 171, 247, 0.1);
-                    padding: 2px 6px;
-                    border-radius: 3px;
-                    margin-left: 8px;
-                }
-                .dump-size {
-                    color: #94d82d;
-                    font-size: 0.85em;
-                }
-                .file-info {
-                    color: #adb5bd;
-                    font-size: 0.85em;
-                    margin: 20px 0;
-                    padding: 10px;
-                    background: #1e1e1e;
-                    border-radius: 4px;
-                }
-                .debug-title {
-                    color: #ff922b;
-                    margin-bottom: 20px;
-                    font-size: 1.5em;
-                }
-                /* Syntax highlighting - High contrast color scheme */
-                .string    { color: #4EC9B0; }  /* Teal - stands out clearly */
-                .number    { color: #569CD6; }  /* Soft blue - easy on eyes */
-                .boolean   { color: #FF7B72; }  /* Coral red - pops for true/false */
-                .null      { color: #C586C0; }  /* Muted purple - distinct */
-                .key       { color: #9CDCFE; }  /* Light blue - good contrast */
-                .index     { color: #858585; }  /* Medium gray - subtle for indexes */
-                .object    { color: #FFA657; }  /* Vibrant orange - clear for objects */            </style>
-        </head>
-        <body>';
+        echo <<<HTML
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Debug Dump</title>
+                <meta charset="UTF-8">
+                <style>
+                    body { 
+                        background: #111; 
+                        color: #f0f0f0; 
+                        font-family: "Fira Code", "Consolas", monospace; 
+                        padding: 20px; 
+                        line-height: 1.5;
+                    }
+                    .dump-container { 
+                        background: #1e1e1e; 
+                        padding: 15px; 
+                        border-radius: 5px; 
+                        margin: 15px 0; 
+                        box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+                    }
+                    .dump-header { 
+                        color: #ff6b6b; 
+                        font-weight: bold; 
+                        margin-bottom: 8px; 
+                        cursor: pointer; 
+                        padding: 8px 12px;
+                        border-radius: 4px;
+                        background: #252525;
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        user-select: none;
+                        transition: background 0.2s;
+                    }
+                    .dump-header:hover {
+                        background: #2e2e2e;
+                    }
+                    .dump-content { 
+                        white-space: pre-wrap; 
+                        font-size: 14px; 
+                        display: none; 
+                        padding: 12px; 
+                        border-left: 3px solid #ff6b6b; 
+                        background: #252525;
+                        margin-top: 8px;
+                        border-radius: 0 0 4px 4px;
+                        overflow-x: auto;
+                    }
+                    .dump-type {
+                        color: #4dabf7;
+                        font-size: 0.85em;
+                        background: rgba(77, 171, 247, 0.1);
+                        padding: 2px 6px;
+                        border-radius: 3px;
+                        margin-left: 8px;
+                    }
+                    .dump-size {
+                        color: #94d82d;
+                        font-size: 0.85em;
+                    }
+                    .file-info {
+                        color: #adb5bd;
+                        font-size: 0.85em;
+                        margin: 20px 0;
+                        padding: 10px;
+                        background: #1e1e1e;
+                        border-radius: 4px;
+                    }
+                    .debug-title {
+                        color: #ff922b;
+                        margin-bottom: 20px;
+                        font-size: 1.5em;
+                    }
+                    /* Syntax highlighting - High contrast color scheme */
+                    .string    { color: #4EC9B0; }  /* Teal - stands out clearly */
+                    .number    { color: #569CD6; }  /* Soft blue - easy on eyes */
+                    .boolean   { color: #FF7B72; }  /* Coral red - pops for true/false */
+                    .null      { color: #C586C0; }  /* Muted purple - distinct */
+                    .key       { color: #9CDCFE; }  /* Light blue - good contrast */
+                    .index     { color: #858585; }  /* Medium gray - subtle for indexes */
+                    .object    { color: #FFA657; }  /* Vibrant orange - clear for objects */            </style>
+            </head>
+            <body>
+            HTML;
 
         // echo "<div class='debug-title'>Debug Dump</div>";
 
@@ -631,7 +634,8 @@ class Type
 
             echo '</pre></div></div>';
         }
-        echo "<script>
+        echo <<<HTML
+        <script>
             function toggleDump(id) {
                 const el = document.getElementById(id);
                 el.style.display = (el.style.display === 'none' || el.style.display === '') ? 'block' : 'none';
@@ -672,12 +676,14 @@ class Type
             
             // Highlight after page loads
             window.addEventListener('DOMContentLoaded', highlightSyntax);
-        </script>";
+        </script>
+        HTML;
 
 
         echo '</body></html>';
         exit;
     }
+
     /**
      * Dump - Advanced debugging function with type-aware output
      * 

@@ -387,7 +387,7 @@ trait Strings
      * @param  string  $value
      * @return bool
      */
-    public static function isMatch(string $pattern, string $value): bool
+    public static function isMatch(string|iterable $pattern, string $value): bool
     {
         $value = (string) $value;
 

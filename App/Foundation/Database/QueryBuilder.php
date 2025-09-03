@@ -362,7 +362,7 @@ class QueryBuilder extends Connection
             $this->stmt->execute($this->bindings);
             $this->resetQuery();
 
-            $main_body = $this->stmt->fetchAll(\PDO::FETCH_OBJ) ?: [];
+            return $main_body = $this->stmt->fetchAll(\PDO::FETCH_ASSOC) ?: [];
 
             if (empty($main_body)) return $main_body;
 

@@ -34,35 +34,50 @@ class Reactive
 
     public function __construct(array $initialState = [])
     {
-        $this->id = static::class . '_' . spl_object_id($this);
+        $this->id = static::class . '_' . uniqid('', true);
         $this->view = str_replace('.', DIRECTORY_SEPARATOR, $this->view());
         $this->states = $initialState;
     }
 
-    public function render()
+    public function render(bool $reactiveLoader = true)
     {
-        $reativejs = asset('js/reactive.js');
-        $nonce = DI::get('nonce');
+        $reactivejs = asset('js/reactive.js');
+        $nonce = $_ENV['CSP'] === true ? DI::get('nonce') : '';
 
         $injector = <<<HTML
         <script id="reactive_loader" nonce="{$nonce}">
         (function() {
-            window.addEventListener('load', () => {
+            const existingLoader = document.getElementById('reactive_loader');
+            if (existingLoader) existingLoader.remove();
+
+            if (typeof Reactive !== 'undefined') {
+                Reactive?.init?.();
+                return;
+            }
+
+            window.addEventListener('DOMContentLoaded', () => {
+                if (typeof Reactive !== 'undefined') {
+                    Reactive?.init?.();
+                    document.getElementById('reactive_loader')?.remove();
+                    return;
+                }
+
+                if (document.getElementById('reactive_js')) {
+                    return;
+                }
+
                 const script = document.createElement('script');
+                script.id = 'reactive_js';
                 script.nonce = "{$nonce}";
-                script.type = "text/javascript";
-                script.src = "{$reativejs}";
-                
+                script.src = "{$reactivejs}";
                 script.onload = () => {
                     Reactive?.init?.();
                     document.getElementById('reactive_loader')?.remove();
                 };
-                
                 script.onerror = () => {
-                    alert('Cannot loaded reactive.js')
+                    console.error('Failed to load reactive.js');
                     document.getElementById('reactive_loader')?.remove();
                 };
-                
                 document.body.appendChild(script);
             });
         })();
@@ -71,9 +86,9 @@ class Reactive
 
         ob_start();
         Compile::compile($this->view, ['id' => $this->id, 'currentStates' => $this->states, ...$this->states]);
-        $res = ob_get_clean() . (ReactiveHandler::isInitialized() ? '' : $injector);
-        ReactiveHandler::init();
-        return $res;
+        $content = ob_get_clean();
+
+        return $content . ($reactiveLoader ? $injector : '');
     }
 
     public function setView($name)
@@ -89,20 +104,20 @@ class Reactive
     public function handle(string $_action, mixed ...$args)
     {
         if (!method_exists($this, $_action)) {
-            return response(404)->json([
+            return [
+                'found' => false,
                 'component' => $this->id,
                 'message' => 'Method not found: ' . $_action,
-            ]);
+            ];
         }
 
         $this->$_action(...$args);
 
-        // return response()->json($this->states);
-
-        return response()->json([
+        return [
+            'found' => true,
             'id' => $this->id,
-            'html' => $this->render(),
-            'state' => $this->states
-        ]);
+            'html' => $this->render(false),
+            'state' => $this->states,
+        ];
     }
 }

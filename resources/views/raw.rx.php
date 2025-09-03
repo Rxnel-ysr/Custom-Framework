@@ -11,6 +11,12 @@
     <div>
         <h1>testing validations</h1>
         <form action="/form-endpoint" method="POST">
+            @if(env('APP_DEBUG'))
+            
+            @else
+
+            @endif
+            
             @csrf
             @method('')
             <label for="name">Name:</label>

@@ -79,7 +79,7 @@ class App
         Env::load($this->configs['env']);
         load([$this->root . '/App/Http/Controllers']);
 
-        $requestUri = $request->url();
+        $requestUri = $request->uri();
         $rateLimiterConfig = config($this->configs['rate_limiter']);
         $apiPrefix = '/' . trim($this->router['api_prefix'], '/') . '/';
 

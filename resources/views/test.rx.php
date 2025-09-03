@@ -6,8 +6,8 @@ http_response_code(201);
 $data = ['yusron', 'ronel', 'rexarion'];
 
 @endphp
-<h1>{{ $message }}</h1>
-@say($message)
+<h1>{{ $message ?? '' }}</h1>
+@say('Alok')
 
 <ul>
     @foreach($data as $i)

@@ -452,12 +452,14 @@ class Route implements RouterInterface
 
     public static function debugRoutes()
     {
-        echo "Registered Routes:\n";
+        $list = [];
+
         foreach (self::$routeList as $method => $routes) {
-            echo "$method:\n";
             foreach ($routes as $route) {
-                echo "  $route\n";
+                $list[$method][] = $route;
             }
         }
+
+        return $list;
     }
 }

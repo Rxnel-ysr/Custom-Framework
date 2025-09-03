@@ -5,4 +5,5 @@ return array (
   'App\\Foundation\\System\\Disk' => '/App/Foundation/System/Disk.php',
   'App\\Reactive\\CounterTest' => 'App/Components/CounterTest.php',
   'App\\Reactive\\Lists' => 'App/Components/List.php',
+  'Tokenizer' => 'App/Foundation/Compiler/Tokenizer.php',
 );

@@ -4,24 +4,70 @@ namespace App\Foundation\Helpers;
 
 class Env
 {
-    /**
-     * Loads environment variables from a given file and sets them in the system environment.
-     *
-     * @param string $path The path to the environment file to load.
-     * 
-     * @return void
-     */
-    public static function load($path)
+    public static function load(string $path): void
     {
-        if (!file_exists($path)) return;
+        if (!is_readable($path)) {
+            return;
+        }
 
         $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-        foreach ($lines as $line) {
-            if (strpos(trim($line), '#') === 0) continue;
-            list($key, $value) = explode('=', $line, 2);
-            $value = trim($value, '"\'');
-            putenv("$key=$value");
-            $_ENV[$key] = $value;
+        if ($lines === false) {
+            return;
         }
+
+        foreach ($lines as $line) {
+            $line = trim($line);
+            if ($line === '' || $line[0] === '#') {
+                continue;
+            }
+
+            [$key, $value] = self::parseLine($line);
+            self::setEnvironment($key, $value);
+        }
+    }
+
+    protected static function stripComment(string $line): string
+    {
+        return trim(strtok($line, '#'));
+    }
+
+    protected static function parseLine(string $line): array
+    {
+        $parts = explode('=', self::stripComment($line), 2);
+        if (count($parts) !== 2) {
+            return [null, null];
+        }
+
+        $key = trim($parts[0]);
+        $value = self::parseValue(trim($parts[1]));
+
+        return [$key, $value];
+    }
+
+    protected static function parseValue(string $value)
+    {
+        if (preg_match('/^([\'"])(.*)\1$/', $value, $matches)) {
+            $value = $matches[2];
+        }
+
+        return match (strtolower($value)) {
+            'true' => true,
+            'false' => false,
+            'null' => null,
+            default => is_numeric($value) ? (strpos($value, '.') !== false ? (float)$value : (int)$value) : $value,
+        };
+    }
+
+    protected static function setEnvironment(?string $key, $value): void
+    {
+        if (is_null($key)) {
+            return;
+        }
+        $stringValue = is_bool($value) ? ($value ? 'true' : 'false')
+            : (is_null($value) ? 'null'
+                : (string)$value);
+
+        putenv("$key=$stringValue");
+        $_ENV[$key] = $value;
     }
 }

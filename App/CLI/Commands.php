@@ -3,10 +3,14 @@
 use App\Foundation\CLI\Command;
 use App\Foundation\Database\Migration;
 use App\EXPE\Foundation\Manager\ClassManager;
+use App\Foundation\Compiler\Compile;
 use App\Foundation\Database\Connection;
+use App\Foundation\Database\QueryBuilder;
 use App\Foundation\Http\HttpHeaders;
 use App\Foundation\Http\Route;
 use App\Foundation\System\Disk;
+use App\Support\Facades\DB;
+use App\Support\Facades\DI;
 use App\Support\Facades\Rx;
 
 $root = dirname(__DIR__, 2);
@@ -215,10 +219,10 @@ Command::register(
         PHP;
 
         $componentView = <<<PHP
-        <div data-reactive data-reactive-name="{{ \$id }}" data-reactive-state='@json(\$currentStates)'>
+        <div rx:reactive rx:reactive-name="{{ \$id }}" rx:state='@json(\$currentStates)'>
             <h1>Count: {{ \$count }}</h1>
 
-            <button data-action="increment">+1</button>
+            <button rx:action="increment">+1</button>
         </div>
 
         PHP;
@@ -283,11 +287,63 @@ Command::register(
 );
 
 Command::register(
-    'test',
-    function () {
-        $header = new HttpHeaders();
-        $res = $header->contentType('application/json')->contentLength(40)->contentDescription('This is just test')->buildToArray();
-        var_dump($res);
+    '⁠',
+    function () use ($root) {
+// print_r(Compile::ready());
+// throw new Exception('hi');
+
+        DI::bind('偀', function(){
+            return '‮HAHAHAHAAH';
+        });
+
+
+        /**
+         *  A ‮ class that ‮ Flipped 
+         */
+        class ‮
+        {
+            public $name;
+            public function __construct($name)
+            {
+                $this->name = $name;
+            }
+
+            public function sayHello()
+            {
+                echo 'Hi, my name is ' . $this->name;
+            }
+        }
+
+        /**
+         * Great, you found ‮ghost‬ haha
+         * [U+202C] [U+202E]‮ u202e
+         */
+        class ⁠
+        {
+            public $⁠;
+            public function __construct($⁠)
+            {
+                $this->⁠ = $⁠;
+            }
+
+            public function ​()
+            {
+                echo 'Hi, my name is ' . $this->⁠;
+            }
+        }
+
+        // echo DI::get('偀');
+        
+        // echo json_encode(DB::table('posts')->get(null,true));
+        $qb = new QueryBuilder();
+        $qb->table('posts');
+        // count($qb->get(true));
+        var_dump($qb->get());
+
+
+        $​ = new ⁠('Ronel');
+        $​->​();
+
     },
     't',
     'Testing field of a command'

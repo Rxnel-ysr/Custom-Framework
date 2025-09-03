@@ -88,17 +88,18 @@ class Debugger
             ob_end_clean();
         }
 
+        
         $message = "\n[ERROR] " . get_class($e) . ' | Code: ' . $e->getCode()
-            . "\nMessage: " . $e->getMessage()
-            . "\nFile: " . $e->getFile() . '(' . $e->getLine() . ')'
+        . "\nMessage: " . $e->getMessage()
+        . "\nFile: " . $e->getFile() . '(' . $e->getLine() . ')'
             . "\nTrace:\n" . $e->getTraceAsString() . "\n";
 
         if ($e->getPrevious() !== null) {
             $prev = $e->getPrevious();
             $message .= "\n\nPrevious Trigger:\n" . get_class($prev) . ' | Code: ' . $prev->getCode()
-                . "\nMessage: " . $prev->getMessage()
-                . "\nFile: " . $prev->getFile() . ' (Line: ' . $prev->getLine() . ')'
-                . "\nTrace:\n" . $prev->getTraceAsString();
+            . "\nMessage: " . $prev->getMessage()
+            . "\nFile: " . $prev->getFile() . ' (Line: ' . $prev->getLine() . ')'
+            . "\nTrace:\n" . $prev->getTraceAsString();
         }
 
         $dump_at_terminal ? print_r($message) && print("\n") : error_log($message);
