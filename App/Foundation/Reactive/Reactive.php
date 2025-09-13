@@ -42,7 +42,7 @@ class Reactive
     public function render(bool $reactiveLoader = true)
     {
         $reactivejs = asset('js/reactive.js');
-        $nonce = $_ENV['CSP'] === true ? DI::get('nonce') : '';
+        $nonce = ($_ENV['CSP'] ?? false) === true ? DI::get('nonce') : '';
 
         $injector = <<<HTML
         <script id="reactive_loader" nonce="{$nonce}">

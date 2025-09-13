@@ -4,47 +4,46 @@ declare(strict_types=1);
 
 namespace App\Foundation\CLI;
 
-use App\EXPE\Foundation\Manager\ClassManager;
-
-// require_once './App/Core/definitions.php';
-// require_once FOUNDATION . 'Manager/ClassManager_EXPE.php';
-// require_once FOUNDATION . 'Helpers/Helpers.php';
-// require_once FOUNDATION . 'Helpers/Utility.php';
-// require_once FOUNDATION . 'Debug/Debug.php';
+use App\Foundation\Traits\Macroable;
+use Throwable;
 
 class Command
 {
+    use Macroable;
+
+    protected static Argv $argv;
     private static array $command = [];
     private static array $aliases = [];
-    // private static array $last_error = [];
 
-    /**
-     * Register a new command.
-     *
-     * @param string $trigger The command trigger (alias).
-     * @param string|callable $command The command to execute, either as a string (code) or callable.
-     * @param array $params Parameters for the command.
-     * @param array $dependencies Dependencies for the command.
-     * @param string $help_message Help message for the command.
-     * @param array $export_var Variables to export for the command.
-     * @return void
-     */
-    public static function register(string $trigger, string|callable $command, string $alias = '', string $help_message = '', array $params = [], array $dependencies = [])
+    public static function register(string $trigger, string|callable $command): CommandBuilder
     {
-        self::$command[$trigger][] = [
-            'dependencies' => $dependencies,
-            'command' => $command,
-            'params' => $params,
-            'help' => $help_message,
+        $entry = [
+            'dependencies' => [],
+            'command'      => $command,
+            'params'       => [],
+            'help'         => '',
         ];
 
-        if (!empty($alias)) {
-            $alias = trim($alias);
-            $order = count(self::$command[$trigger]) - 1;
-            $prefix = strlen($alias) > 1 ? '--' : '-';
-            self::$aliases[$prefix . $alias] = self::$command[$trigger][$order];
-        }
+        self::$command[$trigger][] = $entry;
+        $order = count(self::$command[$trigger]) - 1;
+
+        return new CommandBuilder($trigger, $order);
     }
+
+    public static function update(string $trigger, int $order, array $updates): void
+    {
+        self::$command[$trigger][$order] = array_merge(
+            self::$command[$trigger][$order],
+            $updates
+        );
+    }
+
+    public static function addAlias(string $alias, string $trigger, int $order): void
+    {
+        $prefix = strlen($alias) > 1 ? '--' : '-';
+        self::$aliases[$prefix . $alias] = &self::$command[$trigger][$order];
+    }
+
 
     /**
      * Execute a registered command.
@@ -52,44 +51,75 @@ class Command
      * @param string $trigger The command trigger to execute.
      * @return mixed The result of the command execution.
      */
-    public static function execute(string $trigger)
+    public static function execute(?string $trigger)
     {
-        $command = self::$aliases[$trigger] ?? self::$command[$trigger][0] ?? self::$aliases['-h'];
-        // var_dump($command);
-        // die;
-
-        foreach ($command['dependencies'] as $alias => $dependency) {
-            if (is_string($dependency) && strpos($dependency, '.php') === false) {
-                require_once ClassManager::getClassFile($dependency);
-
-                if (!is_numeric($alias)) {
-                    class_alias($dependency, $alias);
-                }
-            } elseif (is_callable($dependency)) {
-                call_user_func($dependency);
-            } else {
-                require_once $dependency;
+        try {
+            if (is_null($trigger)) {
+                return self::showHelp();
             }
-        }
+            $command = self::$aliases[$trigger] ?? self::$command[$trigger][0] ?? null;
+            if (is_null($command)) {
+                echo "Command not found: {$trigger}\n\nAvailable commands:\n";
+                return self::showHelp(false);
+            }
 
-        if (is_callable($command['command'])) {
-            // var_dump($command);
-            return callFuncWithParams($command['command'], $command['params'],false, true);
-        }
+            foreach ($command['dependencies'] as $alias => $dependency) {
+                if (is_string($dependency) && strpos($dependency, '.php') === false) {
+                    if (!is_numeric($alias)) {
+                        class_alias($dependency, $alias);
+                    }
+                } elseif (is_array($dependency)) {
+                    $instance = $dependency[0];
+                    $instance->$dependency[1];
+                } else if (is_callable($dependency)) {
+                    call_user_func($dependency);
+                } else {
+                    require_once $dependency;
+                }
+            }
 
-        if (is_string($command['command'])) {
-            return eval($command['command']);
+            // if (is_callable($command['command'])) {
+            //     $params = [];
+            //     foreach ($command['params'] as $no => $param) {
+            //         $params[$param] = self::parameter($no + 2);
+            //     }
+
+            //     $bag = new ParamBag($params);
+            //     $callable = $command['command']->bindTo($bag, ParamBag::class);
+
+            //     $callable();
+            // }
+            if (is_callable($command['command'])) {
+                $params = [];
+                foreach ($command['params'] as $param) {
+                    $params[$param] = self::$argv->option($param)
+                        ?? self::$argv->getNextPositional();
+                }
+
+                $bag = new ParamBag($params);
+                $callable = $command['command']->bindTo($bag, ParamBag::class);
+                $callable();
+            } elseif (is_string($command['command'])) {
+                shell_exec($command['command']);
+            }
+
+            return 0;
+        } catch (Throwable $e) {
+            echo "Error running command: {$e->getMessage()}";
+            return 1;
         }
     }
+
 
     /**
      * Standby and execute a default or help command.
      *
-     * @return void
+     * @return mixed
      */
-    public static function standBy()
+    public static function standBy(Argv $argv)
     {
-        self::execute(self::parameter(1, '', 'help'));
+        self::$argv = $argv;
+        return self::execute($argv->shiftPositionals());
     }
 
     /**
@@ -97,13 +127,15 @@ class Command
      *
      * @return void
      */
-    public static function showHelp()
+    public static function showHelp(bool $withIntro = true)
     {
-        echo "Built-in command handler for this custom framework\n\nCommands:\n";
+        if ($withIntro) {
+            echo "Built-in command handler for this custom framework\n\nCommands:\n";
+        }
 
         if (empty(self::$command) && empty(self::$aliases)) {
             echo "No commands registered yet.\n";
-            exit;
+            return 0;
         }
 
         // Get max width for formatting
@@ -142,7 +174,7 @@ class Command
             }
         }
 
-        exit;
+        return 0;
     }
 
     /**
@@ -154,11 +186,11 @@ class Command
      * @param string|null $type The expected type of the parameter (bool, int, float, string, array, json).
      * @return mixed The value of the CLI parameter, converted to the expected type, or the default value.
      */
-    public static function parameter(int $n, string $prompt, mixed $default = '', ?string $type = null): mixed
+    public static function parameter(int $n, ?string $prompt = null, mixed $default = '', ?string $type = null): mixed
     {
         global $argv;
 
-        $value = $argv[$n] ?? (isset($default) && !empty($default) ? $default : trim(readline($prompt)));
+        $value = $argv[$n] ?? (isset($default) && !empty($default) ? $default : (!empty($prompt) ? trim(readline($prompt)) : null));
 
         // Type filtering
         return match ($type) {
@@ -170,17 +202,63 @@ class Command
             default  => $value, // Default as string
         };
     }
+}
 
-    // public static function setLastError(string $command_name, array $error)
-    // {
-    //     self::$last_error = [
-    //         'command_name' => $command_name,
-    //         'details' => $error
-    //     ];
-    // }
+class ParamBag
+{
+    private array $params = [];
+    public function __construct(array $params)
+    {
+        $this->params = $params;
+    }
+    public function __get(string $key)
+    {
+        return $this->params[$key] ?? null;
+    }
+    public function __set(string $key, $val)
+    {
+        $this->params[$key] = $val;
+    }
+}
 
-    // public static function getLastError()
-    // {
-    //     return self::$last_error;
-    // }
+/**
+ * Fluent builder for command configuration.
+ */
+class CommandBuilder
+{
+    private string $trigger;
+    private int $order;
+
+    public function __construct(string $trigger, int $order)
+    {
+        $this->trigger = $trigger;
+        $this->order   = $order;
+    }
+
+    public function alias(string $alias): self
+    {
+        Command::addAlias($alias, $this->trigger, $this->order);
+        return $this;
+    }
+
+    public function help(string $text): self
+    {
+        Command::update($this->trigger, $this->order, ['help' => $text]);
+        return $this;
+    }
+
+    public function param(array $params): self
+    {
+        Command::update($this->trigger, $this->order, ['params' => $params]);
+        return $this;
+    }
+
+    public function dependency(string|callable|array $dep): self
+    {
+        $cmd = Command::$command[$this->trigger][$this->order] ?? [];
+        $deps = $cmd['dependencies'] ?? [];
+        $deps[] = $dep;
+        Command::update($this->trigger, $this->order, ['dependencies' => $deps]);
+        return $this;
+    }
 }

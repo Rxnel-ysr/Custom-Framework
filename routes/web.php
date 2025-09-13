@@ -1,6 +1,7 @@
 <?php
 
-use App\EXPE\Foundation\Manager\ClassManager;
+use App\Foundation\Database\QueryBuilder;
+use App\Foundation\Manager\ClassManager;
 use App\Foundation\Http\{RouteRequest, Request, Response, HttpHeaders, Route, StaticRequest};
 use App\Foundation\Manager\InstanceManager;
 use App\Foundation\Model;
@@ -22,7 +23,7 @@ Route::get('/', function () {
 })->name('home');
 
 Route::get('/route', function () {
-   return dd(['route'=> Route::$name, 'route_list' => Route::routeList()], get_declared_classes());
+   return dd(['route' => Route::$name, 'route_list' => Route::routeList()], get_declared_classes());
    // die;
 });
 
@@ -63,14 +64,15 @@ Route::get('/raw', function () {
 //    $res->serve($disk->path('result.txt'), 'image/jpeg');
 // })->name('fileEnd');
 
-// Route::get('/destroy', function () {
-//    while (true) {
-//       echo "hi";
-//    }
-// });
+Route::get('/destroy', function () {
+   while (true) {
+      echo "hi";
+   }
+});
 
 Route::get('/env', function () {
-   print_rpre($_ENV);
+   // throw new Exception("ok");
+   print_rpre(...$_ENV);
 });
 
 Route::get('/download', function (Request $req) {
@@ -91,6 +93,9 @@ Route::get('/test', function () {
    // echo '</pre>';
    // echo 'entered';
    // die;
+   // function ok(){
+   //    ok();
+   // }
 
    return view('test');
 });
@@ -121,8 +126,8 @@ Route::get('/test/{name:.*?}', function ($name) {
 //    response()->serve($disk->path($req->query('file')));
 // });
 
-Route::get('/up', function (Request $req) {
-   $time=  (hrtime(true) - START) / 1.0e6 . 'ms';
+Route::get('/up', function () {
+   $time =  (hrtime(true) - START) / 1.0e6 . 'ms';
    return response()->json(['server' => $_SERVER, 'serve-time' => $time], true);
 });
 
@@ -140,10 +145,14 @@ Route::get('/up', function (Request $req) {
 //    var_dump($debug,http_response_code());
 //    echo '</pre>';
 // });
+Route::get('/query', function (Request $request) {
+   return response()->json((new QueryBuilder())->table('posts')->get());
+});
 
 Route::fallback(function () {
-   return response(404)->json(['message' => 'Not found']);
+   // return response(404)->json(['message' => 'Not found']);
    // return dd(Route::dump(), Route::debugPatterns());
+   return abort(404);
 });
 
 // // Route::debugTree();

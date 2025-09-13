@@ -6,6 +6,7 @@ namespace App\Foundation\Database;
 
 use App\Debug\Debugger;
 use App\Foundation\Database\Connection;
+use App\Foundation\Traits\Macroable;
 use Exception;
 
 require_once 'Connection.php';
@@ -232,6 +233,8 @@ class Schema
 
 class Blueprint extends Connection
 {
+    use Macroable;
+    
     private $pdo;
     private $stmt;
     private $table_name;
@@ -372,6 +375,12 @@ class Blueprint extends Connection
         return $this;
     }
 
+    public function enum(string $column, array $allowed)
+    {
+        $this->addColumn($column, 'ENUM(' . implode(', ', $allowed) . ') NOT NULL');
+        return $this;
+    }
+
     public function timestamps()
     {
         $this
@@ -414,6 +423,12 @@ class Blueprint extends Connection
     public function comment($comment)
     {
         $this->modifyLastColumn("COMMENT '$comment'");
+        return $this;
+    }
+
+    public function after($column)
+    {
+        $this->modifyLastColumn("AFTER '$column'");
         return $this;
     }
 }

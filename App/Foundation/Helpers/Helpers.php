@@ -902,3 +902,21 @@ function retrieveEnv(string $name, string $type = 'string', $default = null)
             throw new InvalidArgumentException("Unsupported type {$type} for environment variable {$name}");
     }
 }
+
+function abort($errorCode, $message = '', $subMessage = '')
+{
+    return Debugger::showErrorPage($errorCode, $message, $subMessage);
+}
+
+function createInstance(object|string $class, callable $func)
+{
+    if (is_object($class)) {
+        $classI = $class;
+    } else {
+        $classI = new $class();
+    }
+
+    $func($classI);
+    InstanceManager::setInstance(is_object($class) ? $class::class : $class, $classI);
+    return $classI;
+}

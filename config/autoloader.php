@@ -28,7 +28,7 @@ return [
     |
     */
 
-    'auto-resolve' => true,
+    'auto-resolve' => false,
 
     /*
     |--------------------------------------------------------------------------
@@ -53,4 +53,21 @@ return [
     */
 
     'cache' => $root . '/storage/cache/classes/classes.php',
+
+    'where_to_look_class' => '/App/Foundation',
+    /*
+    |--------------------------------------------------------------------------
+    | Autoloader Auto Mode
+    |--------------------------------------------------------------------------
+    |
+    | When enabled, the autoloader will output handle cold start and map every
+    | class automatically.
+    */
+    'auto' => true,
+
+    'files' => [
+        'App/Core/Routers/RouterInterface.php',
+        'App/Foundation/Helpers/Utility.php',
+        'App/Foundation/Helpers/Helpers.php'
+    ]
 ];

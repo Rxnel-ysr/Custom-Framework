@@ -2,8 +2,10 @@
 
 namespace App;
 
+use App\Foundation\CLI\Argv;
+use App\Foundation\CLI\Command;
 use App\Foundation\Guard\RateLimiter;
-use App\Foundation\Helpers\Env;
+use App\Foundation\Configuration\Env;
 use App\Foundation\Http\Request;
 use App\Foundation\Http\Route;
 use App\Foundation\Manager\InstanceManager;
@@ -76,7 +78,6 @@ class App
             require_once $this->root . DIRECTORY_SEPARATOR . $dependency;
         }
 
-        Env::load($this->configs['env']);
         load([$this->root . '/App/Http/Controllers']);
 
         $requestUri = $request->uri();
@@ -115,5 +116,9 @@ class App
         Route::dispatch($requestUri);
         // $res = ob_get_clean();
         // file_put_contents($this->root . '/public/result.txt',$res);
+    }
+
+    public function handleCommand(Argv $arg){
+        return Command::standBy($arg);
     }
 }

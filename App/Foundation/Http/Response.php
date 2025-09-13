@@ -18,10 +18,12 @@ class Response
         return $this->headers;
     }
 
-    public function json(mixed $data = [], bool $pretty = false)
+    public function json(mixed $data = [], int $code = 200,bool $pretty = false)
     {
         $this->headers->contentType('application/json');
+        $this->status($code);
         $this->sendHeaders();
+        
         echo json_encode($data, $pretty ? JSON_PRETTY_PRINT : 0);
     }
 

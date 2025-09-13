@@ -134,11 +134,7 @@ class Debugger
         string $customMessage = '',
         string $customSubMessage = '',
         string $customTitleName = '',
-        string $trace = '',
-        bool $add_new_class = false,
-        bool $returnButton = false,
-        string|null $urlForButton = null,
-        string|null $btnTextContent = null
+        string $trace = ''
     ): void {
         if (filter_var(http_response_code(), FILTER_VALIDATE_INT) != $errorCode && !headers_sent()) {
             http_response_code($errorCode);
@@ -168,11 +164,6 @@ class Debugger
             $customSubMessage ?: $error_sub_messages[$errorCode] ?? 'An error occurred';
         $title_name =
             $customTitleName ?: $title_name[$errorCode] ?? 'An error occured';
-
-        $returnButton = $returnButton;
-        $url = $urlForButton;
-        $btnTextContent;
-        $add_new_class;
         $trace;
         $_nonce = DI::get('nonce');
 

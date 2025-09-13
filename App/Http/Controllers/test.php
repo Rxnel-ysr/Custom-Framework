@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\EXPE\Foundation\Manager\ClassManager;
+use App\Foundation\Manager\ClassManager;
 use App\Foundation\Http\Controller;
 use App\Foundation\Http\Request as HttpRequest;
 use App\Foundation\Http\Route;

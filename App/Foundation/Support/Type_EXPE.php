@@ -1044,6 +1044,202 @@ class Type
     }
 
     /**
+     * Dump and Die - Advanced debugging function with type-aware output
+     * 
+     * Displays variables with detailed type information, syntax highlighting, and collapsible sections.
+     * Integrates with Type class for consistent type handling and conversion display.
+     *
+     * @param mixed ...$args Variables to dump (accepts multiple arguments)
+     */
+    public static function dd(...$args): void
+    {
+        // Output styling and scripting
+        echo <<<HTML
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Debug Dump</title>
+                <meta charset="UTF-8">
+                <style>
+                    body { 
+                        background: #111; 
+                        color: #f0f0f0; 
+                        font-family: "Fira Code", "Consolas", monospace; 
+                        padding: 20px; 
+                        line-height: 1.5;
+                    }
+                    .dump-container { 
+                        background: #1e1e1e; 
+                        padding: 15px; 
+                        border-radius: 5px; 
+                        margin: 15px 0; 
+                        box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+                    }
+                    .dump-header { 
+                        color: #ff6b6b; 
+                        font-weight: bold; 
+                        margin-bottom: 8px; 
+                        cursor: pointer; 
+                        padding: 8px 12px;
+                        border-radius: 4px;
+                        background: #252525;
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        user-select: none;
+                        transition: background 0.2s;
+                    }
+                    .dump-header:hover {
+                        background: #2e2e2e;
+                    }
+                    .dump-content { 
+                        white-space: pre-wrap; 
+                        font-size: 14px; 
+                        display: none; 
+                        padding: 12px; 
+                        border-left: 3px solid #ff6b6b; 
+                        background: #252525;
+                        margin-top: 8px;
+                        border-radius: 0 0 4px 4px;
+                        overflow-x: auto;
+                    }
+                    .dump-type {
+                        color: #4dabf7;
+                        font-size: 0.85em;
+                        background: rgba(77, 171, 247, 0.1);
+                        padding: 2px 6px;
+                        border-radius: 3px;
+                        margin-left: 8px;
+                    }
+                    .dump-size {
+                        color: #94d82d;
+                        font-size: 0.85em;
+                    }
+                    .file-info {
+                        color: #adb5bd;
+                        font-size: 0.85em;
+                        margin: 20px 0;
+                        padding: 10px;
+                        background: #1e1e1e;
+                        border-radius: 4px;
+                    }
+                    .debug-title {
+                        color: #ff922b;
+                        margin-bottom: 20px;
+                        font-size: 1.5em;
+                    }
+                    /* Syntax highlighting - High contrast color scheme */
+                    .string    { color: #4EC9B0; }  /* Teal - stands out clearly */
+                    .number    { color: #569CD6; }  /* Soft blue - easy on eyes */
+                    .boolean   { color: #FF7B72; }  /* Coral red - pops for true/false */
+                    .null      { color: #C586C0; }  /* Muted purple - distinct */
+                    .key       { color: #9CDCFE; }  /* Light blue - good contrast */
+                    .index     { color: #858585; }  /* Medium gray - subtle for indexes */
+                    .object    { color: #FFA657; }  /* Vibrant orange - clear for objects */            </style>
+            </head>
+            <body>
+            HTML;
+
+        // echo "<div class='debug-title'>Debug Dump</div>";
+
+        // Get caller file information
+        $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2);
+        $caller = $backtrace[1] ?? null;
+
+        if ($caller) {
+            $file = $caller['file'] ?? 'unknown';
+            $line = $caller['line'] ?? 'unknown';
+            echo "<div class='file-info'>";
+            echo "Called in: <strong>" . htmlspecialchars(basename($file)) . "</strong> on line <strong>{$line}</strong><br>";
+            echo "<small>" . htmlspecialchars(dirname($file)) . "</small>";
+            echo "</div>";
+        }
+
+        // Process each argument
+        foreach ($args as $index => $arg) {
+            $dumpId = 'dump_' . uniqid();
+            $varType = Type::getType($arg);
+            $sizeInfo = '';
+
+            // Get size information
+            if (is_array($arg)) {
+                $sizeInfo = ' · <span class="dump-size">' . count($arg) . ' items</span>';
+            } elseif (is_string($arg)) {
+                $sizeInfo = ' · <span class="dump-size">' . strlen($arg) . ' chars</span>';
+            } elseif (is_object($arg)) {
+                $sizeInfo = ' · <span class="dump-size">' . count(get_object_vars($arg)) . ' properties</span>';
+            }
+
+            echo "<div class='dump-container'>";
+            echo "<div class='dump-header' onclick='toggleDump(\"$dumpId\")' data-dump-id='$dumpId'>";
+            echo "<span>Debug #" . ($index + 1) . " <span class='dump-type'>{$varType}</span>{$sizeInfo}</span>";
+            echo "<span class='toggle-icon'>▼</span>";
+            echo "</div>";
+
+            echo "<div class='dump-content' id='$dumpId'><pre>";
+
+            // Enhanced output using Type class information
+            if (is_object($arg)) {
+                echo htmlspecialchars(self::formatObject($arg));
+            } elseif (is_array($arg)) {
+                echo htmlspecialchars(self::formatArray($arg));
+            } else {
+                echo htmlspecialchars(self::formatValue($arg));
+            }
+
+            echo '</pre></div></div>';
+        }
+        echo <<<HTML
+        <script>
+            function toggleDump(id) {
+                const el = document.getElementById(id);
+                el.style.display = (el.style.display === 'none' || el.style.display === '') ? 'block' : 'none';
+                
+                const header = document.querySelector(`[data-dump-id=\"\${id}\"]`);
+                const icon = header.querySelector('.toggle-icon');
+                icon.textContent = el.style.display === 'none' ? '▶' : '▼';
+            }
+
+            // Add syntax highlighting
+            function highlightSyntax() {
+                document.querySelectorAll('.dump-content pre').forEach(pre => {
+                    let html = pre.innerHTML;
+                    
+                    // Highlight strings
+                    html = html.replace(/(['\"])(.*?)\\1/g, '<span class=\"string\">$1$2$1</span>');
+                    
+                    // Highlight numbers
+                    html = html.replace(/(\b\d+\.?\d*\b)/g, '<span class=\"number\">$1</span>');
+                    
+                    // Highlight booleans
+                    html = html.replace(/\b(true|false)\b/g, '<span class=\"boolean\">$1</span>');
+                    
+                    // Highlight null
+                    html = html.replace(/\b(null)\b/g, '<span class=\"null\">$1</span>');
+                    
+                    // Highlight array keys
+                    html = html.replace(/(\=\>\s*)([^\[\{]+)(\\n|\s*\[|\s*\{)/g, '$1<span class=\"key\">$2</span>$3');
+                    
+                    // Highlight array indexes
+                    html = html.replace(/(\[)(\d+)(\]\s*\=\>)/g, '$1<span class=\"index\">$2</span>$3');
+
+                    html = html.replace(/\bobject\(([^)]+)\)/gi, '<span class=\"object\">object($1)</span>');
+                    
+                    pre.innerHTML = html;
+                });
+            }
+            
+            // Highlight after page loads
+            window.addEventListener('DOMContentLoaded', highlightSyntax);
+        </script>
+        HTML;
+
+
+        echo '</body></html>';
+        exit;
+    }
+
+    /**
      * Convert value to binary string with brutal options
      */
     public static function toBinary($value, array $options = []): string

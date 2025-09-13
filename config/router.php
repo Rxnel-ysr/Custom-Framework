@@ -4,7 +4,7 @@ return [
     // ======================================================================
     // | Application Router Configuration                                   |
     // ======================================================================
-    'router' => 'RegexRouter',
+    'router' => 'RadixTree',
 
     /*
     |--------------------------------------------------------------------------
@@ -23,6 +23,7 @@ return [
     // ======================================================================
     'choices' => [
         'Trie',          // Best for small apps (<10 routes), simple implementation
+        
         'RadixTree',     // Optimized for medium/large route sets, memory efficient
 
         'RegexRouter',   // For complex route patterns with regular expressions 

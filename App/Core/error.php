@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <style nonce="<?= $_nonce ?>">
+    <style nonce="<?= $_nonce ?? '' ?>">
         body {
             background-color: #1c1c1e;
             color: #ffffff;
@@ -225,6 +225,7 @@
             padding: 3rem;
         }
     </style>
+    
     <title><?= $title_name ?></title>
 </head>
 
@@ -234,30 +235,14 @@
             <h1 class="error_code"><?= http_response_code() ?></h1>
             <h2 class="error_message"><?= $error_message ?></h2>
             <p class="error_sub_message"><?= $error_sub_message ?></p>
-            <?php if ($returnButton) { ?>
-                <a href="<?= $url ?>" class="btn-custom mt-3"><?= $btnTextContent ?? 'Return' ?></a>
-            <?php } ?>
         </div>
-        <?php if ($add_new_class) { ?>
-            <div class="error-container text-center">
-                <form action="/AUTO-LOAD/REGISTER" method="POST" style="display: flex; flex-direction: column; justify-content: center; align-items: center;">
-                    <h1 class="error_message mb-3">Register new class</h1>
-                    <div class="input-group mb-3 w-75">
-                        <input type="hidden" name="class-name" value="<?= $error_message ?>" id="class_name">
-                        <input type="text" name="class-path" class="form-control rounded-start" placeholder="Class path..." aria-describedby="basic-addon1" required>
-                        <span class="input-group-text" id="basic-addon1">.php</span>
-                        <button class="btn-secondary" type="submit" id="button-addon2">Add</button>
-                    </div>
-                </form>
-            </div>
-        <?php } ?>
 
-        <?php if (!empty($trace)) { ?>
+        <?php if (!empty($trace)): ?>
             <div class="error-container text-left">
                 <p class="card-subtitle">Trace:</p>
                 <pre class="trace"><?= $trace ?></pre>
             </div>
-        <?php } ?>
+        <?php endif; ?>
     </div>
 
 </body>

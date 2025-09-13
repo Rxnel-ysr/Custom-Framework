@@ -2,7 +2,6 @@
 
 namespace App\Foundation\Providers;
 
-use App\Foundation\Http\HttpHeaders;
 use App\Foundation\Http\Request;
 use App\Foundation\Http\Route;
 use App\Support\Facades\Rx;
@@ -10,7 +9,7 @@ use App\Support\Facades\Rx;
 class AppServiceProvider
 {
 
-    public static function register(): void
+    public function register(): void
     {
         // Register
         Rx::register('say', function (string $message): string {
@@ -58,7 +57,7 @@ class AppServiceProvider
         });
     }
 
-    public static function boot(): void
+    public function boot(): void
     {
         // Boot 
     }

@@ -110,33 +110,6 @@ class QueryBuilder extends Connection
     }
 
     /**
-     * Switches between "id_<name>" and "<name>_id" formats.
-     *
-     * This function checks the input pattern and switches it to the opposite format.
-     * - If the input matches "id_<name>", it converts to "<name>_id".
-     * - If the input matches "<name>_id", it converts to "id_<name>".
-     *
-     * @param string $column The column name to switch.
-     * 
-     * @return string The switched column name.
-     */
-    private function switchColumnPattern(string $column): string
-    {
-        // Match 'id_<name>'
-        if (preg_match('/^id_(\w+)$/', $column, $matches)) {
-            return "{$matches[1]}_id";
-        }
-
-        // Match '<name>_id'
-        if (preg_match('/^(\w+)_id$/', $column, $matches)) {
-            return 'id_' . $matches[1];
-        }
-
-        // Return the original column if no pattern matches
-        return $column;
-    }
-
-    /**
      * Define and handle relations in your table.
      *
      * This method allows you to specify relations for your table in a structured format:

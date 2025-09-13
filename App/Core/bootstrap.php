@@ -2,53 +2,29 @@
 
 use App\App;
 use App\Debug\Debugger;
-use App\EXPE\Foundation\Manager\ClassManager;
 use App\Foundation\Compiler\Compile;
 use App\Foundation\Database\Connection;
-use App\Foundation\Helpers\Env;
-use App\Foundation\Http\Request;
+use App\Foundation\Configuration\Env;
 use App\Foundation\Manager\InstanceManager;
 use App\Foundation\Providers\AppServiceProvider;
-use App\Foundation\Reactive\Reactive;
 use App\Foundation\System\Disk;
 use App\Support\Facades\DI;
 
 // Define root path once
-const BASE_PATH = __DIR__ . '/../../';
+$__root = dirname(__DIR__, 2) . '/';
 $isWeb = PHP_SAPI !== 'cli';
 
-
-// Load Core
-require_once BASE_PATH . 'App/Foundation/Manager/ClassManager_EXPE.php';
-require_once BASE_PATH . 'App/Providers/AppServiceProvider.php';
-require_once BASE_PATH . 'App/Core/Routers/RouterInterface.php';
-require_once BASE_PATH . 'App/Foundation/Compiler/Compile.php';
-require_once BASE_PATH . 'App/Foundation/Helpers/Utility.php';
-require_once BASE_PATH . 'App/Foundation/Helpers/Helpers.php';
-
-
-// Load Env And Autoloader first config first
-$cfg['auto-loader'] = require BASE_PATH . 'config/autoloader.php';
-
-// Init Class Manager
-ClassManager::set(BASE_PATH, $cfg['auto-loader']['debug'], true, [
-    'classmap'      => $cfg['auto-loader']['classmap'],
-    'cache_classmap' => $cfg['auto-loader']['cache'],
-]);
-
-ClassManager::initAutoloader($cfg['auto-loader']['auto-resolve']);
-
-Env::load(BASE_PATH . 'config/.env');
+Env::load($__root . '.env');
 
 // Load Other Configuration Files
 $cfg = [
-    'dependencies'    => require BASE_PATH . 'config/app.php',
-    'config'          => require BASE_PATH . 'config/config.php',
-    'database'        => require BASE_PATH . 'config/database.php',
-    'router'          => require BASE_PATH . 'config/router.php',
-    'router_path'     => require BASE_PATH . 'config/router_path.php',
-    'router_plugins'  => require BASE_PATH . 'config/router_plugins.php',
-    'compiler'        => require BASE_PATH . 'config/compiler.php',
+    'dependencies'    => require $__root . 'config/app.php',
+    'config'          => require $__root . 'config/config.php',
+    'database'        => require $__root . 'config/database.php',
+    'router'          => require $__root . 'config/router.php',
+    'router_path'     => require $__root . 'config/router_path.php',
+    'router_plugins'  => require $__root . 'config/router_plugins.php',
+    'compiler'        => require $__root . 'config/compiler.php',
     ...$cfg
 ];
 
@@ -58,14 +34,14 @@ $cfg = [
 Debugger::init(
     isWeb: $isWeb,
     errorLevel: E_ALL & ~E_WARNING,
-    error_page: BASE_PATH . 'App/Core/error.php',
-    store_at_log: true,
-    log_file: BASE_PATH . 'storage/logs/debug.log'
+    error_page: $__root . 'App/Core/error copy.php',
+    store_at_log: false,
+    log_file: $__root . 'storage/logs/debug.log'
 );
 
 if ($isWeb) {
     $nonce = base64_encode(random_bytes(16));
-    if ($_ENV['CSP'] === true) {
+    if (isset($_ENV['CSP']) && $_ENV['CSP'] == true) {
         header("Content-Security-Policy: default-src 'self'; media-src 'self'; script-src 'self' 'nonce-$nonce'; style-src 'self' 'nonce-$nonce' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com;");
     }
     DI::bind('nonce', fn() => $nonce);
@@ -78,7 +54,7 @@ if ($isWeb) {
         throw new InvalidArgumentException("Invalid router: {$router['router']}");
     }
     // Boot the route handler
-    require_once $cfg['router_path'][$router['router']];
+    require $cfg['router_path'][$router['router']];
 }
 
 // Compile Views
@@ -90,10 +66,10 @@ Compile::init(
 
 
 // System Resources
-$disk = new Disk(BASE_PATH . 'public');
+$disk = new Disk($__root . 'public');
 
 // Initialize App
-$app = (new App(root: BASE_PATH))
+$app = (new App(root: $__root))
     ->withRouting([
         'web'       => '/routes/web.php',
         'api'       => '/routes/api.php',
@@ -105,14 +81,16 @@ $app = (new App(root: BASE_PATH))
         ...$cfg['config']
     ])
     ->withDependencies($cfg['dependencies']);
-    
+
 // Inject Instances
 InstanceManager::setInstance('app', $app);
 InstanceManager::setInstance('appDisk', $disk);
 
 // Boot and Register provider
-AppServiceProvider::boot();
-AppServiceProvider::register();
+createInstance(AppServiceProvider::class, function ($c) {
+    $c->register();
+    $c->boot();
+});
 
 // Setup Database
 Connection::set($cfg['database']);
