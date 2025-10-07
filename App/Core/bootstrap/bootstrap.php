@@ -11,19 +11,15 @@ use App\Foundation\System\Disk;
 use App\Support\Facades\DI;
 
 // Define root path once
-$__root = dirname(__DIR__, 2) . '/';
+$__root = dirname(__DIR__, 3) . '/';
 $isWeb = PHP_SAPI !== 'cli';
 
 Env::load($__root . '.env');
 
 // Load Other Configuration Files
 $cfg = [
-    'dependencies'    => require $__root . 'config/app.php',
-    'config'          => require $__root . 'config/config.php',
     'database'        => require $__root . 'config/database.php',
     'router'          => require $__root . 'config/router.php',
-    'router_path'     => require $__root . 'config/router_path.php',
-    'router_plugins'  => require $__root . 'config/router_plugins.php',
     'compiler'        => require $__root . 'config/compiler.php',
     ...$cfg
 ];
@@ -54,7 +50,7 @@ if ($isWeb) {
         throw new InvalidArgumentException("Invalid router: {$router['router']}");
     }
     // Boot the route handler
-    require $cfg['router_path'][$router['router']];
+    require $cfg['router']['path'][$router['router']];
 }
 
 // Compile Views
@@ -64,23 +60,14 @@ Compile::init(
     $cfg['compiler']['ext'],
 );
 
+// Setup Database
+Connection::set($cfg['database']);
 
 // System Resources
 $disk = new Disk($__root . 'public');
 
-// Initialize App
-$app = (new App(root: $__root))
-    ->withRouting([
-        'web'       => '/routes/web.php',
-        'api'       => '/routes/api.php',
-        'api_prefix' => $cfg['router']['api_prefix'],
-        'plugins'   => $cfg['router_plugins'],
-    ])
-    ->withConfig([
-        'database' => $cfg['database'],
-        ...$cfg['config']
-    ])
-    ->withDependencies($cfg['dependencies']);
+
+$app = require __DIR__ . '/app.php';
 
 // Inject Instances
 InstanceManager::setInstance('app', $app);
@@ -91,9 +78,6 @@ createInstance(AppServiceProvider::class, function ($c) {
     $c->register();
     $c->boot();
 });
-
-// Setup Database
-Connection::set($cfg['database']);
 
 // Return the ready App instance
 return $app;

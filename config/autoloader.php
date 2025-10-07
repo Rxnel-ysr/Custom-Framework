@@ -54,7 +54,17 @@ return [
 
     'cache' => $root . '/storage/cache/classes/classes.php',
 
-    'where_to_look_class' => '/App/Foundation',
+    /*
+    |--------------------------------------------------------------------------
+    | Class look dir
+    |--------------------------------------------------------------------------
+    |
+    | Define a path to autoloader to search class on,
+    | E.g. defined 'App/Foundation' and class that looked is aClass
+    | will be searched in 'App/Foundation/aClass.php'
+    */
+    'where_to_look_class' => 'App/Foundation',
+
     /*
     |--------------------------------------------------------------------------
     | Autoloader Auto Mode
@@ -65,6 +75,14 @@ return [
     */
     'auto' => true,
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | Files
+    |--------------------------------------------------------------------------
+    |
+    | List of files that will always be loaded
+    */
     'files' => [
         'App/Core/Routers/RouterInterface.php',
         'App/Foundation/Helpers/Utility.php',

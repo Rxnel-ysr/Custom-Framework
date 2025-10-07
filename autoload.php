@@ -5,7 +5,7 @@ use App\Foundation\Manager\ClassManager;
 require 'App/Foundation/Manager/ClassManager.php';
 
 $cfg = require 'config/autoloader.php';
-
+// $start = hrtime(true);
 ClassManager::set(
     __DIR__,
     $cfg['debug'],
@@ -17,5 +17,7 @@ ClassManager::set(
     ],
     $cfg['files']
 );
+// $rs = (hrtime(true) - $start) / 1.0e6 . "ms\n";
+// echo $rs;
 
 ClassManager::initAutoloader($cfg['auto-resolve']);

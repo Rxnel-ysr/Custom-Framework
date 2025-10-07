@@ -4,6 +4,7 @@ namespace App\Foundation\Http;
 
 use App\Debug\Debugger;
 use Closure;
+use RouterBase;
 use RouterInterface;
 
 class RadixNode
@@ -19,7 +20,7 @@ class RadixNode
 /**
  * Radix Router
  */
-class Route implements RouterInterface
+class Route extends RouterBase implements RouterInterface
 {
     public static string $name = 'RadixRouter';
     private static RadixNode $root;
@@ -274,7 +275,7 @@ class Route implements RouterInterface
         // Merge new attributes
         self::$appliedGroup[] = self::$currentGroup = [
             'prefix' => trim(self::$currentGroup['prefix'] . '/' . trim($attributes['prefix'] ?? '', '/'), '/'),
-            'middleware' => array_merge(self::$currentGroup['middleware'], $attributes['middleware'] ?? []),
+            'middleware' => array_merge(self::$currentGroup['middleware'], (is_array($attributes['middleware']) ? $attributes['middleware'] : [$attributes['middleware']]) ?? []),
             'namespace' => self::$currentGroup['namespace'] . '\\' . trim($attributes['namespace'] ?? '', '\\'),
         ];
 
@@ -390,9 +391,9 @@ class Route implements RouterInterface
         return Debugger::showErrorPage(500, 'Invalid callback');
     }
 
-    public static function dispatch(string $requestUri)
+    public static function dispatch(Request $request)
     {
-        $requestUri = trim($requestUri, '/');
+        $requestUri = trim($request->uri(), '/');
         $method = self::getRequestMethod();
 
         $segments = explode('/', $requestUri);
@@ -415,22 +416,14 @@ class Route implements RouterInterface
 
             $middleware = array_merge(self::$globalMiddleware, $node->middleware ?? []);
 
-            foreach ($middleware as $m) {
-                if (is_callable($m)) {
-                    $response = call_user_func($m);
-                    if ($response !== true) {
-                        return $response;
-                    }
-                } elseif (is_string($m)) {
-                    $middlewareInstance = new $m();
-                    $response = $middlewareInstance->handle();
-                    if ($response !== true) {
-                        return $response;
-                    }
-                }
-            }
+            $destination = fn() => self::execute($node->handlers[$method], array_combine($node->paramKeys, $params));
 
-            return self::execute($node->handlers[$method], array_combine($node->paramKeys, $params));
+            return self::pipeline($request, $middleware, $destination);
+            // return self::execute($node->handlers[$method], array_combine($node->paramKeys, $params));
+        }
+
+        if (isset(self::$fallback)) {
+            return self::execute(self::$fallback, []);
         }
 
         return Debugger::showErrorPage(405, 'Method not allowed');

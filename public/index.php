@@ -12,5 +12,5 @@ if (StaticFile::serve($_, $_SERVER['REQUEST_URI'], $_ . '/storage/cache')) {
     exit;
 }
 
-(require __DIR__ . '/../App/Core/bootstrap.php')
+(require __DIR__ . '/../App/Core/bootstrap/bootstrap.php')
     ->handle(Request::capture());

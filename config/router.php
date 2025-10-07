@@ -1,5 +1,7 @@
 <?php
 
+$root = dirname(__DIR__, 1);
+
 return [
     // ======================================================================
     // | Application Router Configuration                                   |
@@ -23,7 +25,7 @@ return [
     // ======================================================================
     'choices' => [
         'Trie',          // Best for small apps (<10 routes), simple implementation
-        
+
         'RadixTree',     // Optimized for medium/large route sets, memory efficient
 
         'RegexRouter',   // For complex route patterns with regular expressions 
@@ -38,4 +40,10 @@ return [
         'LayeredRouter'  // For microservices with route versioning/namespaces 
 
     ],
+
+    'path' => [
+        'Trie' => $root . '/App/Core/Routers/TrieRouter.php',
+        'RadixTree' => $root . '/App/Core/Routers/RadixRouter.php',
+        'RegexRouter' => $root . '/App/Core/Routers/RegexRouter.php',
+    ]
 ];

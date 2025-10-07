@@ -4,13 +4,14 @@ namespace App\Foundation\Http;
 
 use App\Debug\Debugger;
 use Closure;
+use RouterBase;
 use RouterInterface;
 use Throwable;
 
 /**
  * Regex Router
  */
-class Route implements RouterInterface
+class Route extends RouterBase implements RouterInterface
 {
     public static string $name = 'RegexRouter';
     private static string $dirRoot;
@@ -329,9 +330,9 @@ class Route implements RouterInterface
         return Debugger::showErrorPage(500, 'Invalid callback');
     }
 
-    public static function dispatch(string $requestUri)
+    public static function dispatch(Request $request)
     {
-        $requestUri = trim($requestUri, '/');
+        $requestUri = trim($request->uri(), '/');
         // echo 'Request uri: ' . $requestUri . '<br>';
         // die;
         $method = self::getRequestMethod();
@@ -355,17 +356,10 @@ class Route implements RouterInterface
             $middleware = array_merge(self::$globalMiddleware, $res['middleware'] ?? []);
 
             foreach ($middleware as $m) {
-                if (is_callable($m)) {
-                    $response = call_user_func($m);
-                    if ($response !== true) {
-                        return $response;
-                    }
-                } elseif (is_string($m)) {
-                    $middlewareInstance = new $m();
-                    $response = $middlewareInstance->handle();
-                    if ($response !== true) {
-                        return $response;
-                    }
+                $m = explode(':', $m, 2);
+                $response = callFuncWithParams([$m[0]::class, 'handle'], explode($m[1], ','));
+                if ($response !== true) {
+                    return $response;
                 }
             }
 
@@ -402,22 +396,11 @@ class Route implements RouterInterface
 
                 $middleware = array_merge(self::$globalMiddleware, $route['middleware'] ?? []);
 
-                foreach ($middleware as $m) {
-                    if (is_callable($m)) {
-                        $response = call_user_func($m);
-                        if ($response !== true) {
-                            return $response;
-                        }
-                    } elseif (is_string($m)) {
-                        $middlewareInstance = new $m();
-                        $response = $middlewareInstance->handle();
-                        if ($response !== true) {
-                            return $response;
-                        }
-                    }
-                }
+                $middleware = array_merge(self::$globalMiddleware, $node->middleware ?? []);
 
-                return self::execute($route['action'], $orderedParams);
+                $destination = fn() => self::execute($route['action'], $orderedParams);
+
+                return self::pipeline($request, $middleware, $destination);
             }
         }
 

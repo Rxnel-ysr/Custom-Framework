@@ -11,7 +11,7 @@ if (PHP_SAPI !== 'cli') {
 require 'autoload.php';
 require __DIR__ . '/routes/console.php';
 
-$status = (require __DIR__ . '/App/Core/bootstrap.php')
+$status = (require __DIR__ . '/App/Core/bootstrap/bootstrap.php')
     ->handleCommand(new Argv());
 
 exit($status);

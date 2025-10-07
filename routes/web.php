@@ -149,6 +149,15 @@ Route::get('/query', function (Request $request) {
    return response()->json((new QueryBuilder())->table('posts')->get());
 });
 
+Route::group(['middleware' => null], function () {
+
+   Route::get('/test-middleware', function () {
+      return "Hello from end point!";
+   });
+
+});
+
+
 Route::fallback(function () {
    // return response(404)->json(['message' => 'Not found']);
    // return dd(Route::dump(), Route::debugPatterns());

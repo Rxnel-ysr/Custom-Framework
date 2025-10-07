@@ -4,6 +4,7 @@ namespace App\Foundation\Http;
 
 use App\Debug\Debugger;
 use Closure;
+use RouterBase;
 use RouterInterface;
 
 class TrieNode
@@ -17,7 +18,7 @@ class TrieNode
 /**
  * Trie Router
  */
-class Route implements RouterInterface
+class Route extends RouterBase implements RouterInterface
 {
     public static string $name = 'TrieRouter';
     private static TrieNode $root;
@@ -284,9 +285,9 @@ class Route implements RouterInterface
         return Debugger::showErrorPage(500, 'Invalid callback');
     }
 
-    public static function dispatch(string $requestUri)
+    public static function dispatch(Request $request)
     {
-        $requestUri = trim($requestUri, '/');
+        $requestUri = trim($request->uri(), '/');
         $method = self::getRequestMethod();
 
         // var_dump(self::$cache);
@@ -337,28 +338,31 @@ class Route implements RouterInterface
             // die;
 
             // die;
-            foreach ($middleware as $m) {
-                if (is_callable($m)) {
-                    $response = call_user_func($m);
-                    if ($response !== true) {
-                        return $response; // Allow middleware to return responses
-                    }
-                } elseif (is_string($m)) {
-                    // Handle class-based middleware
-                    $middlewareInstance = new $m();
-                    $response = $middlewareInstance->handle();
-                    if ($response !== true) {
-                        return $response;
-                    }
-                }
-            }
 
-            // self::cacheRoute($requestUri, $method, $node->handlers[$method], $params);
-            // dd($node->paramKeys, $params);
-            return self::execute($node->handlers[$method], array_combine($node->paramKeys, $params));
+            //     if (is_callable($m)) {
+            //         $response = call_user_func($m);
+            //         if ($response !== true) {
+            //             return $response; // Allow middleware to return responses
+            //         }
+            //     } elseif (is_string($m)) {
+            //         // Handle class-based middleware
+            //         $middlewareInstance = new $m();
+            //         $response = $middlewareInstance->handle();
+            //         if ($response !== true) {
+            //             return $response;
+            //         }
+            //     }
+            // }
+
+            $destination = fn() => self::execute($node->handlers[$method], array_combine($node->paramKeys, $params));
+
+            return self::pipeline($request, $middleware, $destination);
         }
 
         // return self::showError(405, 'Method Not Allowed');
+        if (isset(self::$fallback)) {
+            return self::execute(self::$fallback, []);
+        }
         return Debugger::showErrorPage(405, 'Method not allowed');
     }
 }

@@ -6,6 +6,7 @@ namespace App\Foundation\CLI;
 
 use App\Foundation\Traits\Macroable;
 use Throwable;
+use Closure;
 
 class Command
 {
@@ -40,8 +41,7 @@ class Command
 
     public static function addAlias(string $alias, string $trigger, int $order): void
     {
-        $prefix = strlen($alias) > 1 ? '--' : '-';
-        self::$aliases[$prefix . $alias] = &self::$command[$trigger][$order];
+        self::$aliases[$alias] = &self::$command[$trigger][$order];
     }
 
 
@@ -62,6 +62,7 @@ class Command
                 echo "Command not found: {$trigger}\n\nAvailable commands:\n";
                 return self::showHelp(false);
             }
+            /** @var array{dependencies:array{string|array|Closure|object}, command:string|Closure} $command */
 
             foreach ($command['dependencies'] as $alias => $dependency) {
                 if (is_string($dependency) && strpos($dependency, '.php') === false) {
@@ -69,7 +70,7 @@ class Command
                         class_alias($dependency, $alias);
                     }
                 } elseif (is_array($dependency)) {
-                    $instance = $dependency[0];
+                    $instance = is_object($dependency[0]) ? $dependency[0] : new $dependency[0];
                     $instance->$dependency[1];
                 } else if (is_callable($dependency)) {
                     call_user_func($dependency);
@@ -91,14 +92,28 @@ class Command
             // }
             if (is_callable($command['command'])) {
                 $params = [];
+                $unusedPositionals = [];
+                
                 foreach ($command['params'] as $param) {
-                    $params[$param] = self::$argv->option($param)
-                        ?? self::$argv->getNextPositional();
+                    $opt = self::$argv->option($param, null);
+                    if ($opt !== null) {
+                        $params[$param] = $opt;
+                    } else {
+                        $unusedPositionals[] = $param;
+                    }
+                }
+
+                // fill unused params with remaining positionals
+                foreach ($unusedPositionals as $param) {
+                    $pos = self::$argv->getNextPositional();
+                    if ($pos !== null) {
+                        $params[$param] = $pos;
+                    }
                 }
 
                 $bag = new ParamBag($params);
                 $callable = $command['command']->bindTo($bag, ParamBag::class);
-                $callable();
+                $callable(self::$argv);
             } elseif (is_string($command['command'])) {
                 shell_exec($command['command']);
             }
@@ -257,7 +272,7 @@ class CommandBuilder
     {
         $cmd = Command::$command[$this->trigger][$this->order] ?? [];
         $deps = $cmd['dependencies'] ?? [];
-        $deps[] = $dep;
+        $deps = is_array($dep) ? [...$deps, ...$dep] : [...$deps, $dep];
         Command::update($this->trigger, $this->order, ['dependencies' => $deps]);
         return $this;
     }

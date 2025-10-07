@@ -23,7 +23,6 @@ class ClassManager
     private static array $setting;
     private static array $files;
 
-    // Template for empty class maps
     private const EMPTY_CLASSMAP_TEMPLATE = "<?php\nreturn [];\n";
 
     /**
@@ -69,11 +68,15 @@ class ClassManager
             self::$cache_classes = self::loadClassMap(self::$setting['cache_classmap']);
 
             if ($auto && empty(self::$classes)) {
-                // echo $root;
-                $classes = self::scanForClasses(self::$root . '/');
-                // var_dump($classes);
-                self::updateClassesMapping($classes);
-                self::updateCacheClassesMapping($classes);
+
+                $classes = self::scanForClasses(self::$root);
+                $res = [];
+                foreach ($classes as $class => $path) {
+                    $res[$class] = str_replace(self::$root, '', $path);
+                }
+
+                self::updateClassesMapping($res);
+                self::updateCacheClassesMapping($res);
             }
 
             self::$setting['where_to_look_class'] = rtrim(self::$setting['where_to_look_class'], '/\\') . '/';
@@ -162,43 +165,80 @@ class ClassManager
         }
     }
 
-    public static function scanForClasses(string $directory, array $ignore_dirs = [], array $ignore_files = [], array $except_files = []): array
-    {
+    public static function scanForClasses(
+        string $directory,
+        array $ignore_dirs = [],
+        array $ignore_files = [],
+        array $except_files = []
+    ): array {
         $directory = rtrim($directory, DIRECTORY_SEPARATOR);
         $classes = [];
+        $visited = [];
 
-        $files = new RecursiveIteratorIterator(
+        // Preprocess ignore dirs once
+        $ignoreDirsNormalized = [];
+        foreach ($ignore_dirs as $dir) {
+            $ignoreDirsNormalized[] = trim($dir, '/\\') . DIRECTORY_SEPARATOR;
+        }
+
+        // Flip arrays to hash maps (O(1) lookups)
+        $ignoreFilesSet = $ignore_files ? array_flip($ignore_files) : [];
+        $exceptFilesSet = $except_files ? array_flip($except_files) : [];
+
+        $iterator = new RecursiveIteratorIterator(
             new RecursiveCallbackFilterIterator(
-                new RecursiveDirectoryIterator($directory, FilesystemIterator::SKIP_DOTS),
-                function ($file, $key, $iterator) use ($ignore_dirs, $directory, $except_files): bool {
-                    $relativePath = str_replace($directory . DIRECTORY_SEPARATOR, '', $file->getPathname());
+                new RecursiveDirectoryIterator(
+                    $directory,
+                    FilesystemIterator::SKIP_DOTS | FilesystemIterator::FOLLOW_SYMLINKS
+                ),
+                static function ($file, $key, $iterator) use (
+                    $directory,
+                    $ignoreDirsNormalized,
+                    $exceptFilesSet,
+                    &$visited
+                ): bool {
+                    if (!$file->isDir()) {
+                        return true; // keep file
+                    }
 
-                    if (in_array($relativePath, $except_files)) {
+                    $realPath = $file->getRealPath();
+                    if (isset($visited[$realPath])) {
+                        return false;
+                    }
+                    $visited[$realPath] = true;
+
+                    $relativePath = substr($realPath, strlen($directory) + 1);
+
+                    // Explicit exceptions win
+                    if (isset($exceptFilesSet[$relativePath])) {
                         return true;
                     }
 
-                    foreach ($ignore_dirs as $ignoreDir) {
-                        $ignoreDir = trim($ignoreDir, '/');
-                        if (str_starts_with($relativePath, $ignoreDir . '/')) {
+                    // Fast prefix check
+                    foreach ($ignoreDirsNormalized as $ignoreDirPath) {
+                        if (strncmp($relativePath, $ignoreDirPath, strlen($ignoreDirPath)) === 0) {
                             return false;
                         }
                     }
 
                     return true;
                 }
-            )
+            ),
+            RecursiveIteratorIterator::LEAVES_ONLY
         );
 
-        foreach ($files as $file) {
+        foreach ($iterator as $file) {
             if ($file->isFile() && $file->getExtension() === 'php') {
-                $relativePath = str_replace($directory . DIRECTORY_SEPARATOR, '', $file->getPathname());
+                $relativePath = substr($file->getPathname(), strlen($directory) + 1);
 
-                if (in_array($relativePath, $ignore_files)) {
+                if (isset($ignoreFilesSet[$relativePath])) {
                     continue;
                 }
 
-                $foundClasses = self::extractClassesFromFile($file->getPathname());
-                $classes = array_merge($classes, $foundClasses);
+                // No array_merge in loop, direct append is cheaper
+                foreach (self::extractClassesFromFile($file->getPathname()) as $class => $path) {
+                    $classes[$class] = $path;
+                }
             }
         }
 
@@ -207,15 +247,23 @@ class ClassManager
 
     private static function extractClassesFromFile(string $filePath): array
     {
-        // echo "{$filePath}\n";
         $content = file_get_contents($filePath);
-        if (strpos($content, 'class') === false) {
+        if (
+            strpos($content, 'class') === false &&
+            strpos($content, 'interface') === false &&
+            strpos($content, 'trait') === false
+        ) {
             return [];
         }
 
         $cleanedContent = self::cleanPhpContent($content);
+
         preg_match('/namespace\s+([\w\\\\]+);/i', $cleanedContent, $namespace);
-        preg_match_all('/(?<!new\s)\b(?:abstract\s+|final\s+|readonly\s+)?(?:class|interface|trait)\s+([A-Za-z_][A-Za-z0-9_]*)\b/i', $cleanedContent, $matches);
+        preg_match_all(
+            '/(?<!new\s)\b(?:abstract\s+|final\s+|readonly\s+)?(?:class|interface|trait)\s+([A-Za-z_][A-Za-z0-9_]*)\b/i',
+            $cleanedContent,
+            $matches
+        );
 
         $classes = [];
         $namespace = $namespace[1] ?? '';
@@ -230,15 +278,17 @@ class ClassManager
 
     private static function cleanPhpContent(string $content): string
     {
+        // Remove comments
         $cleanedContent = preg_replace([
-            '/\/\/.*/',                    // Remove // comments
-            '/\/\*[\s\S]*?\*\//'           // Remove /* */ comments
+            '/\/\/.*$/m',          // single-line //
+            '/#.*$/m',             // single-line #
+            '/\/\*[\s\S]*?\*\//'   // multi-line /* */
         ], '', $content);
 
-        // Remove all string literals (single & double quotes)
-        $cleanedContent = preg_replace('/(["\'])(?:\\\1|.)*?\1/s', '', $cleanedContent);
+        // Remove all string literals (single or double quotes)
+        $cleanedContent = preg_replace('/(["\'])(?:\\\\.|(?!\1).)*\1/s', '""', $cleanedContent);
 
-        return $cleanedContent ?? ''; // fallback to empty string
+        return $cleanedContent ?? '';
     }
 
 
@@ -302,7 +352,6 @@ class ClassManager
 
     public static function autoload(string $class): bool
     {
-        // echo $class . "\n";
         return self::method_x($class);
     }
 
@@ -582,129 +631,7 @@ class ClassManager
         if (self::$debug) {
             error_log('Auto-loader: Using method 7');
         }
-        $hasNameSpace = strpos($class, '\\') !== false;
-        if ($hasNameSpace) {
-            $normalized = str_replace('\\', '/', $class);
-            $basename = basename($normalized);
-            $namespace = str_replace('/', '\\', dirname($normalized));
-            // eval(<<<PHP
-            //  namespace $namespace;
 
-            //  class $basename {
-            //     private static \$static_data = [];
-            //         private \$instance_data = [];
-            //         private static \$static_methods = [];
-            //         private \$instance_methods = [];
-
-            //         public static function addStaticMethod(string \$name, callable \$callback): void {
-            //             self::\$static_methods[\$name] = \$callback;
-            //         }
-
-            //         public function addInstanceMethod(string \$name, callable \$callback): void {
-            //             \$this->instance_methods[\$name] = \$callback;
-            //             }
-
-            //         public static function __callStatic(\$name, \$arguments) {
-            //             if (isset(self::\$static_methods[\$name])) {
-            //                 return (self::\$static_methods[\$name])(...\$arguments);
-            //                 }
-
-            //                 if (str_starts_with(\$name, 'get_')) {
-            //                 \$prop = substr(\$name, 4);
-            //                 return self::\$static_data[\$prop] ?? "[Static] Property '\$prop' not found.";
-            //             }
-
-            //             if (str_starts_with(\$name, 'set_')) {
-            //                 \$prop = substr(\$name, 4);
-            //                 self::\$static_data[\$prop] = \$arguments[0] ?? null;
-            //                 return;
-            //             }
-
-            //             trigger_error("Static method '\$name' does not exist in placeholder.", E_USER_WARNING);
-            //             return null;
-            //             }
-
-            //         public function __call(\$name, \$arguments) {
-            //             if (isset(\$this->instance_methods[\$name])) {
-            //                 return (\$this->instance_methods[\$name])(...\$arguments);
-            //             }
-
-            //             trigger_error("Instance method '\$name' does not exist in placeholder.", E_USER_WARNING);
-            //             return null;
-            //         }
-
-            //         public function __get(\$name) {
-            //             return \$this->instance_data[\$name] ?? "[Instance] Property '\$name' not found.";
-            //         }
-
-            //         public function __set(\$name, \$value) {
-            //             \$this->instance_data[\$name] = \$value;
-            //             }
-
-            //         public function __toString(): string {
-            //             return "Temporary placeholder class generated by autoloader (method 7).";
-            //         }
-            //         }
-            // PHP);
-        } else {
-            eval(<<<PHP
-                 class $class {
-                    private static \$static_data = [];
-                        private \$instance_data = [];
-                        private static \$static_methods = [];
-                        private \$instance_methods = [];
-                        
-                        public static function addStaticMethod(string \$name, callable \$callback): void {
-                            self::\$static_methods[\$name] = \$callback;
-                        }
-    
-                        public function addInstanceMethod(string \$name, callable \$callback): void {
-                            \$this->instance_methods[\$name] = \$callback;
-                            }
-    
-                        public static function __callStatic(\$name, \$arguments) {
-                            if (isset(self::\$static_methods[\$name])) {
-                                return (self::\$static_methods[\$name])(...\$arguments);
-                                }
-                                
-                                if (str_starts_with(\$name, 'get_')) {
-                                \$prop = substr(\$name, 4);
-                                return self::\$static_data[\$prop] ?? "[Static] Property '\$prop' not found.";
-                            }
-                            
-                            if (str_starts_with(\$name, 'set_')) {
-                                \$prop = substr(\$name, 4);
-                                self::\$static_data[\$prop] = \$arguments[0] ?? null;
-                                return;
-                            }
-    
-                            trigger_error("Static method '\$name' does not exist in placeholder.", E_USER_WARNING);
-                            return null;
-                            }
-    
-                        public function __call(\$name, \$arguments) {
-                            if (isset(\$this->instance_methods[\$name])) {
-                                return (\$this->instance_methods[\$name])(...\$arguments);
-                            }
-                            
-                            trigger_error("Instance method '\$name' does not exist in placeholder.", E_USER_WARNING);
-                            return null;
-                        }
-    
-                        public function __get(\$name) {
-                            return \$this->instance_data[\$name] ?? "[Instance] Property '\$name' not found.";
-                        }
-    
-                        public function __set(\$name, \$value) {
-                            \$this->instance_data[\$name] = \$value;
-                            }
-    
-                        public function __toString(): string {
-                            return "Temporary placeholder class generated by autoloader (method 7).";
-                        }
-                        }
-                PHP);
-        }
         return true;
         error_log('Auto-loader: Method 7 failed (skipped)');
         return false;
