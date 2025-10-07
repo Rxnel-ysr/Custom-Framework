@@ -53,18 +53,61 @@ class Route extends RouterBase implements RouterInterface
         return $_POST['_HTTP_METHOD'] ?? $_SERVER['REQUEST_METHOD'] ?? 'GET';
     }
 
-    public static function middleware(string|array $middleware)
+    public static function middleware(string|array $middleware, ?callable $callback = null): null|self
     {
         if (!is_array($middleware)) {
             $middleware = [$middleware];
         }
-        self::$globalMiddleware = array_merge(self::$globalMiddleware, $middleware);
-        return new Self();
+
+        if (!is_null($callback)) {
+            return self::group(['middleware' => $middleware], $callback);
+        }
+
+        // Store route-specific middleware for the last added route
+        if (self::$lastRoute !== null) {
+            $method = self::$lastRoute['method'];
+            $url = self::$lastRoute['url'];
+
+            // Find and update the node with the new middleware
+            $segments = [];
+            $token = strtok($url, '/');
+            while ($token !== false) {
+                $segments[] = $token;
+                $token = strtok('/');
+            }
+
+            $node = self::$root;
+            foreach ($segments as $segment) {
+                if (preg_match('/\{([a-zA-Z0-9_]+)\}/', $segment, $matches)) {
+                    $segment = '{}';
+                }
+
+                if (isset($node->children[$segment])) {
+                    $node = $node->children[$segment];
+                } else {
+                    // Node not found, can't update middleware
+                    return new self();
+                }
+            }
+
+            // Update the middleware for this specific node
+            $node->middleware = array_merge($node->middleware, $middleware);
+
+            // Also update lastRoute for chaining
+            self::$lastRoute['middleware'] = array_merge(
+                self::$lastRoute['middleware'] ?? [],
+                $middleware
+            );
+        } else {
+            // Fallback to global middleware if no specific route
+            self::$globalMiddleware = array_merge(self::$globalMiddleware, $middleware);
+        }
+
+        return new self();
     }
 
     public static function add(string $method, string $url, callable|array $action, array $middleware = [])
     {
-        // echo 'called for ' . $url . '<br>';
         self::$lastRoute = null;
         // Apply group prefix
         $url = trim(self::$currentGroup['prefix'] . '/' . trim($url, '/'), '/');
@@ -72,7 +115,6 @@ class Route extends RouterBase implements RouterInterface
 
         // Apply group middleware
         $middleware = array_merge(self::$currentGroup['middleware'], $middleware);
-        // dd($middleware);
 
         // Apply namespace to controller actions
         if (is_array($action) && !empty(self::$currentGroup['namespace'])) {
@@ -103,21 +145,14 @@ class Route extends RouterBase implements RouterInterface
 
         $node->handlers[$method] = $action;
         $node->paramKeys = $paramKeys;
-        $node->middleware = $middleware;
+        $node->middleware = $middleware; // Initialize middleware here
 
-
-        // self::$routeMiddleware[$method][$url] = $middleware;
         self::$lastRoute = [
             'method' => $method,
             'url' => $url,
             'action' => $action,
             'middleware' => $middleware
         ];
-
-        // echo 'At add:
-        // <pre>';
-        // var_dump($url, self::$currentGroup['middleware'], self::$routeMiddleware[$method][$url]);
-        // echo '</pre>';
 
         return new Self();
     }

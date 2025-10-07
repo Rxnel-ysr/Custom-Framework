@@ -51,13 +51,40 @@ class Route extends RouterBase implements RouterInterface
         return '/' . trim($path, '/');
     }
 
-    public static function middleware(string|array $middleware)
+    public static function middleware(string|array $middleware, ?callable $callback = null): null|self
     {
         if (!is_array($middleware)) {
             $middleware = [$middleware];
         }
-        self::$globalMiddleware = array_merge(self::$globalMiddleware, $middleware);
-        return new Self();
+
+        if (!is_null($callback)) {
+            return self::group(['middleware' => $middleware], $callback);
+        }
+
+        // Store route-specific middleware for the last added route
+        if (self::$lastRoute !== null) {
+            $method = self::$lastRoute['method'];
+            $url = self::$lastRoute['url'];
+
+            // Update the middleware for this specific route
+            if (isset(self::$routes[$method][$url])) {
+                self::$routes[$method][$url]['middleware'] = array_merge(
+                    self::$routes[$method][$url]['middleware'] ?? [],
+                    $middleware
+                );
+            }
+
+            // Also update lastRoute for chaining
+            self::$lastRoute['middleware'] = array_merge(
+                self::$lastRoute['middleware'] ?? [],
+                $middleware
+            );
+        } else {
+            // Fallback to global middleware if no specific route
+            self::$globalMiddleware = array_merge(self::$globalMiddleware, $middleware);
+        }
+
+        return new self();
     }
 
     private static function parseRoutePattern(string $pattern): array
@@ -105,8 +132,8 @@ class Route extends RouterBase implements RouterInterface
 
                 // echo 'Regex pattern: ' .$regexPattern . '<br>';
                 $paramKeys[] = $paramName;
-            }  else{
-                $regexPattern .= preg_quote($segment,'/');
+            } else {
+                $regexPattern .= preg_quote($segment, '/');
             }
 
             // echo $regexPattern . '<br>';
@@ -116,9 +143,9 @@ class Route extends RouterBase implements RouterInterface
 
         if (! empty($regexPattern)) {
             $regexPattern =  $regexPattern . '$#';
-        } else{
+        } else {
             $regexPattern = null;
-        } 
+        }
 
 
         return [
@@ -133,7 +160,7 @@ class Route extends RouterBase implements RouterInterface
 
         // Apply group prefix
         $url = trim(self::$currentGroup['prefix'] . self::normalizePath($url), '/');
-        self::$routeList[$method][] = '/'.$url;
+        self::$routeList[$method][] = '/' . $url;
 
         // Apply group middleware
         $middleware = array_merge(self::$currentGroup['middleware'], $middleware);
@@ -153,7 +180,7 @@ class Route extends RouterBase implements RouterInterface
             'pattern' => $regexPattern,
             'patternExplanation' => translateRegex($regexPattern),
             'action' => $action,
-            'middleware' => $middleware,
+            'middleware' => $middleware, // Initialize middleware here
             'paramKeys' => $paramKeys,
             'url' => $url
         ];
@@ -344,7 +371,7 @@ class Route extends RouterBase implements RouterInterface
             return Debugger::showErrorPage(404, 'Not found');
         }
 
-        if(isset(self::$routes[$method][$requestUri])){
+        if (isset(self::$routes[$method][$requestUri])) {
             // echo 'Here';
             // die;
             $res = self::$routes[$method][$requestUri];
@@ -355,15 +382,9 @@ class Route extends RouterBase implements RouterInterface
 
             $middleware = array_merge(self::$globalMiddleware, $res['middleware'] ?? []);
 
-            foreach ($middleware as $m) {
-                $m = explode(':', $m, 2);
-                $response = callFuncWithParams([$m[0]::class, 'handle'], explode($m[1], ','));
-                if ($response !== true) {
-                    return $response;
-                }
-            }
+            $destination = fn() => self::execute($res['action'], []);
 
-            return self::execute($res['action'],[]);
+            return self::pipeline($request, $middleware, $destination);;
         }
 
         // echo '<pre>';
@@ -371,10 +392,10 @@ class Route extends RouterBase implements RouterInterface
         // echo '</pre>';
         // die;
         foreach (self::$routes[$method] as $route) {
-            if($route['pattern'] == null) continue;
+            if ($route['pattern'] == null) continue;
             // echo $route['pattern'];
             // continue;
-            
+
             // echo 'Dispatch: ' . htmlspecialchars($route['pattern']) . '<br>';
             // echo $route['pattern'];
             // continue;
@@ -395,8 +416,6 @@ class Route extends RouterBase implements RouterInterface
                 }
 
                 $middleware = array_merge(self::$globalMiddleware, $route['middleware'] ?? []);
-
-                $middleware = array_merge(self::$globalMiddleware, $node->middleware ?? []);
 
                 $destination = fn() => self::execute($route['action'], $orderedParams);
 

@@ -61,20 +61,47 @@ class Route extends RouterBase implements RouterInterface
         return '/' . trim($path, '/');
     }
 
-    public static function middleware(string|array $middleware)
+    public static function middleware(string|array $middleware, ?callable $callback = null): null|self
     {
         if (!is_array($middleware)) {
             $middleware = [$middleware];
         }
-        self::$globalMiddleware = array_merge(self::$globalMiddleware, $middleware);
-        return new Self();
+
+        if (!is_null($callback)) {
+            return self::group(['middleware' => $middleware], $callback);
+        }
+
+        // Store route-specific middleware for the last added route
+        if (self::$lastRoute !== null) {
+            self::$lastRoute['middleware'] = array_merge(
+                self::$lastRoute['middleware'] ?? [],
+                $middleware
+            );
+
+            // Update the node with the new middleware
+            $url = trim(self::$lastRoute['url'], '/');
+            $segments = explode('/', $url);
+            $result = self::searchNode(self::$root, $segments);
+
+            if ($result !== null) {
+                $result['node']->middleware = array_merge(
+                    $result['node']->middleware,
+                    $middleware
+                );
+            }
+        } else {
+            // Fallback to global middleware if no specific route
+            self::$globalMiddleware = array_merge(self::$globalMiddleware, $middleware);
+        }
+
+        return new self();
     }
 
     private static function insertNode(RadixNode $node, array $segments, string $method, callable|array $action, array $middleware, array $paramKeys): RadixNode
     {
         if (empty($segments)) {
             $node->handlers[$method] = $action;
-            $node->middleware = $middleware;
+            $node->middleware = $middleware; // Set middleware for this node
             $node->paramKeys = $paramKeys;
             return $node;
         }

@@ -151,11 +151,13 @@ Route::get('/query', function (Request $request) {
 
 Route::group(['middleware' => null], function () {
 
-   Route::get('/test-middleware', function () {
-      return "Hello from end point!";
-   });
+ 
 
 });
+
+Route::get('/test-middleware', function () {
+   return "Hello from end point!";
+})->middleware('test');
 
 
 Route::fallback(function () {
