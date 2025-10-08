@@ -89,9 +89,6 @@ class Route extends RouterBase implements RouterInterface
                     $middleware
                 );
             }
-        } else {
-            // Fallback to global middleware if no specific route
-            self::$globalMiddleware = array_merge(self::$globalMiddleware, $middleware);
         }
 
         return new self();
@@ -333,29 +330,31 @@ class Route extends RouterBase implements RouterInterface
     // Resourceful routing (RESTful)
     public static function resource(string $name, string $controller, array $options = []): void
     {
-        // $name = trim($name, '/');
-        $only = $options['only'] ?? ['index', 'show', 'create', 'store', 'edit', 'update', 'destroy'];
-        $except = $options['except'] ?? [];
+        $name = trim($name, '/');
+        $only = array_fill_keys($options['only'] ?? ['index', 'show', 'create', 'store', 'edit', 'update', 'destroy'], true);
+        $except = array_fill_keys($options['except'] ?? [], true);
         $names = $options['names'] ?? [];
         $middleware = $options['middleware'] ?? [];
 
         $routes = [
-            'index' => ['GET', "/$name", [$controller, 'index']],
-            'create' => ['GET', "/$name/create", [$controller, 'create']],
-            'store' => ['POST', "/$name", [$controller, 'store']],
-            'show' => ['GET', '/' . $name . '/{id}', [$controller, 'show']],
-            'edit' => ['GET', '/' . $name . '/{id}/edit', [$controller, 'edit']],
-            'update' => ['PUT', '/' . $name . '/{id}', [$controller, 'update']],
-            'destroy' => ['DELETE', '/' . $name . '/{id}', [$controller, 'destroy']],
+            'index' => ['GET', "/{$name}", [$controller, 'index']],
+            'create' => ['GET', "/{$name}/create", [$controller, 'create']],
+            'store' => ['POST', "/{$name}", [$controller, 'store']],
+            'show' => ['GET', "/{$name}/{id}", [$controller, 'show']],
+            'edit' => ['GET', "/{$name}/{id}/edit", [$controller, 'edit']],
+            'update' => ['PUT', "/{$name}/{id}", [$controller, 'update']],
+            'destroy' => ['DELETE', "/{$name}/{id}", [$controller, 'destroy']],
         ];
 
-        $index = -1;
-        foreach ($routes as $action => $route) {
-            $index++;
-            if (in_array($action, $only) && !in_array($action, $except)) {
-                self::add($route[0], $route[1], $route[2])->middleware($middleware)->name($names[$index] ?? '');
+        self::group(['middleware' => $middleware], function () use ($routes, $only, $except, $names, $name) {
+            $index = -1;
+            foreach ($routes as $action => $route) {
+                $index++;
+                if (($only[$action] ?? false) && (!$except[$action] ?? true)) {
+                    self::add($route[0], $route[1], $route[2])->name($names[$index] ?? "{$name}.{$route[2][1]}");
+                }
             }
-        }
+        });
     }
 
     // View routes

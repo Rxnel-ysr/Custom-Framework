@@ -149,11 +149,7 @@ Route::get('/query', function (Request $request) {
    return response()->json((new QueryBuilder())->table('posts')->get());
 });
 
-Route::group(['middleware' => null], function () {
-
- 
-
-});
+Route::middleware('', function () {});
 
 Route::get('/test-middleware', function () {
    return "Hello from end point!";
