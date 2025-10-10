@@ -113,12 +113,10 @@ class Command
 
                 $bag = new ParamBag($params);
                 $callable = $command['command']->bindTo($bag, ParamBag::class);
-                $callable(self::$argv);
+                return $callable(self::$argv);
             } elseif (is_string($command['command'])) {
-                shell_exec($command['command']);
+                return shell_exec($command['command']);
             }
-
-            return 0;
         } catch (Throwable $e) {
             echo "Error running command: {$e->getMessage()}";
             return 1;
@@ -193,28 +191,24 @@ class Command
     }
 
     /**
-     * Return PHP CLI parameter at a given index with optional type filtering.
+     * Prompt
      *
-     * @param int $n The parameter index.
-     * @param string $prompt A prompt to display if the parameter is not provided.
+     * @param string $prompt A prompt to display.
      * @param mixed $default The default value to return if the parameter is not provided.
      * @param string|null $type The expected type of the parameter (bool, int, float, string, array, json).
      * @return mixed The value of the CLI parameter, converted to the expected type, or the default value.
      */
-    public static function parameter(int $n, ?string $prompt = null, mixed $default = '', ?string $type = null): mixed
+    public static function prompt(string $prompt, mixed $default = '', ?string $type = null): mixed
     {
-        global $argv;
+        $value = readline($prompt) ?: $default;
 
-        $value = $argv[$n] ?? (isset($default) && !empty($default) ? $default : (!empty($prompt) ? trim(readline($prompt)) : null));
-
-        // Type filtering
         return match ($type) {
-            'bool'   => filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? (bool)$default,
-            'int'    => filter_var($value, FILTER_VALIDATE_INT) ?? (int)$default,
-            'float'  => filter_var($value, FILTER_VALIDATE_FLOAT) ?? (float)$default,
-            'array'  => is_string($value) ? explode(',', $value) : (is_array($value) ? $value : [$value]),
-            'json' => json_decode($value, true) ?? (json_last_error() === JSON_ERROR_NONE ? json_decode($default, true) : $default),
-            default  => $value, // Default as string
+            'bool'  => filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? (bool)$default,
+            'int'   => filter_var($value, FILTER_VALIDATE_INT) ?? (int)$default,
+            'float' => filter_var($value, FILTER_VALIDATE_FLOAT) ?? (float)$default,
+            'array' => is_string($value) ? explode(',', $value) : (is_array($value) ? $value : [$value]),
+            'json'  => json_decode($value, true) ?? (json_last_error() === JSON_ERROR_NONE ? json_decode($default, true) : $default),
+            default => $value,
         };
     }
 }

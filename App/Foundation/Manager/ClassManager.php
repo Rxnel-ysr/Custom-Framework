@@ -137,9 +137,10 @@ class ClassManager
     public static function loadAllClass(array $excepts = []): int
     {
         $loadedCount = 0;
+        $excepts = array_fill_keys($excepts, true);
 
         foreach (self::$classes as $class => $path) {
-            if (in_array($class, $excepts, true)) {
+            if ($excepts[$class] ?? false) {
                 continue;
             }
 

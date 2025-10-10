@@ -84,12 +84,17 @@ abstract class Migration
 
             $old_migrations = arrayIntersectOnly($current_migrations, $filenames);
 
+            $new_migrations = array_fill_keys($new_migrations, true);
+            $old_migrations = array_fill_keys($old_migrations, true);
+
             $files = array_map(function ($file) use ($new_migrations, $old_migrations) {
-                if (in_array(basename($file), $new_migrations)) {
+                $basename = basename($file);
+
+                if ($new_migrations[$basename] ?? false) {
                     return ['file' => $file, 'status' => 'pending'];
                 };
 
-                if (in_array(basename($file), $old_migrations)) {
+                if ($old_migrations[$basename] ?? false) {
                     return ['file' => $file, 'status' => 'done'];
                 }
                 return null;
@@ -234,7 +239,7 @@ class Schema
 class Blueprint extends Connection
 {
     use Macroable;
-    
+
     private $pdo;
     private $stmt;
     private $table_name;

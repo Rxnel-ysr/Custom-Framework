@@ -74,4 +74,5 @@ return array (
   'App\\Foundation\\Compiler\\Compile' => 'App/Foundation/Compiler/Compile.php',
   'App\\Foundation\\Providers\\AppServiceProvider' => 'App/Providers/AppServiceProvider.php',
   'TestErrHandler' => 'test/TestErrorHandler.php',
+  'App\\Foundation\\Generator\\TemplateBuilder' => 'App/Foundation/Generator/TemplateBuilder.php',
 );

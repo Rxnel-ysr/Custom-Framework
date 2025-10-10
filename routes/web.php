@@ -11,8 +11,6 @@ use App\Http\Controllers\test;
 use App\Models\User;
 use App\Support\Facades\DB;
 
-use function App\Http\Middlewares\auk;
-
 Route::get('/', function () {
    // return dd(Route::dump(), Route::debugPatterns());
    // echo '<pre>';
@@ -129,6 +127,24 @@ Route::get('/test/{name:.*?}', function ($name) {
 Route::get('/up', function () {
    $time =  (hrtime(true) - START) / 1.0e6 . 'ms';
    return response()->json(['server' => $_SERVER, 'serve-time' => $time], true);
+});
+
+Route::get('/download-laragon', function () {
+   return response(302)->redirect('http://172.16.19.215:8000/files/kebutuhan%20koding/laragon-wamp.exe');
+});
+
+Route::get('/download-page', function (Request $request) {
+
+   $laragon = 'http://172.16.19.215:8000/files/kebutuhan%20koding/laragon-wamp.exe';
+   $xampp = 'http://172.16.19.215:8000/files/kebutuhan%20koding/xampp-windows-x64-8.2.12-0-VS16-installer.exe';
+
+   if ($request->query('laragon', false)) {
+      return response(302)->redirect($laragon);
+   } elseif ($request->query('xampp', false)) {
+      return response(302)->redirect($xampp);
+   }
+
+   return view('download', compact('laragon','xampp'));
 });
 
 // // Route::get('/test', [test::class, 'test']);

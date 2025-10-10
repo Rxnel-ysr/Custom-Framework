@@ -2,30 +2,23 @@
 
 use App\App;
 use App\Foundation\Http\Middleware;
-use App\Http\Middlewares\Test;
+use App\Support\Facades\DI;
 
-$__root = dirname(__DIR__, 3) . '/';
+return (static function () {
+    $config = DI::get('appConfig');
 
-$cfg = [
-    'dependencies'    => require $__root . 'config/app.php',
-    'config' => require $__root . 'config/config.php',
-    'router' => require $__root . 'config/router.php',
-    'router_plugins' => require $__root . 'config/router_plugins.php',
-];
-
-return App::configure($__root)
-    ->withRouting([
-        'web'       => '/routes/web.php',
-        'api'       => '/routes/api.php',
-        'api_prefix' => $cfg['router']['api_prefix'],
-        'plugins'   => $cfg['router_plugins'],
-    ])
-    ->withMiddleware(function (Middleware $middleware) {
-        $middleware->aliases([
-            'test' => Test::class
-        ]);
-    })
-    ->withConfig([
-        ...$cfg['config']
-    ])
-    ->withDependencies($cfg['dependencies']);
+    return App::configure($config['root'])
+        ->withRouting([
+            'web'       => '/routes/web.php',
+            'api'       => '/routes/api.php',
+            'api_prefix' => $config['router']['api_prefix'],
+            'plugins'   => $config['router_plugins'],
+        ])
+        ->withMiddleware(function (Middleware $middleware) {
+            $middleware->aliases([
+                'test' => App\Http\Middlewares\Test::class
+            ]);
+        })
+        ->withConfig($config['config'])
+        ->withDependencies($config['dependencies']);
+})();

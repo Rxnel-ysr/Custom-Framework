@@ -346,8 +346,9 @@ class Disk implements Stringable
      * @return void
      * @throws Exception If deletion of any item fails.
      */
-    public function cleanDir(): void
+    public function cleanDir(array $excepts = []): void
     {
+        $excepts = array_flip($excepts);
         $iterator = new RecursiveIteratorIterator(
             new RecursiveDirectoryIterator($this->root, RecursiveDirectoryIterator::SKIP_DOTS),
             RecursiveIteratorIterator::CHILD_FIRST
@@ -355,11 +356,16 @@ class Disk implements Stringable
 
         foreach ($iterator as $item) {
             if ($item->isDir()) {
-                if (!rmdir($item->getPathname())) {
+                if (!@rmdir($item->getPathname())) {
                     throw new Exception("Failed to remove directory: {$item->getPathname()}");
                 }
             } else {
-                if (!unlink($item->getPathname())) {
+                $filepath = $item->getPathname();
+                $basename = basename($filepath);
+
+                if (isset($excepts[$basename])) continue;
+
+                if (!unlink($filepath)) {
                     throw new Exception("Failed to delete file: {$item->getPathname()}");
                 }
             }

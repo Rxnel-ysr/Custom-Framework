@@ -555,16 +555,16 @@ class Collection implements JsonSerializable, Countable, IteratorAggregate, Arra
 
     public function except(array|string $keys): self
     {
-        $keys = (array)$keys;
+        $keys = array_flip((array)$keys);
         $filtered = [];
 
         foreach ($this->items as $item) {
             if (is_array($item)) {
-                $filtered[] = array_diff_key($item, array_flip($keys));
+                $filtered[] = array_diff_key($item, $keys);
             } elseif (is_object($item)) {
                 $filteredItem = [];
                 foreach ($item as $key => $value) {
-                    if (!in_array($key, $keys)) {
+                    if (!isset($keys[$key])) {
                         $filteredItem[$key] = $value;
                     }
                 }

@@ -1,0 +1,10 @@
+<?php
+
+namespace App\Models;
+
+use App\Foundation\Model;
+
+class $model_name extends Model
+{
+    //
+}

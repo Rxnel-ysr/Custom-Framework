@@ -8,6 +8,8 @@ use App\Support\Facades\DI;
 use Exception;
 use ReflectionFunction;
 
+class CompilerException extends Exception{}
+
 class Compile
 {
     private static string $ext;

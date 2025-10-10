@@ -4,6 +4,7 @@ use App\Foundation\CLI\Command;
 use App\Foundation\Database\Migration;
 use App\Foundation\Manager\ClassManager;
 use App\Foundation\Database\Connection;
+use App\Foundation\Generator\TemplateBuilder;
 use App\Foundation\System\Disk;
 use App\Support\Facades\DI;
 use App\Support\Facades\Rx;
@@ -24,10 +25,11 @@ Command::register('help', fn() => Command::showHelp())
     ->help('Show help message then exit.');
 
 Command::register('serve', function () {
-    $ipPort = $this->ipPort ?? 'localhost:8000';
-    shell_exec("php -S {$ipPort} public/index.php");
+    $host = $this->host ?? '127.0.0.1';
+    $port = $this->port ?? '8000';
+    shell_exec("php -S {$host}:{$port} public/index.php");
 })->alias('s')
-    ->param(['ipPort'])
+    ->param(['host', 'port'])
     ->help('Start the local dev server, default localhost:8000');
 
 // --- Migrations ---
@@ -51,49 +53,31 @@ Command::register('migrate:rollback', fn() => Migration::goToPrevMigrationsAndUn
     ->help('Rolling back the migrations');
 
 // --- Generators ---
-Command::register('make:controller', function () use ($root) {
-    $name       = Command::parameter(2, 'Name of controller: ', '', 'string');
-    $isResource = Command::parameter(3, '', 'no') === '-r';
+Command::register('make:controller', function ($argv) {
+    $name       = $this->name ?? Command::prompt('Name of controller: ');
+    $isResource = $argv->flag('r');
+    $root = DI::get('appConfig')['root'];
 
-    $fileName = $root . '/App/Http/Controllers/' . str_replace('.', DIRECTORY_SEPARATOR, $name) . '.php';
+    $fileName =  $root . 'App/Http/Controllers/' . str_replace('.', DIRECTORY_SEPARATOR, $name) . '.php';
     if (file_exists($fileName)) {
         echo "[WARN] Controller already exist [$name]";
-        exit(1);
+        return 1;
     }
 
-    $controllerRessource = <<<PHP
-    <?php
-    namespace App\Http\Controllers;
-
-    use App\Foundation\Http\Request;
-
-    class $name extends Controller
-    {
-        public function index() {}
-        public function create() {}
-        public function store(Request \$request) {}
-        public function show(string \$id) {}
-        public function edit(string \$id) {}
-        public function update(Request \$request, string \$id) {}
-        public function destroy(string \$id) {}
+    if ($isResource) {
+        $generator = new TemplateBuilder($root . 'storage/templates/controller_resources.stub');
+    } else {
+        $generator = new TemplateBuilder($root . 'storage/templates/controller.stub');
     }
-    PHP;
 
-    $controller = <<<PHP
-    <?php
-    namespace App\Http\Controllers;
+    $generator->rules([
+        'controller_name' => $name
+    ])->parse()
+        ->save($fileName);
 
-    use App\Foundation\Http\Request;
-
-    class $name extends Controller
-    {
-        //
-    }
-    PHP;
-
-    file_put_contents($fileName, $isResource ? $controllerRessource : $controller);
     echo '[INFO] Created controller [' . str_replace($root, '', $fileName) . ']' . PHP_EOL;
-})
+    return 0;
+})->param(['name'])
     ->alias('mc')
     ->help('Make a new controller');
 
@@ -149,8 +133,8 @@ var_export(ClassManager::getMethodDetails(Command::parameter(2, 'Classname: ', '
     ->alias('cmi');
 
 Command::register('clean-views', function () {
-    $views_disk = new Disk(dirname(__DIR__, 2) . '/storage/cache/views');
-    $views_disk->cleanDir();
+    $views_disk = new Disk(dirname(__DIR__, 1) . '/storage/cache/views');
+    $views_disk->cleanDir(['.gitignore']);
 })->alias('cv')
     ->help('Clean all cached compiled views');
 
