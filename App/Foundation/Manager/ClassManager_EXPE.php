@@ -21,6 +21,7 @@ class ClassManager
     private static bool $is_initialized = false;
     private static bool $debug = false;
     private static bool $auto_resolve = false;
+    private static bool $check_filemtime = false;
     private static array $setting;
     private static array $files;
 
@@ -33,6 +34,7 @@ class ClassManager
         string $root,
         bool $debug = true,
         bool $auto = false,
+        bool $check_filemtime = false,
         array $setting = [
             'classmap' => 'path/to/class/map.php',
             'cache_classmap' => 'path/to/cache/class/map.php',
@@ -48,6 +50,7 @@ class ClassManager
 
         self::$debug = $debug;
         self::$setting = $setting;
+        self::$check_filemtime = $check_filemtime;
         self::$root = rtrim($root, '/') . '/';
 
         if (self::$setting === $dummy_setting) {
@@ -71,14 +74,13 @@ class ClassManager
             if ($auto && empty(self::$classes)) {
 
                 $classes = self::scanForClasses(self::$root);
-                $res = [];
                 foreach ($classes as $cls => $spec) {
                     $spec['filepath'] = self::normalizePathToRelative($spec['filepath']);
                     $normalizedClasses[$cls] = $spec;
                 }
 
-                self::updateClassesMapping($res);
-                self::updateCacheClassesMapping($res);
+                self::updateClassesMapping($classes);
+                self::updateCacheClassesMapping($classes);
             }
 
             self::$setting['where_to_look_class'] = rtrim(self::$setting['where_to_look_class'], '/\\') . '/';
@@ -170,6 +172,7 @@ class ClassManager
 
     public static function scanForClasses(
         string $directory,
+        bool $check_filemtime = false,
         array $ignore_dirs = [],
         array $ignore_files = [],
         array $except_files = []
@@ -239,7 +242,7 @@ class ClassManager
                 }
 
                 // No array_merge in loop, direct append is cheaper
-                foreach (self::extractClassesFromFile($file->getPathname()) as $class => $specs) {
+                foreach (self::extractClassesFromFile($file->getPathname(), $check_filemtime) as $class => $specs) {
                     $classes[$class] = $specs;
                 }
             }
@@ -291,7 +294,7 @@ class ClassManager
      * @param string $filePath
      * @return array<string, array{filepath: string, depends: array<int, string>, init: array<int, string>}>
      */
-    private static function extractClassesFromFile(string $filePath): array
+    private static function extractClassesFromFile(string $filePath, bool $check_filemtime = false): array
     {
         $content = file_get_contents($filePath);
         if (
@@ -326,7 +329,8 @@ class ClassManager
             $classes[$fullClass] = [
                 'filepath' => $filePath,
                 'depends'  => $directives['depends'],
-                'init'     => $directives['init']
+                'init'     => $directives['init'],
+                'filemtime' => $check_filemtime ? filemtime($filePath) : 0
             ];
         }
 
@@ -416,17 +420,19 @@ class ClassManager
     /**
      * Load class and resolve init methods and dependencies
      *
-     * @param array{filepath: string, depends: array<int, string>, init: array<int, string>} $class
+     * @param array{filepath: string, depends: array<int, string>, init: array<int, string>, filemtime: int} $class
      * @param string $classname The fully qualified class name being loaded
      * @return bool
      */
-    public static function loadClass(array $class, string $classname)
+    public static function loadClass(string $classname, bool $check_filemtime, array $spec)
     {
-
-        $classPath = realpath(self::$root . $class['filepath']);
+        $classPath = self::$root . $spec['filepath'];
+        if ($check_filemtime && filemtime($classPath) > $spec['filemtime']) {
+            return false;
+        }
         $classDir = dirname($classPath) . '/';
 
-        foreach ($class['depends'] ?? [] as $dependency) {
+        foreach ($spec['depends'] ?? [] as $dependency) {
             if (strpos($dependency, '.php') !== false) {
                 $depPath = realpath($classDir . $dependency);
                 if ($depPath && strpos($depPath, self::$root) === 0) {
@@ -443,7 +449,7 @@ class ClassManager
 
         require_once $classPath;
 
-        foreach ($class['init'] ?? [] as $setup) {
+        foreach ($spec['init'] ?? [] as $setup) {
             if (strpos($setup, '::') !== false) {
                 [$initClass, $method] = explode('::', $setup, 2);
                 if (method_exists($initClass, $method)) {
@@ -451,7 +457,8 @@ class ClassManager
                 } elseif (self::$debug) {
                     error_log("Auto-loader: Init method not found: {$setup}");
                 }
-            } elseif (is_callable($setup)) {
+            } elseif (function_exists($setup)) {
+                // $realSetup = strtok($setup, '()');
                 $setup();
             } elseif (method_exists($classname, $setup)) {
                 call_user_func([$classname, $setup]);
@@ -580,7 +587,7 @@ class ClassManager
     public static function loadClassFromCache(string $class): array|false
     {
         if (isset(self::$cache_classes[$class]) && file_exists(self::$root . self::$cache_classes[$class]['filepath'])) {
-            self::loadClass(self::$cache_classes[$class], $class);
+            self::loadClass($class, false, self::$cache_classes[$class],);
             return self::$cache_classes[$class];
         }
 
@@ -613,7 +620,7 @@ class ClassManager
 
     public static function searchClass(string $class, string $dir, array $ignore_dirs = [], array $ignore_files = [], array $except_files = []): string|false
     {
-        $classes = self::scanForClasses($dir, $ignore_dirs, $ignore_files, $except_files);
+        $classes = self::scanForClasses($dir, false, $ignore_dirs, $ignore_files, $except_files);
         return $classes[$class] ?? false;
     }
 
@@ -629,7 +636,15 @@ class ClassManager
         }
 
         if (isset(self::$classes[$class]) && file_exists(self::$root . self::$classes[$class]['filepath'])) {
-            self::loadClass(self::$classes[$class], $class);
+            if (! self::loadClass($class, self::$check_filemtime, self::$classes[$class])) {
+                $extracted = self::extractClassesFromFile(self::$classes[$class]['filepath']);
+                foreach ($extracted as $classname => $specs) {
+                    self::registerNewClass($classname, $specs);
+                    if ($classname == $class) {
+                        self::loadClass($classname, false, $specs);
+                    }
+                }
+            }
 
             if (self::exists($class)) {
                 self::messageForResolvedClass($class, 1);
@@ -725,7 +740,7 @@ class ClassManager
             return false;
         }
 
-        $classes = self::scanForClasses(self::$root);
+        $classes = self::scanForClasses(self::$root, true);
         $normalizedClasses = [];
 
         foreach ($classes as $cls => $spec) {

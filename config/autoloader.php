@@ -17,7 +17,7 @@ return [
     |
     */
 
-    'debug' => true,
+    'debug' => false,
 
     /*
     |--------------------------------------------------------------------------
@@ -31,6 +31,19 @@ return [
     */
 
     'auto-resolve' => true,
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Autoloader Auto Mode
+    |--------------------------------------------------------------------------
+    |
+    | When enabled, the autoloader will output handle cold start and map every
+    | class automatically.
+    */
+    'auto' => true,
+
+    'check_filemtime' => true,
 
     /*
     |--------------------------------------------------------------------------
@@ -66,16 +79,6 @@ return [
     | will be searched in 'App/Foundation/aClass.php'
     */
     'where_to_look_class' => 'App/Foundation',
-
-    /*
-    |--------------------------------------------------------------------------
-    | Autoloader Auto Mode
-    |--------------------------------------------------------------------------
-    |
-    | When enabled, the autoloader will output handle cold start and map every
-    | class automatically.
-    */
-    'auto' => true,
 
 
     /*

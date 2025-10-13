@@ -9,6 +9,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1749689049,
   ),
   'App\\Http\\Controllers\\testing' => 
   array (
@@ -19,6 +20,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1749717795,
   ),
   'App\\Http\\Middlewares\\Test' => 
   array (
@@ -29,6 +31,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1759836209,
   ),
   'App\\Http\\Controllers\\ResourcesController' => 
   array (
@@ -39,6 +42,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1760087774,
   ),
   'App\\Http\\Controllers\\Test' => 
   array (
@@ -49,6 +53,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1757326267,
   ),
   'App\\Foundation\\Http\\Controller' => 
   array (
@@ -59,6 +64,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1747444586,
   ),
   'App\\Reactive\\CounterComponent' => 
   array (
@@ -69,6 +75,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1749643029,
   ),
   'App\\Reactive\\CounterTest' => 
   array (
@@ -79,6 +86,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1749700518,
   ),
   'App\\Reactive\\Oka' => 
   array (
@@ -89,6 +97,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1749778893,
   ),
   'App\\Reactive\\Lists' => 
   array (
@@ -99,6 +108,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1749727184,
   ),
   'App\\Models\\User' => 
   array (
@@ -109,6 +119,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1747559703,
   ),
   'App\\Models\\Test' => 
   array (
@@ -119,6 +130,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1747444586,
   ),
   'App\\App' => 
   array (
@@ -129,6 +141,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1760270180,
   ),
   'App\\Foundation\\Http\\TrieNode' => 
   array (
@@ -139,6 +152,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1759904985,
   ),
   'App\\Foundation\\Http\\Route' => 
   array (
@@ -149,6 +163,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1759905030,
   ),
   'RouterInterface' => 
   array (
@@ -159,6 +174,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1759830693,
   ),
   'RouterBase' => 
   array (
@@ -169,6 +185,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1759830693,
   ),
   'App\\Foundation\\Http\\RadixNode' => 
   array (
@@ -179,6 +196,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1759905030,
   ),
   'App\\Foundation\\Http\\HttpHeaders' => 
   array (
@@ -189,6 +207,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1749443884,
   ),
   'App\\Foundation\\Http\\Response' => 
   array (
@@ -199,6 +218,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1757510157,
   ),
   'App\\Foundation\\Http\\ReqRequest' => 
   array (
@@ -209,6 +229,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1748006536,
   ),
   'App\\Foundation\\Http\\StaticFile' => 
   array (
@@ -220,6 +241,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1760327717,
   ),
   'App\\Foundation\\Http\\Request' => 
   array (
@@ -230,6 +252,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1754485173,
   ),
   'App\\Foundation\\Database\\QueryBuilder' => 
   array (
@@ -240,6 +263,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1757231328,
   ),
   'App\\EXPE\\Foundation\\Model' => 
   array (
@@ -250,6 +274,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1747559330,
   ),
   'App\\EXPE\\Foundation\\Database\\QueryBuilder' => 
   array (
@@ -260,6 +285,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1757218348,
   ),
   'App\\Foundation\\Database\\Connection' => 
   array (
@@ -270,6 +296,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1747444586,
   ),
   'App\\Foundation\\Database\\Migration' => 
   array (
@@ -280,6 +307,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1760014334,
   ),
   'App\\Foundation\\Database\\Schema' => 
   array (
@@ -290,6 +318,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1760014334,
   ),
   'App\\Foundation\\Database\\Blueprint' => 
   array (
@@ -300,6 +329,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1760014334,
   ),
   'App\\Foundation\\Model' => 
   array (
@@ -310,6 +340,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1747560230,
   ),
   'App\\Foundation\\Traits\\Strings' => 
   array (
@@ -320,6 +351,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1754394308,
   ),
   'App\\Foundation\\Traits\\Macroable' => 
   array (
@@ -330,6 +362,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1757160431,
   ),
   'App\\Support\\Facades\\Response' => 
   array (
@@ -340,6 +373,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1749467851,
   ),
   'App\\Support\\Facades\\DB' => 
   array (
@@ -350,6 +384,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1747546454,
   ),
   'App\\Support\\Facades\\Request' => 
   array (
@@ -360,6 +395,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1747473456,
   ),
   'App\\Support\\Facades\\DI' => 
   array (
@@ -370,6 +406,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1760088751,
   ),
   'App\\Support\\Facades\\Rx' => 
   array (
@@ -380,6 +417,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1749468285,
   ),
   'App\\Support\\Facades\\Facade' => 
   array (
@@ -390,6 +428,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1747546708,
   ),
   'App\\Foundation\\Configuration\\Env' => 
   array (
@@ -400,6 +439,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1757516318,
   ),
   'App\\Foundation\\Reactive\\ReactiveHandler' => 
   array (
@@ -410,6 +450,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1760187478,
   ),
   'App\\Foundation\\Reactive\\Reactive' => 
   array (
@@ -420,6 +461,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1760187478,
   ),
   'App\\Foundation\\Generator\\TemplateBuilderException' => 
   array (
@@ -430,6 +472,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1760195789,
   ),
   'App\\Foundation\\Generator\\TemplateBuilder' => 
   array (
@@ -440,6 +483,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1760195789,
   ),
   'App\\Foundation\\Authentication\\Auth' => 
   array (
@@ -450,6 +494,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1750498262,
   ),
   'App\\EXPE\\Foundation\\CLI\\Command' => 
   array (
@@ -460,6 +505,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1760277253,
   ),
   'App\\EXPE\\Foundation\\CLI\\ParamBag' => 
   array (
@@ -470,6 +516,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1760277253,
   ),
   'App\\EXPE\\Foundation\\CLI\\CommandBuilder' => 
   array (
@@ -480,6 +527,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1760277253,
   ),
   'App\\Foundation\\CLI\\Command' => 
   array (
@@ -490,6 +538,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1760269807,
   ),
   'App\\Foundation\\CLI\\ParamBag' => 
   array (
@@ -500,6 +549,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1760269807,
   ),
   'App\\Foundation\\CLI\\CommandBuilder' => 
   array (
@@ -510,6 +560,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1760269807,
   ),
   'App\\Foundation\\CLI\\Argv' => 
   array (
@@ -520,6 +571,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1760269250,
   ),
   'Utils' => 
   array (
@@ -530,6 +582,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1749912373,
   ),
   'Unix' => 
   array (
@@ -540,6 +593,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1747444587,
   ),
   'App\\Support\\Facades\\Model' => 
   array (
@@ -550,6 +604,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1747444587,
   ),
   'App\\Foundation\\Support\\Str' => 
   array (
@@ -560,6 +615,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1747444587,
   ),
   'App\\Foundation\\Support\\Type' => 
   array (
@@ -570,6 +626,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1749912754,
   ),
   'App\\Foundation\\Support\\TypeChecker' => 
   array (
@@ -580,6 +637,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1749912754,
   ),
   'App\\Foundation\\Support\\Collection' => 
   array (
@@ -590,6 +648,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1760058865,
   ),
   'App\\Foundation\\Manager\\Container' => 
   array (
@@ -600,6 +659,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1760090852,
   ),
   'App\\Foundation\\Manager\\ContainerException' => 
   array (
@@ -610,6 +670,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1760090852,
   ),
   'App\\EXPE\\Foundation\\Manager\\ClassManager' => 
   array (
@@ -620,6 +681,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1760367355,
   ),
   'App\\Foundation\\Manager\\InstanceManager' => 
   array (
@@ -630,6 +692,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1749563186,
   ),
   'App\\Foundation\\Manager\\SessionManager' => 
   array (
@@ -640,6 +703,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1747444587,
   ),
   'App\\Foundation\\Manager\\ClassManager' => 
   array (
@@ -650,6 +714,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1760160107,
   ),
   'App\\Foundation\\Guard\\RateLimiter' => 
   array (
@@ -660,6 +725,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1755866890,
   ),
   'App\\Foundation\\Guard\\RateLimiterSQL' => 
   array (
@@ -670,6 +736,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1755866890,
   ),
   'App\\Foundation\\Guard\\Validator' => 
   array (
@@ -680,6 +747,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1747444587,
   ),
   'App\\Foundation\\Guard\\CSRF' => 
   array (
@@ -690,6 +758,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1750246355,
   ),
   'App\\Foundation\\Http\\MiddlewareException' => 
   array (
@@ -700,6 +769,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1759830645,
   ),
   'App\\Foundation\\Http\\Middleware' => 
   array (
@@ -710,6 +780,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1759830645,
   ),
   'App\\Foundation\\System\\File' => 
   array (
@@ -720,6 +791,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1747444587,
   ),
   'App\\Foundation\\System\\Disk' => 
   array (
@@ -730,6 +802,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1760061055,
   ),
   'App\\Debug\\ErrorHandler' => 
   array (
@@ -740,6 +813,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1747444587,
   ),
   'App\\Debug\\Debugger' => 
   array (
@@ -750,6 +824,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1757494288,
   ),
   'Parserd' => 
   array (
@@ -760,6 +835,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1749876775,
   ),
   'DirectiveTokenizer' => 
   array (
@@ -770,6 +846,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1749873294,
   ),
   'DirectiveParser' => 
   array (
@@ -780,6 +857,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1749873294,
   ),
   'App\\Foundation\\Compiler\\CompilerException' => 
   array (
@@ -790,6 +868,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1760320165,
   ),
   'App\\Foundation\\Compiler\\Compile' => 
   array (
@@ -800,6 +879,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1760320165,
   ),
   'App\\Foundation\\Providers\\AppServiceProvider' => 
   array (
@@ -810,6 +890,7 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1760187445,
   ),
   'App\\Test\\testClassWithInitAndDeps' => 
   array (
@@ -819,8 +900,10 @@ return array (
     ),
     'init' => 
     array (
-      0 => 'App\\Test\\testClassWithInitAndDeps::init',
+      0 => 'App\\Test\\say',
+      1 => 'App\\Test\\testClassWithInitAndDeps::init',
     ),
+    'filemtime' => 0,
   ),
   'TestErrHandler' => 
   array (
@@ -831,5 +914,6 @@ return array (
     'init' => 
     array (
     ),
+    'filemtime' => 1747444587,
   ),
 );

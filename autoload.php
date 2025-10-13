@@ -10,6 +10,7 @@ ClassManager::set(
     __DIR__,
     $cfg['debug'],
     $cfg['auto'],
+    $cfg['check_filemtime'],
     [
         'classmap'      => $cfg['classmap'],
         'cache_classmap' => $cfg['cache'],

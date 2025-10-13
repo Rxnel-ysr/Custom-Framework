@@ -5,6 +5,7 @@ namespace App\Test;
 /**
  * A something
  * 
+ * @init App\Test\say
  * @init App\Test\testClassWithInitAndDeps::init
  */
 class testClassWithInitAndDeps
@@ -16,12 +17,17 @@ class testClassWithInitAndDeps
         self::$state = true;
     }
 
-    public static function sayHi(){
-        if(self::$state){
+    public static function sayHi()
+    {
+        if (self::$state) {
             echo 'Hello, I am alive!';
-        }else{
+        } else {
             echo 'Hello, ...I am... dead';
         }
     }
 }
 
+function say()
+{
+    echo 'hi';
+}
