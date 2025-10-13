@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Foundation\Manager;
+namespace App\EXPE\Foundation\Manager;
 
 use Exception;
 use FilesystemIterator;
@@ -11,6 +11,7 @@ use ReflectionUnionType;
 use ReflectionClass;
 use ReflectionMethod;
 use ReflectionParameter;
+use RuntimeException;
 
 class ClassManager
 {
@@ -36,7 +37,6 @@ class ClassManager
             'classmap' => 'path/to/class/map.php',
             'cache_classmap' => 'path/to/cache/class/map.php',
             'where_to_look_class' => 'path/to/dir/containing/class',
-            'additional_methods' => []
         ],
         array $files = []
     ): void {
@@ -44,7 +44,6 @@ class ClassManager
             'classmap' => 'path/to/class/map.php',
             'cache_classmap' => 'path/to/cache/class/map.php',
             'where_to_look_class' => 'path/to/dir/containing/class',
-            'additional_methods' => []
         ];
 
         self::$debug = $debug;
@@ -73,8 +72,9 @@ class ClassManager
 
                 $classes = self::scanForClasses(self::$root);
                 $res = [];
-                foreach ($classes as $class => $path) {
-                    $res[$class] = str_replace(self::$root, '', $path);
+                foreach ($classes as $cls => $spec) {
+                    $spec['filepath'] = self::normalizePathToRelative($spec['filepath']);
+                    $normalizedClasses[$cls] = $spec;
                 }
 
                 self::updateClassesMapping($res);
@@ -239,8 +239,8 @@ class ClassManager
                 }
 
                 // No array_merge in loop, direct append is cheaper
-                foreach (self::extractClassesFromFile($file->getPathname()) as $class => $path) {
-                    $classes[$class] = $path;
+                foreach (self::extractClassesFromFile($file->getPathname()) as $class => $specs) {
+                    $classes[$class] = $specs;
                 }
             }
         }
@@ -248,6 +248,49 @@ class ClassManager
         return $classes;
     }
 
+    /**
+     * Undocumented function
+     *
+     * @param string $content
+     * @param string|null $namespace
+     * @return array<string, array{depends: <int, string>,init: <int, string>}>
+     */
+    private static function parseDirectivesByClass(string $content, ?string $namespace = null): array
+    {
+        $pattern = '/\/\*\*(.*?)\*\/\s*(?:abstract\s+|final\s+|readonly\s+)?(?:class|interface|trait)\s+([A-Za-z_][A-Za-z0-9_]*)/is';
+        preg_match_all($pattern, $content, $matches, PREG_SET_ORDER);
+
+        $result = [];
+
+        foreach ($matches as $m) {
+            $doc = $m[1];
+            $classname = $namespace ? $namespace . "\\" . $m[2] : $m[2];
+            $depends = [];
+            $init = [];
+
+            if (preg_match_all('/@depends\s+([^\s]+)/', $doc, $deps)) {
+                $depends = $deps[1];
+            }
+            if (preg_match_all('/@init\s+([^\s]+)/', $doc, $inits)) {
+                $init = $inits[1];
+            }
+
+            $result[$classname] = [
+                'depends' => $depends,
+                'init' => $init
+            ];
+        }
+
+        return $result;
+    }
+
+
+    /**
+     * Undocumented function
+     *
+     * @param string $filePath
+     * @return array<string, array{filepath: string, depends: array<int, string>, init: array<int, string>}>
+     */
     private static function extractClassesFromFile(string $filePath): array
     {
         $content = file_get_contents($filePath);
@@ -262,6 +305,12 @@ class ClassManager
         $cleanedContent = self::cleanPhpContent($content);
 
         preg_match('/namespace\s+([\w\\\\]+);/i', $cleanedContent, $namespace);
+        $namespace = $namespace[1] ?? '';
+
+        // Parse per-class directives
+        $directivesMap = self::parseDirectivesByClass($content, $namespace);
+
+        // Find all class-like declarations
         preg_match_all(
             '/(?<!new\s)\b(?:abstract\s+|final\s+|readonly\s+)?(?:class|interface|trait)\s+([A-Za-z_][A-Za-z0-9_]*)\b/i',
             $cleanedContent,
@@ -269,15 +318,21 @@ class ClassManager
         );
 
         $classes = [];
-        $namespace = $namespace[1] ?? '';
 
         foreach ($matches[1] ?? [] as $classname) {
             $fullClass = $namespace ? $namespace . "\\" . $classname : $classname;
-            $classes[$fullClass] = $filePath;
+            $directives = $directivesMap[$fullClass] ?? ['depends' => [], 'init' => []];
+
+            $classes[$fullClass] = [
+                'filepath' => $filePath,
+                'depends'  => $directives['depends'],
+                'init'     => $directives['init']
+            ];
         }
 
         return $classes;
     }
+
 
     private static function cleanPhpContent(string $content): string
     {
@@ -358,6 +413,62 @@ class ClassManager
         return self::method_x($class);
     }
 
+    /**
+     * Load class and resolve init methods and dependencies
+     *
+     * @param array{filepath: string, depends: array<int, string>, init: array<int, string>} $class
+     * @param string $classname The fully qualified class name being loaded
+     * @return bool
+     */
+    public static function loadClass(array $class, string $classname)
+    {
+
+        $classPath = realpath(self::$root . $class['filepath']);
+        $classDir = dirname($classPath) . '/';
+
+        foreach ($class['depends'] ?? [] as $dependency) {
+            if (strpos($dependency, '.php') !== false) {
+                $depPath = realpath($classDir . $dependency);
+                if ($depPath && strpos($depPath, self::$root) === 0) {
+                    require_once $depPath;
+                } else {
+                    throw new RuntimeException("Invalid dependency path: $dependency");
+                }
+            } else if (! self::exists($dependency)) {
+                self::autoload($dependency);
+            } else if (self::$debug) {
+                error_log("Auto-Loader: Cannot resolve dependency {$dependency} from class {$classname}");
+            }
+        }
+
+        require_once $classPath;
+
+        foreach ($class['init'] ?? [] as $setup) {
+            if (strpos($setup, '::') !== false) {
+                [$initClass, $method] = explode('::', $setup, 2);
+                if (method_exists($initClass, $method)) {
+                    call_user_func([$initClass, $method]);
+                } elseif (self::$debug) {
+                    error_log("Auto-loader: Init method not found: {$setup}");
+                }
+            } elseif (is_callable($setup)) {
+                $setup();
+            } elseif (method_exists($classname, $setup)) {
+                call_user_func([$classname, $setup]);
+            } elseif (self::$debug) {
+                error_log("Auto-loader: Invalid init callable: {$setup} from class {$classname}");
+            }
+        }
+
+        return true;
+    }
+
+    public static function normalizePathToRelative(string $path): string
+    {
+        return str_replace(self::$root, '', $path);
+    }
+
+
     public static function method_x(string $class): bool
     {
         $methods = [
@@ -366,18 +477,10 @@ class ClassManager
             'method_3',
             'method_4',
             'method_5',
-            'method_6',
-            'method_7'
         ];
 
         foreach ($methods as $method) {
             if (self::$method($class)) {
-                return true;
-            }
-        }
-
-        foreach (self::$setting['additional_methods'] as $method) {
-            if ($method($class)) {
                 return true;
             }
         }
@@ -389,18 +492,18 @@ class ClassManager
     {
 
         $classes = self::scanForClasses(self::$root);
-        $results = [];
 
-        foreach ($classes as $class => $path) {
-            $results[$class] = str_replace(self::$root, '', $path);
+        foreach ($classes as $cls => $spec) {
+            $spec['filepath'] = self::normalizePathToRelative($spec['filepath']);
+            $classes[$cls] = $spec;
         }
 
         echo 'Updating main mapping...' . PHP_EOL;
-        self::updateClassesMapping($results);
+        self::updateClassesMapping($classes);
 
         if ($with_cache) {
             echo 'Updating cache mapping...' . PHP_EOL;
-            self::updateCacheClassesMapping($results);
+            self::updateCacheClassesMapping($classes);
         }
     }
 
@@ -423,6 +526,7 @@ class ClassManager
         error_log(sprintf($messages[$level] ?? 'Auto-loader: Unrecognized level (%d), ignoring... have a nice day!', $class, $level));
     }
 
+
     public static function getLoadedClass(array|string $custom_filter = []): array
     {
         $filter = empty($custom_filter) ? array_keys(self::$classes) : (is_array($custom_filter) ? $custom_filter : [$custom_filter]);
@@ -430,13 +534,13 @@ class ClassManager
         return array_intersect(get_declared_classes(), $filter);
     }
 
-    public static function registerNewClass(string $class, string $location): void
+    public static function registerNewClass(string $class, array $specs): void
     {
         if (self::$debug) {
             error_log('Auto-loader: Registered class [' . $class . ']');
         }
 
-        self::$classes[$class] = $location;
+        self::$classes[$class] = $specs;
         self::saveClassMap(self::$setting['classmap'], self::$classes);
     }
 
@@ -454,25 +558,35 @@ class ClassManager
 
     private static function saveClassMap(string $filePath, array $data): void
     {
-        file_put_contents($filePath, '<?php' . PHP_EOL . 'return ' . var_export($data, true) . ';');
+        foreach ($data as &$class) {
+            $class['depends'] = (array)($class['depends'] ?? []);
+            $class['init']    = (array)($class['init'] ?? []);
+        }
+
+        file_put_contents(
+            $filePath,
+            '<?php' . PHP_EOL . 'return ' . var_export($data, true) . ';'
+        );
     }
 
-    public static function cachedResolvedClass(string $class, string $resolved_path): void
+
+    public static function cachedResolvedClass(string $class, array $spec): void
     {
-        self::registerNewClass($class, $resolved_path);
-        self::$cache_classes[$class] = $resolved_path;
+        self::registerNewClass($class, $spec);
+        self::$cache_classes[$class] = $spec;
         self::saveClassMap(self::$setting['cache_classmap'], self::$cache_classes);
     }
 
-    public static function loadClassFromCache(string $class): string|false
+    public static function loadClassFromCache(string $class): array|false
     {
-        if (isset(self::$cache_classes[$class]) && file_exists(self::$root . self::$cache_classes[$class])) {
-            require_once self::$root . self::$cache_classes[$class];
+        if (isset(self::$cache_classes[$class]) && file_exists(self::$root . self::$cache_classes[$class]['filepath'])) {
+            self::loadClass(self::$cache_classes[$class], $class);
             return self::$cache_classes[$class];
         }
 
         return false;
     }
+
 
     public static function resolve(string $class): string|false
     {
@@ -485,7 +599,11 @@ class ClassManager
             require_once $full_path;
 
             if (self::exists($class)) {
-                self::registerNewClass($class, $guessed_class_path);
+                $specs = self::extractClassesFromFile($full_path);
+                foreach ($specs as $class => $spec) {
+                    $spec['filepath'] = self::normalizePathToRelative($spec['filepath']);
+                    self::registerNewClass($class, $spec);
+                }
                 return $guessed_class_path;
             }
         }
@@ -510,8 +628,8 @@ class ClassManager
             error_log('Auto-loader: Using method 1');
         }
 
-        if (isset(self::$classes[$class]) && file_exists(self::$root . self::$classes[$class])) {
-            require_once self::$root . self::$classes[$class];
+        if (isset(self::$classes[$class]) && file_exists(self::$root . self::$classes[$class]['filepath'])) {
+            self::loadClass(self::$classes[$class], $class);
 
             if (self::exists($class)) {
                 self::messageForResolvedClass($class, 1);
@@ -549,10 +667,10 @@ class ClassManager
             error_log('Auto-loader: Using method 3');
         }
 
-        $path = self::loadClassFromCache($class);
+        $spec = self::loadClassFromCache($class);
 
-        if ($path && self::exists($class)) {
-            self::registerNewClass($class, $path);
+        if (self::exists($class)) {
+            self::registerNewClass($class, $spec);
             return true;
         }
 
@@ -576,7 +694,11 @@ class ClassManager
             require_once $full_path;
 
             if (self::exists($class)) {
-                self::registerNewClass($class, $guessed_class_path_name);
+                $specs = self::extractClassesFromFile($full_path);
+                foreach ($specs as $class => $spec) {
+                    $spec['filepath'] = self::normalizePathToRelative($spec['filepath']);
+                    self::registerNewClass($class, $spec);
+                }
                 return true;
             }
 
@@ -606,14 +728,15 @@ class ClassManager
         $classes = self::scanForClasses(self::$root);
         $normalizedClasses = [];
 
-        foreach ($classes as $cls => $path) {
-            $normalizedClasses[$cls] = str_replace(self::$root, '', $path);
+        foreach ($classes as $cls => $spec) {
+            $spec['filepath'] = self::normalizePathToRelative($spec['filepath']);
+            $normalizedClasses[$cls] = $spec;
         }
 
         self::updateClassesMapping($normalizedClasses);
 
         if (isset($classes[$class])) {
-            require_once $classes[$class];
+            require_once $classes[$class]['filepath'];
 
             if (self::exists($class)) {
                 self::cachedResolvedClass($class, $normalizedClasses[$class]);
@@ -627,29 +750,6 @@ class ClassManager
             error_log('Auto-loader: Method 5 failed (class cant be found)');
         }
 
-        return false;
-    }
-
-    public static function method_6(string $class): bool
-    {
-        if (self::$debug) {
-            error_log('Auto-loader: Using method 6');
-            error_log('Auto-loader: Method 6 failed (skipped)');
-        }
-
-        return false;
-    }
-
-    public static function method_7(string $class): bool
-    {
-        if (self::$debug) {
-            error_log('Auto-loader: Using method 7');
-        }
-
-        // return true;
-        if (self::$debug) {
-            error_log('Auto-loader: Method 7 failed (skipped)');
-        }
         return false;
     }
 }

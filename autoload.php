@@ -1,8 +1,8 @@
 <?php
 
-use App\Foundation\Manager\ClassManager;
+use App\EXPE\Foundation\Manager\ClassManager;
 
-require 'App/Foundation/Manager/ClassManager.php';
+require 'App/Foundation/Manager/ClassManager_EXPE.php';
 
 $cfg = require 'config/autoloader.php';
 // $start = hrtime(true);
@@ -13,7 +13,8 @@ ClassManager::set(
     [
         'classmap'      => $cfg['classmap'],
         'cache_classmap' => $cfg['cache'],
-        'where_to_look_class' => $cfg['where_to_look_class']
+        'where_to_look_class' => $cfg['where_to_look_class'],
+        'additional_methods' => $cfg['additional_methods']
     ],
     $cfg['files']
 );

@@ -3,7 +3,7 @@
 namespace App;
 
 use App\Foundation\CLI\Argv;
-use App\Foundation\CLI\Command;
+use App\EXPE\Foundation\CLI\Command;
 use App\Foundation\Guard\RateLimiter;
 use App\Foundation\Http\Request;
 use App\Foundation\Http\Route;

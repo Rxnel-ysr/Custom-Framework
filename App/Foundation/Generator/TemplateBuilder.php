@@ -10,10 +10,11 @@ class TemplateBuilder
 {
     private string $filepath;
     private array $rules;
+    private string $varToReplace;
     private string $result;
     private string $placeholder;
 
-    public function __construct(string $filepath, string $placeholder = '{{$i}}')
+    public function __construct(string $filepath, string $placeholder = '{{$i}}', string $varToReplace = '$i')
     {
         if (!is_file($filepath)) {
             throw new TemplateBuilderException("Template not found: {$filepath}");
@@ -21,13 +22,14 @@ class TemplateBuilder
 
         $this->filepath = $filepath;
         $this->placeholder = $placeholder;
+        $this->varToReplace = $varToReplace;
         $this->rules = [];
         $this->result = '';
     }
 
     public function genPlaceholder(array $keys)
     {
-        return array_map(fn($item) => str_replace('$i', $item, $this->placeholder), $keys);
+        return array_map(fn($item) => str_replace($this->varToReplace, $item, $this->placeholder), $keys);
     }
 
     public function placeholders(): array

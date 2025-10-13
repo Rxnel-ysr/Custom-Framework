@@ -33,6 +33,21 @@ class Container
         $this->bind($key, $resolver, true);
     }
 
+    public function has(string $key): bool
+    {
+        return isset($this->instances[$key]) || isset($this->bindings[$key]);
+    }
+
+    protected function hasInstance(string $key): bool
+    {
+        return isset($this->instances[$key]);
+    }
+
+    protected function hasBinding(string $key): bool
+    {
+        return isset($this->bindings[$key]);
+    }
+
     public function get(string $key)
     {
         // Check if we already have a shared instance

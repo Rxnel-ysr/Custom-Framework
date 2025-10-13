@@ -1,6 +1,8 @@
 <?php
 
-use App\Foundation\CLI\Command;
+use App\Foundation\CLI\Argv;
+use App\EXPE\Foundation\CLI\Command;
+use App\EXPE\Foundation\Manager\ClassManager as ManagerClassManager;
 use App\Foundation\Database\Migration;
 use App\Foundation\Manager\ClassManager;
 use App\Foundation\Database\Connection;
@@ -8,6 +10,7 @@ use App\Foundation\Generator\TemplateBuilder;
 use App\Foundation\System\Disk;
 use App\Support\Facades\DI;
 use App\Support\Facades\Rx;
+use App\Test\testClassWithInitAndDeps;
 
 $root = dirname(__DIR__, 2);
 
@@ -24,10 +27,8 @@ Command::register('help', fn() => Command::showHelp())
     ->alias('h')
     ->help('Show help message then exit.');
 
-Command::register('serve', function () {
-    $host = $this->host ?? '127.0.0.1';
-    $port = $this->port ?? '8000';
-    shell_exec("php -S {$host}:{$port} public/index.php");
+Command::register('serve', function ($host = '127.0.0.1', $port = 8000) {
+    return shell_exec("php -S {$host}:{$port} public/index.php");
 })->alias('s')
     ->param(['host', 'port'])
     ->help('Start the local dev server, default localhost:8000');
@@ -64,13 +65,9 @@ Command::register('make:controller', function ($argv) {
         return 1;
     }
 
-    if ($isResource) {
-        $generator = new TemplateBuilder($root . 'storage/templates/controller_resources.stub');
-    } else {
-        $generator = new TemplateBuilder($root . 'storage/templates/controller.stub');
-    }
-
-    $generator->rules([
+    (new TemplateBuilder(
+        $root . ($isResource ? 'storage/templates/controller_resources.stub' : 'storage/templates/controller.stub')
+    ))->rules([
         'controller_name' => $name
     ])->parse()
         ->save($fileName);
@@ -123,9 +120,10 @@ Command::register('make:component', function () use ($root) {
     ->help('Make a new Reactive Component');
 
 // --- Utilities ---
-Command::register('dump-autoload', fn() =>
-ClassManager::dumpAutoload(Command::parameter(2, null) === '--cache'))
-    ->alias('dal')
+Command::register('dump-autoload', function (Argv $a) {
+    ManagerClassManager::dumpAutoload($a->flag('c'));
+    return 0;
+})->alias('dal')
     ->help('Dump current mapping and update it');
 
 Command::register('class-methods', fn() =>
@@ -135,6 +133,7 @@ var_export(ClassManager::getMethodDetails(Command::parameter(2, 'Classname: ', '
 Command::register('clean-views', function () {
     $views_disk = new Disk(dirname(__DIR__, 1) . '/storage/cache/views');
     $views_disk->cleanDir(['.gitignore']);
+    return 0;
 })->alias('cv')
     ->help('Clean all cached compiled views');
 
@@ -163,12 +162,18 @@ Command::register('test', function () use ($root) {
     $​->​();
 
     $nonexistclass = new Anjay();
-    $nonexistclass->addInstddanceMethod('test', fn() => print PHP_EOL . 'it does work');
+    $nonexistclass->addInstanceMethod('test', fn() => print PHP_EOL . 'it does work');
     $nonexistclass->test();
+    return 0;
 })->alias('t')
     ->help('Testing field of a command');
 
-Command::register('ok', fn() => throw new Exception("Error Processing Request", 1));
+Command::register('ok', function () {
+    var_dump(debug_backtrace());
+
+    echo "\nHello";
+    return 0;
+});
 
 Command::register('count', function () {
     function getDirSize(string $dir, array $blacklist = [], bool $verbose = false): int
@@ -218,8 +223,34 @@ Command::register('count', function () {
     ], true);
 
     echo "Framework size: " . humanSize($totalSize) . PHP_EOL;
+    return 0;
 });
 
 Command::register('testtt', function () {
     echo "Hello my name is, {$this->name}. And I am is {$this->age} years old";
 })->param(['age', 'name']);
+
+
+class test
+{
+    public function index(Argv $argv, string $nama, int $umur, array $alok)
+    {
+        var_dump([$argv->flag('r'), $argv->flag('g'), $argv->flag('a')]);
+
+        echo "\nNama: {$nama}\nUmur: {$umur}\n";
+
+        $className = test::class;
+        echo "\n{$className}";
+
+        var_dump(compact('alok'));
+
+        return 0;
+    }
+}
+
+Command::register('anajay', [test::class, 'index'])->param(['nama:string', 'umur:int', 'alok:array']);
+
+Command::register('invoke', function () {
+   testClassWithInitAndDeps::sayHi();
+   return 0;
+});

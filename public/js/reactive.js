@@ -10,6 +10,13 @@ class Reactive {
         });
     }
 
+    static scan() {
+        document.querySelectorAll('[rx\\:reactive]').forEach(el => {
+            const component = new ReactiveComponent(el);
+            this.components.set(component.id, component);
+        });
+    }
+
     static async sendAction(componentId, action, data = {}) {
         const component = this.components.get(componentId);
         if (!component) {
@@ -20,6 +27,7 @@ class Reactive {
         try {
             const response = await fetch('/__reactive', {
                 method: 'POST',
+                credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
@@ -27,6 +35,7 @@ class Reactive {
                     'X-Component-Request': 'true'
                 },
                 body: JSON.stringify({
+                    __component_rerender: true,
                     __component_name: componentId,
                     __component_action: action,
                     __component_states: component.getStates(),
@@ -349,6 +358,8 @@ class ReactiveComponent {
             await new Promise(resolve => setTimeout(resolve, 50));
             this.restoreFocus();
         }
+
+        /* Reactive.scan(); */
     }
 
     restoreFocus() {

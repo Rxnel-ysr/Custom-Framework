@@ -1,5 +1,7 @@
 <?php
 
+use App\Foundation\Generator\TemplateBuilder;
+
 $root = dirname(__DIR__, 1);
 
 return [
@@ -15,7 +17,7 @@ return [
     |
     */
 
-    'debug' => false,
+    'debug' => true,
 
     /*
     |--------------------------------------------------------------------------
@@ -28,7 +30,7 @@ return [
     |
     */
 
-    'auto-resolve' => false,
+    'auto-resolve' => true,
 
     /*
     |--------------------------------------------------------------------------
@@ -40,7 +42,7 @@ return [
     |
     */
 
-    'classmap' => $root . '/config/classes.php',
+    'classmap' => $root . '/config/classes_EXPE.php',
 
     /*
     |--------------------------------------------------------------------------
@@ -52,7 +54,7 @@ return [
     |
     */
 
-    'cache' => $root . '/storage/cache/classes/classes.php',
+    'cache' => $root . '/storage/cache/classes/classes_EXPE.php',
 
     /*
     |--------------------------------------------------------------------------
@@ -87,5 +89,36 @@ return [
         'App/Core/Routers/RouterInterface.php',
         'App/Foundation/Helpers/Utility.php',
         'App/Foundation/Helpers/Helpers.php'
+    ],
+
+
+    'additional_methods' => [
+        function ($class) use ($root) {
+            $hasNamespace = strpos($class, '\\') !== false;
+
+            if ($hasNamespace) {
+                $normalized = str_replace('\\', '/', $class);
+                $namespace = str_replace('/', '\\', dirname($normalized));
+                $classname = basename($normalized);
+
+
+                $classBuilder = new TemplateBuilder(
+                    "{$root}/storage/templates/classWithNamespace_placeholder.stub"
+                )->rules([
+                    'namespace' => $namespace,
+                    'classname' => $classname
+                ])->parse();
+            } else {
+                $classBuilder = new TemplateBuilder(
+                    "{$root}/storage/templates/class_placeholder.stub"
+                )->rules([
+                    'classname' => $class
+                ])->parse();
+            }
+
+            eval($classBuilder->getResult());
+
+            return true;
+        }
     ]
 ];

@@ -165,11 +165,11 @@ $exclude_navigation = $exclude_nav ?? false;
                 text-decoration: none;
             }
         </style>
-        @stacks('styles')
+        @stacks('styles');
 
     <?php } ?>
 
-    @yield('content')
+    @yield('content');
 
     
     <!-- Footer daur ulang juga ygy -->

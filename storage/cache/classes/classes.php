@@ -69,4 +69,6 @@ return array (
   'App\\Foundation\\Compiler\\Compile' => 'App/Foundation/Compiler/Compile.php',
   'App\\Foundation\\Providers\\AppServiceProvider' => 'App/Providers/AppServiceProvider.php',
   'TestErrHandler' => 'test/TestErrorHandler.php',
+  'App\\EXPE\\Foundation\\CLI\\Command' => 'App/Foundation/CLI/Command_EXPE.php',
+  'App\\EXPE\\Foundation\\Manager\\ClassManager' => 'App/Foundation/Manager/ClassManager_EXPE.php',
 );

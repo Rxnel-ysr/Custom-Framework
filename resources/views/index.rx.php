@@ -1,6 +1,6 @@
-@extends('layout.app')
+@extends('layout.app');
 
-@section('content')
+@section('content'):
 <main class="container mt-5 pt-5">
     <h2 class="text-center">Welcome to Native-PHP &COPY;</h2>
     <p class="text-center">Congrats to you for successfully running your project.</p>
@@ -13,7 +13,7 @@
 </main>
 @endsection
 
-@push('styles')
+@push('styles'):
 <style nonce="{{ $_nonce }}">
     #rxnel_gif {
         border-radius: 15px;

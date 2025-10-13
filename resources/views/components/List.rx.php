@@ -1,11 +1,20 @@
-<div rx:reactive rx:reactive-name="{{ $id }}" rx:state='@json($currentStates)'>
+<div rx:reactive rx:reactive-name="{{ $id }}" rx:state='@json($currentStates);'>
     <ul>
-        @foreach($lists as $name)
+        @foreach($lists as $name):
         <li>{{ $name }}</li>
         @endforeach
     </ul>
 
-    <input type="text" rx:oninput="update" rx:delay="5" rx:attribute="temp" name="temp" value="{{$temp}}" />
+    @if(strlen($temp) > 10):
+    <h1>Sure it long</h1>
+    @elseif(strlen($temp) > 5):
+    <h1>Kinda long</h1>
+    @endif
 
-    <button rx:action="add" rx:params='@jparam($temp)' id="btn">Add</button>
+    @reactive('Oka', ['home' => true]);
+
+
+    <input type="text" rx:oninput="update" rx:delay="1000" rx:attribute="temp" name="temp" value="{{$temp}}" />
+
+    <button rx:action="add" rx:params='@jparam($temp);' id="btn">Add</button>
 </div>

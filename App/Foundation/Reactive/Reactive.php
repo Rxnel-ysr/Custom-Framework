@@ -91,6 +91,11 @@ class Reactive
         return $content . ($reactiveLoader ? $injector : '');
     }
 
+    public function getStates(): array
+    {
+        return $this->states;
+    }
+
     public function setView($name)
     {
         $this->view = str_replace('.', DIRECTORY_SEPARATOR, $name);

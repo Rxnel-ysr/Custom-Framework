@@ -2,8 +2,12 @@
 
 namespace App\Foundation\Http;
 
-use Utils;
-
+/**
+ * @depends ../core/Database.php
+ * @requires ../helpers/functions.php
+ *
+ * This file depends on Database and helper functions.
+ */
 class StaticFile
 {
     private static string $baseDir;
@@ -12,7 +16,7 @@ class StaticFile
     final static function serve(string $root, string $requestUri, ?string $cache_dir = null): bool
     {
         $file = $root . $requestUri;
-        self::$baseDir = $root;
+        self::$baseDir = rtrim($root, '/') . '/';
         self::$cacheDir = $cache_dir;
 
         if (!is_file($file)) {
@@ -30,7 +34,6 @@ class StaticFile
         $realFile = realpath($file);
 
         if (strpos($realFile, $publicDir) !== 0 && $requestUri !== '/favicon.ico') {
-            Utils::log("ALERT - Unauthorized attempt to access '{$requestUri}' outside public directory.");
             http_response_code(403);
             return false;
         }

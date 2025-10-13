@@ -9,14 +9,16 @@
 
 <body>
     <div>
+        @say('Hello');
         <h1>testing validations</h1>
         <form action="/form-endpoint" method="POST">
-            @if(false)
+            @if(false):
             <p>hi</p>
             @endif
+            {{-- Hi --}}
 
             @csrf
-            @method('')
+            @method('POST');
             <label for="name">Name:</label>
             <input type="text" name="name" id="name">
             <label for="password">Password:</label>

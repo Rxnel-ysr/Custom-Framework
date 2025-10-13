@@ -2,8 +2,10 @@
 
 declare(strict_types=1);
 
-namespace App\Foundation\CLI;
+namespace App\EXPE\Foundation\CLI;
 
+use App\Foundation\CLI\Argv;
+use App\Foundation\Manager\InstanceManager;
 use App\Foundation\Traits\Macroable;
 use Throwable;
 use Closure;
@@ -23,7 +25,7 @@ class Command
      * @param string|callable(Argv $args) $command
      * @return CommandBuilder
      */
-    public static function register(string $trigger, string|callable $command): CommandBuilder
+    public static function register(string $trigger, string|callable|array $command): CommandBuilder
     {
         $entry = [
             'dependencies' => [],
@@ -36,6 +38,48 @@ class Command
         $order = count(self::$command[$trigger]) - 1;
 
         return new CommandBuilder($trigger, $order);
+    }
+
+    public static function invoke(string $trigger, array $params)
+    {
+        $command = self::$aliases[$trigger] ?? self::$command[$trigger][0] ?? null;
+        if (is_null($command)) {
+            echo "Command not found: {$trigger}\n\nAvailable commands:\n";
+            return self::showHelp(false);
+        }
+        /** @var array{dependencies:array<string,array|Closure|object>, command:string|Closure} $command */
+
+        foreach ($command['dependencies'] as $alias => $dependency) {
+            if (is_string($dependency) && strpos($dependency, '.php') === false) {
+                if (!is_numeric($alias)) {
+                    class_alias($dependency, $alias);
+                }
+            } elseif (is_array($dependency)) {
+                $instance = is_object($dependency[0]) ? $dependency[0] : new $dependency[0];
+                $instance->$dependency[1];
+            } else if (is_callable($dependency)) {
+                call_user_func($dependency);
+            } else {
+                require_once $dependency;
+            }
+        }
+
+        foreach ($command['params'] as $param) {
+            if ($isTypeDefined = strpos($param, ':') !== false) {
+                [$param, $type] = explode(':', $param, 2);
+            }
+
+            if (isset($params[$param])) {
+                $params[$param] = $isTypeDefined ? self::cast($params[$param], $type, null) : $params[$param];
+            }
+        }
+
+        if (is_array($command['command']) && count($command['command']) === 2) {
+            $instance = new $command['command'][0];
+            $command['command'] = [$instance, $command['command'][1]];
+        }
+
+        return callFuncWithParams($command['command'], $params, true, true);
     }
 
     public static function update(string $trigger, int $order, array $updates): void
@@ -96,31 +140,40 @@ class Command
             //     $callable = $command['command']->bindTo($bag, ParamBag::class);
 
             //     $callable();
+
             // }
+
+            $params = [];
+            $unusedPositionals = [];
+
+            foreach ($command['params'] as $param) {
+                if ($isTypeDefined = strpos($param, ':') !== false) {
+                    [$param, $type] = explode(':', $param, 2);
+                }
+
+                $value = self::$argv->option($param, null);
+                if ($value !== null) {
+                    $params[$param] = $isTypeDefined ? self::cast($value, $type, null) : $value;
+                } else {
+                    $unusedPositionals[] = $param;
+                }
+            }
+
+            // fill unused params with remaining positionals
+            foreach ($unusedPositionals as $param) {
+                $pos = self::$argv->getNextPositional();
+                if ($pos !== null) {
+                    $params[$param] = $pos;
+                }
+            }
+
+            if (is_array($command['command']) && count($command['command']) === 2) {
+                $instance = new $command['command'][0];
+                $command['command'] = [$instance, $command['command'][1]];
+            }
+
             if (is_callable($command['command'])) {
-                $params = [];
-                $unusedPositionals = [];
-                
-                foreach ($command['params'] as $param) {
-                    $opt = self::$argv->option($param, null);
-                    if ($opt !== null) {
-                        $params[$param] = $opt;
-                    } else {
-                        $unusedPositionals[] = $param;
-                    }
-                }
-
-                // fill unused params with remaining positionals
-                foreach ($unusedPositionals as $param) {
-                    $pos = self::$argv->getNextPositional();
-                    if ($pos !== null) {
-                        $params[$param] = $pos;
-                    }
-                }
-
-                $bag = new ParamBag($params);
-                $callable = $command['command']->bindTo($bag, ParamBag::class);
-                return $callable(self::$argv);
+                return callFuncWithParams($command['command'], $params, true, true);
             } elseif (is_string($command['command'])) {
                 return shell_exec($command['command']);
             }
@@ -139,6 +192,7 @@ class Command
     public static function standBy(Argv $argv)
     {
         self::$argv = $argv;
+        InstanceManager::setInstance(Argv::class, $argv);
         return self::execute($argv->shiftPositionals());
     }
 
@@ -209,6 +263,11 @@ class Command
     {
         $value = readline($prompt) ?: $default;
 
+        return self::cast($value, $type, $default);
+    }
+
+    public static function cast($value, ?string $type = null, mixed $default = '')
+    {
         return match ($type) {
             'bool'  => filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? (bool)$default,
             'int'   => filter_var($value, FILTER_VALIDATE_INT) ?? (int)$default,
@@ -278,3 +337,13 @@ class CommandBuilder
         return $this;
     }
 }
+
+/**
+ *  ," is not","yeah","uku"
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ */

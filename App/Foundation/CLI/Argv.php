@@ -263,7 +263,7 @@ class Argv implements IteratorAggregate
         return $this->positionals[$i] ?? $default;
     }
 
-    public function option(string $name, mixed $default = null): mixed
+    public function option(string $name, mixed $default = null, ): mixed
     {
         return $this->options[$name] ?? $default;
     }
