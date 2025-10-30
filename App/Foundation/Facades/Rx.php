@@ -6,6 +6,9 @@ use App\Support\Facades\Facade;
 
 /**
  * @method static void register(string $name, callable $func) Register Rx directive on runtime
+ * 
+ * @depends App\Support\Facades\Facade
+ * 
  */
 class Rx extends Facade
 {

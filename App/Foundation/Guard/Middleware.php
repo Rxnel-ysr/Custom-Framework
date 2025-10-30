@@ -26,11 +26,15 @@ class Middleware
     {
         [$realAlias, $args] = strpos($alias, ':') !== false ?  explode(':', $alias, 2) : [$alias, null];
         // dd($realAlias, $args);
-
+        
         $args = explode(',', $args ?? '');
+        // print_rpre($this->aliases);
+        // die;
+        // die($this->aliases[$realAlias]);
         $instances = isset($this->aliases[$realAlias]) ? new $this->aliases[$realAlias] : (class_exists($realAlias) ? new $realAlias : null);
         if(!$instances instanceof Middleware){
-            throw new MiddlewareException("{$realAlias} was not child of App\Foundation\Http\Middleware");
+            $self = self::class;
+            throw new MiddlewareException("{$realAlias} was not child of {$self}");
         }
         return ['instance' => $instances, 'parameters' => $args];
     }

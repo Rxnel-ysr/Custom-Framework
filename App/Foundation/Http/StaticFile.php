@@ -2,12 +2,6 @@
 
 namespace App\Foundation\Http;
 
-/**
- * @depends ../core/Database.php
- * @requires ../helpers/functions.php
- *
- * This file depends on Database and helper functions.
- */
 class StaticFile
 {
     private static string $baseDir;
@@ -15,8 +9,9 @@ class StaticFile
 
     final static function serve(string $root, string $requestUri, ?string $cache_dir = null): bool
     {
-        $file = $root . $requestUri;
-        self::$baseDir = rtrim($root, '/') . '/';
+        $trimmedRoot = rtrim($root, '/') . '/';
+        $file = "{$trimmedRoot}{$requestUri}";
+        self::$baseDir = $trimmedRoot;
         self::$cacheDir = $cache_dir;
 
         if (!is_file($file)) {

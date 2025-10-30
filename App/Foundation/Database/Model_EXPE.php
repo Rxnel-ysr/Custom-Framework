@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\EXPE\Foundation;
+namespace Experimental\App\Foundation;
 
-use App\EXPE\Foundation\Database\QueryBuilder;
+use Experimental\App\Foundation\Database\QueryBuilder;
 use ArrayIterator;
 use Countable;
 use ErrorException;

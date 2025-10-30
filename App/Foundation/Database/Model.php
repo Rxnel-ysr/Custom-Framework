@@ -6,7 +6,7 @@ namespace App\Foundation;
 
 require_once 'QueryBuilder_EXPE.php';
 
-use App\EXPE\Foundation\Database\QueryBuilder;
+use Experimental\App\Foundation\Database\QueryBuilder;
 use ArrayIterator;
 use Countable;
 use ErrorException;
@@ -44,7 +44,7 @@ class Model extends QueryBuilder implements IteratorAggregate, Countable, JsonSe
 
     public function __get($name)
     {
-        return $this->data[$name] ?? throw new ErrorException('Undefined property: '.self::class.'::$'.$name);
+        return $this->data[$name] ?? throw new ErrorException('Undefined property: ' . self::class . '::$' . $name);
     }
 
     public function all()
@@ -80,12 +80,12 @@ class Model extends QueryBuilder implements IteratorAggregate, Countable, JsonSe
 
     public function __debugInfo()
     {
-        return array_map(function($d){
-            if($d instanceof self){
+        return array_map(function ($d) {
+            if ($d instanceof self) {
                 return $d->getProp();
             }
             return $d;
-        },$this->data);
+        }, $this->data);
     }
 
     public function save()
@@ -127,6 +127,4 @@ class Model extends QueryBuilder implements IteratorAggregate, Countable, JsonSe
     {
         return json_encode($this);
     }
-
-    
 }

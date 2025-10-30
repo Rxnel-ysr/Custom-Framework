@@ -32,6 +32,14 @@ return [
 
     'auto-resolve' => true,
 
+    'psr-4' => [
+        'Experimental\\App' => 'App/'
+    ],
+
+    'except' => [
+        'App\\Foundation\\Http\\Route'
+    ],
+
 
     /*
     |--------------------------------------------------------------------------
@@ -40,10 +48,35 @@ return [
     |
     | When enabled, the autoloader will output handle cold start and map every
     | class automatically.
+    |
     */
+
     'auto' => true,
 
+    /*
+    |--------------------------------------------------------------------------
+    | Autoloader Check File Modified Time
+    |--------------------------------------------------------------------------
+    |
+    | When enabled, the autoloader will check the file modified time
+    | before including and performing re-scan if time is greater than stored
+    | class map
+    |
+    */
+
     'check_filemtime' => true,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Read Only
+    |--------------------------------------------------------------------------
+    |
+    | Force autoloader to only read classmap and not performing any file
+    | related action except reading the file.
+    |
+    */
+
+    'read_only' => false,
 
     /*
     |--------------------------------------------------------------------------
@@ -77,9 +110,10 @@ return [
     | Define a path to autoloader to search class on,
     | E.g. defined 'App/Foundation' and class that looked is aClass
     | will be searched in 'App/Foundation/aClass.php'
+    |
     */
-    'where_to_look_class' => 'App/Foundation',
 
+    'where_to_look_class' => 'App/Foundation',
 
     /*
     |--------------------------------------------------------------------------
@@ -87,7 +121,9 @@ return [
     |--------------------------------------------------------------------------
     |
     | List of files that will always be loaded
+    |
     */
+
     'files' => [
         'App/Core/Routers/RouterInterface.php',
         'App/Foundation/Helpers/Utility.php',

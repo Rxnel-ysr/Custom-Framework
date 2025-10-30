@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\EXPE\Foundation\CLI;
+namespace Experimental\App\Foundation\CLI;
 
 use App\Foundation\CLI\Argv;
 use App\Foundation\Manager\InstanceManager;
@@ -10,6 +10,11 @@ use App\Foundation\Traits\Macroable;
 use Throwable;
 use Closure;
 
+/**
+ * Experimental command
+ * 
+ * @depends App\Foundation\Traits\Macroable
+ */
 class Command
 {
     use Macroable;

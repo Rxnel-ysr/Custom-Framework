@@ -134,7 +134,7 @@ class Container
             // If parameter has a type hint, try to resolve it
             if ($type && !$type->isBuiltin()) {
                 $typeName = $type->getName();
-                if (isset($this->bindings[$typeName]) || isset($this->instances[$typeName])) {
+                if ($this->has($typeName)) {
                     $dependencies[] = $this->get($typeName);
                     continue;
                 }

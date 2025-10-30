@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\EXPE\Foundation\Database;
+namespace Experimental\App\Foundation\Database;
 
 require_once 'Connection.php';
 
@@ -81,7 +81,7 @@ class QueryBuilder extends Connection
      */
     private function decideSelect(?array $columns = null)
     {
-        return empty($columns) ? (!empty($this->columns) ? implode(', ', $this->columns) : '*') : implode(',',$columns);
+        return empty($columns) ? (!empty($this->columns) ? implode(', ', $this->columns) : '*') : implode(',', $columns);
     }
 
     protected function filterColumns($columns = [])

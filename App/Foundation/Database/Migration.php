@@ -332,7 +332,7 @@ class Blueprint extends Connection
 
     public function text(string $column)
     {
-        $this->addColumn($column, 'TEXT NULL NULL');
+        $this->addColumn($column, 'TEXT NOT NULL');
         return $this;
     }
 

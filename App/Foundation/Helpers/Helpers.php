@@ -374,7 +374,7 @@ function callFuncWithParams(
         }
 
         // Parameter value resolution
-        if ($isAssoc && array_key_exists($paramName, $params)) {
+        if ($isAssoc && arrKeyExists($paramName, $params)) {
             $value = $params[$paramName];
         } elseif (!$isAssoc && array_key_exists($index, $params)) {
             $value = $params[$index];
@@ -400,6 +400,12 @@ function callFuncWithParams(
             $args
         );
 }
+
+function arrKeyExists(string $key, array &$array): bool
+{
+    return isset($array[$key]) || array_key_exists($key, $array);
+}
+
 
 /**
  * Strict type validation helper.
@@ -908,15 +914,17 @@ function abort($errorCode, $message = '', $subMessage = '')
     return Debugger::showErrorPage($errorCode, $message, $subMessage);
 }
 
-function createInstance(object|string $class, callable $func)
+function createInstance(object|string $class, ?callable $func = null, ?string $name = null, mixed ...$args)
 {
     if (is_object($class)) {
         $classI = $class;
     } else {
-        $classI = new $class();
+        $classI = new $class(...$args);
     }
 
-    $func($classI);
-    InstanceManager::setInstance(is_object($class) ? $class::class : $class, $classI);
+    if (is_callable($func)) {
+        $func($classI);
+    }
+    InstanceManager::setInstance($name ?? (is_object($class) ? $class::class : $class), $classI);
     return $classI;
 }

@@ -18,12 +18,12 @@ return (static function () {
 
     // Configuration loading
     $cfg = [
-        'database'       => require $__root . 'config/database.php',
-        'router'         => require $__root . 'config/router.php',
-        'compiler'       => require $__root . 'config/compiler.php',
-        'dependencies'   => require $__root . 'config/app.php',
-        'config'         => require $__root . 'config/config.php',
-        'router_plugins' => require $__root . 'config/router_plugins.php',
+        'database'       => require "{$__root}config/database.php",
+        'router'         => require "{$__root}config/router.php",
+        'compiler'       => require "{$__root}config/compiler.php",
+        'dependencies'   => require "{$__root}config/app.php",
+        'config'         => require "{$__root}config/config.php",
+        'router_plugins' => require "{$__root}config/router_plugins.php",
         'root'           => $__root,
     ];
 
@@ -34,13 +34,13 @@ return (static function () {
     Debugger::init(
         isWeb: $isWeb,
         errorLevel: E_ALL & ~E_WARNING,
-        error_page: $__root . 'App/Core/error copy.php',
+        error_page: "{$__root}App/Core/error copy.php",
         store_at_log: false,
-        log_file: $__root . 'storage/logs/debug.log'
+        log_file: "{$__root}storage/logs/debug.log"
     );
 
     // Web-only setup
-    if ($isWeb) {
+    // if ($isWeb) {
         $nonce = base64_encode(random_bytes(16));
 
         if (!empty($_ENV['CSP'])) {
@@ -51,15 +51,15 @@ return (static function () {
 
         // Validate router choice
         $choices = array_fill_keys($cfg['router']['choices'], true);
-        $selected = $cfg['router']['router'] ?? null;
+        $selected = $cfg['router']['selected'] ?? null;
 
         if (empty($selected) || !isset($choices[$selected])) {
-            throw new InvalidArgumentException("Invalid router: {$selected}");
+            throw new InvalidArgumentException("Invalid router: [$selected]");
         }
 
         // Boot route handler
         require $cfg['router']['path'][$selected];
-    }
+    // }
 
     // Initialize compiler
     Compile::init(
@@ -71,18 +71,15 @@ return (static function () {
     // Initialize database
     Connection::set($cfg['database']);
 
-    // Initialize system resources
-    $disk = new Disk($__root . 'public');
-
     // Load and configure app instance
     $app = require __DIR__ . '/app.php';
 
     // Inject instances
     InstanceManager::setInstance('app', $app);
-    InstanceManager::setInstance('appDisk', $disk);
 
     // Boot and register service providers
-    createInstance(AppServiceProvider::class, function ($provider) {
+    createInstance(Disk::class, null, 'appDisk', "{$__root}public");
+    createInstance(AppServiceProvider::class, function (AppServiceProvider $provider) {
         $provider->register();
         $provider->boot();
     });

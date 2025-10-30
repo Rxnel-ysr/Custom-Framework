@@ -165,3 +165,11 @@ Route::fallback(function () {
 
 // // Route::debugTree();
 // dependency()
+
+Route::get('/t1', function(){
+   return 't1-get';
+});
+
+Route::post('/t1', function(){
+   return 't1-post';
+})->middleware('test');

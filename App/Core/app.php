@@ -3,15 +3,15 @@
 namespace App;
 
 use App\Foundation\CLI\Argv;
-use App\EXPE\Foundation\CLI\Command;
-use App\Foundation\Guard\RateLimiter;
+use Experimental\App\Foundation\CLI\Command;
+use App\Foundation\Guard\RateLimiterSQL;
 use App\Foundation\Http\Request;
 use App\Foundation\Http\Route;
 use App\Foundation\Http\Middleware;
 use App\Foundation\Manager\InstanceManager;
 use InvalidArgumentException;
 
-// use App\EXPE\Foundation\Http\Route;
+// use Experimental\App\Foundation\Http\Route;
 
 
 class App
@@ -27,7 +27,8 @@ class App
         $this->root = DIRECTORY_SEPARATOR . trim($root, DIRECTORY_SEPARATOR);
     }
 
-    public static function configure($root){
+    public static function configure($root)
+    {
         return new self($root);
     }
 
@@ -93,22 +94,34 @@ class App
         load([$this->root . '/App/Http/Controllers']);
 
         $requestUri = $request->uri();
-        $rateLimiterConfig = config($this->configs['rate_limiter']);
-        $apiPrefix = '/' . trim($this->router['api_prefix'], '/') . '/';
+        if (!str_starts_with($requestUri, '/__')) {
+            $rateLimiterConfig = config($this->configs['rate_limiter']);
+            $apiPrefix = '/' . trim($this->router['api_prefix'], '/') . '/';
 
-        $isApi = str_starts_with($requestUri, $apiPrefix);
-        $requestUri = $isApi ? str_replace($apiPrefix, '/', $requestUri) : $requestUri;
-        $scope = $isApi ? 'api' : 'web';
+            $isApi = str_starts_with($requestUri, $apiPrefix);
+            $requestUri = $isApi ? str_replace($apiPrefix, '/', $requestUri) : $requestUri;
+            $scope = $isApi ? 'api' : 'web';
 
-        $limiter = new RateLimiter(
-            $scope,
-            $this->root . '/storage',
-            $rateLimiterConfig[$scope]['request_limit'],
-            $rateLimiterConfig[$scope]['request_timeframe'],
-            $rateLimiterConfig[$scope]['ban_time']
-        );
+            $result = (new RateLimiterSQL(
+                $scope,
+                $this->root . '/storage/request.sqlite',
+                $rateLimiterConfig[$scope]['request_limit'],
+                $rateLimiterConfig[$scope]['request_timeframe'],
+                $rateLimiterConfig[$scope]['ban_time']
+            ))->check();
 
-        !str_starts_with($requestUri, '/__') && $limiter->check();
+            if (!$result['allowed']) {
+                if ($result['reason'] === 'paused') {
+                    http_response_code(429);
+                    header('Retry-After: ' . $result['retry_after']);
+                    die('Too much request, slow down.');
+                }
+                if ($result['reason'] === 'banned') {
+                    http_response_code(403);
+                    die('You are banned until ' . date('H:i:s', $result['banned_until']));
+                }
+            }
+        }
 
         $routeFile = $isApi ? $this->router['api'] : $this->router['web'];
 
@@ -119,7 +132,7 @@ class App
             // exit;
         }
 
-        InstanceManager::setInstance('App\Foundation\Http\Request', $request);
+        InstanceManager::setInstance(Request::class, $request);
         // error_log('Request done within: ' . timeExecution(fn() => Route::dispatch($requestUri)));
         // echo '<br>' . timeExecution(fn() => Route::dispatch($requestUri)) . 'ms';
         ob_start();

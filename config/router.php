@@ -6,7 +6,7 @@ return [
     // ======================================================================
     // | Application Router Configuration                                   |
     // ======================================================================
-    'router' => 'RadixTree',
+    'selected' => 'RadixTree',
 
     /*
     |--------------------------------------------------------------------------
@@ -42,8 +42,8 @@ return [
     ],
 
     'path' => [
-        'Trie' => $root . '/App/Core/Routers/TrieRouter.php',
-        'RadixTree' => $root . '/App/Core/Routers/RadixRouter.php',
+        'Trie' => $root . '/App/Core/Routers/TrieRouter_EXPE.php',
+        'RadixTree' => $root . '/App/Core/Routers/RadixRouter_EXPE.php',
         'RegexRouter' => $root . '/App/Core/Routers/RegexRouter.php',
     ]
 ];

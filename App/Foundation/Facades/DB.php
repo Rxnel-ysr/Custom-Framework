@@ -5,14 +5,16 @@ namespace App\Support\Facades;
 use App\Support\Facades\Facade;
 
 /**
- * @method static \App\EXPE\Foundation\Database\QueryBuilder table($name)
- * @mixin \App\EXPE\Foundation\Database\QueryBuilder
- * @extends Facade<\App\EXPE\Foundation\Database\QueryBuilder>
+ * @method static \Experimental\App\Foundation\Database\QueryBuilder table($name)
+ * @mixin \Experimental\App\Foundation\Database\QueryBuilder
+ * @extends Facade<\Experimental\App\Foundation\Database\QueryBuilder>
+ * 
+ * @depends App\Support\Facades\Facade
  */
 class DB extends Facade
 {
     protected static function getFacadeAccessor(): string|object
     {
-        return \App\EXPE\Foundation\Database\QueryBuilder::class;
+        return \Experimental\App\Foundation\Database\QueryBuilder::class;
     }
 }

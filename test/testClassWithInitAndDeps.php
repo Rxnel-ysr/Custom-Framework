@@ -3,10 +3,12 @@
 namespace App\Test;
 
 /**
- * A something
+ * A test class with deps and init
+ * @depends App\Foundation\Support\Str
+ * @depends App\Foundation\Support\Collection
  * 
- * @init App\Test\say
- * @init App\Test\testClassWithInitAndDeps::init
+ * @boot App\Test\say
+ * @boot self::init
  */
 class testClassWithInitAndDeps
 {
@@ -24,10 +26,16 @@ class testClassWithInitAndDeps
         } else {
             echo 'Hello, ...I am... dead';
         }
+
+        if (class_exists('App\Foundation\Support\Str', false)) {
+            echo "\nAnd this class is exist!";
+        } else {
+            echo "\nAnd this class is... not exist";
+        }
     }
 }
 
 function say()
 {
-    echo 'hi';
+    echo "hi\n";
 }

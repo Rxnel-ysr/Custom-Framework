@@ -1,16 +1,20 @@
 <?php
 
 use App\Foundation\CLI\Argv;
-use App\EXPE\Foundation\CLI\Command;
-use App\EXPE\Foundation\Manager\ClassManager as ManagerClassManager;
+use Experimental\App\Foundation\CLI\Command;
+use Experimental\App\Foundation\Manager\ClassManager as ManagerClassManager;
 use App\Foundation\Database\Migration;
 use App\Foundation\Manager\ClassManager;
 use App\Foundation\Database\Connection;
+use App\Foundation\Event\Emitter;
+use App\Foundation\Event\Receiver;
 use App\Foundation\Generator\TemplateBuilder;
+use App\Foundation\Manager\Autoloader;
 use App\Foundation\System\Disk;
 use App\Support\Facades\DI;
 use App\Support\Facades\Rx;
 use App\Test\testClassWithInitAndDeps;
+use App\Foundation\Manager\Resolver;
 
 $root = dirname(__DIR__, 2);
 
@@ -54,8 +58,8 @@ Command::register('migrate:rollback', fn() => Migration::goToPrevMigrationsAndUn
     ->help('Rolling back the migrations');
 
 // --- Generators ---
-Command::register('make:controller', function ($argv) {
-    $name       = $this->name ?? Command::prompt('Name of controller: ');
+Command::register('make:controller', function (Argv $argv) {
+    $name       = $argv->shiftPositionals() ?? Command::prompt('Name of controller: ');
     $isResource = $argv->flag('r');
     $root = DI::get('appConfig')['root'];
 
@@ -121,7 +125,12 @@ Command::register('make:component', function () use ($root) {
 
 // --- Utilities ---
 Command::register('dump-autoload', function (Argv $a) {
-    ManagerClassManager::dumpAutoload($a->flag('c'));
+    Autoloader::dumpAutoload($a->flag('c'));
+    if($a->flag('s')){
+        Autoloader::loadAll();
+        
+    }
+
     return 0;
 })->alias('dal')
     ->help('Dump current mapping and update it');
@@ -210,7 +219,7 @@ Command::register('count', function () {
     }
 
     echo 'Root: ' . dirname(__DIR__) . PHP_EOL;
-    $totalSize = getDirSize(dirname(__DIR__), [
+    $totalSize = getDirSize(dirname(__DIR__) . '/App/Foundation/Manager', [
         'storage/',
         'public/media/',
         '.log',
@@ -251,6 +260,102 @@ class test
 Command::register('anajay', [test::class, 'index'])->param(['nama:string', 'umur:int', 'alok:array']);
 
 Command::register('invoke', function () {
-   testClassWithInitAndDeps::sayHi();
-   return 0;
+    testClassWithInitAndDeps::sayHi();
+    return 0;
+});
+
+
+Command::register('test-v1', function () {
+
+    class Logger
+    {
+        public function log($msg)
+        {
+            echo "[LOG] $msg\n";
+        }
+    }
+
+    class Database
+    {
+        public function connect()
+        {
+            echo "Connected to database.\n";
+        }
+    }
+
+    class Service
+    {
+        public function __construct(
+            #[Inject(Logger::class)] private Logger $log,
+            #[Inject(Database::class)] private Database $db,
+            public string $name = "default"
+        ) {}
+
+        public function run()
+        {
+            $this->db->connect();
+            $this->log->log("Service {$this->name} started!");
+        }
+    }
+
+    Resolver::set(Logger::class, new Logger());
+    Resolver::set(Database::class, new Database());
+
+    $svc = Resolver::createInstance(Service::class, null, ['name' => 'Ares']);
+    $svc->run();
+
+    return 0;
+});
+
+Command::register('test-v2', function () {
+    $receiver = new Receiver(['die' => [
+        [
+            function () {
+                echo "prio1\n";
+            }
+        ],
+        [
+            function () {
+                echo "prio2.1\n";
+            },
+            function () {
+                echo "prio2.2\n";
+            },
+        ],
+        [
+            function () {
+                echo "prio3\n";
+            }
+        ],
+    ]]);
+
+    $emitter = new Emitter($receiver);
+
+    $receiver2 = new Receiver(['live' => [
+        [
+            function () {
+                echo "l.prio1\n";
+            }
+        ],
+        [
+            function () {
+                echo "l.prio2.1\n";
+            },
+            function () {
+                echo "l.prio2.2\n";
+            },
+        ],
+        [
+            function () {
+                echo "l.prio3\n";
+            },
+            fn() => $emitter->emit('die')
+        ],
+    ]]);
+
+    $emitter2 = new Emitter($receiver2);
+
+    $emitter2->emit('live');
+
+    return 0;
 });

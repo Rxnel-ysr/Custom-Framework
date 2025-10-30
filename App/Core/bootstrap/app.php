@@ -16,7 +16,7 @@ return (static function () {
         ])
         ->withMiddleware(function (Middleware $middleware) {
             $middleware->aliases([
-                'test' => App\Http\Middlewares\Test::class
+                'test' => \App\Http\Middlewares\Test::class
             ]);
         })
         ->withConfig($config['config'])

@@ -12,6 +12,9 @@ use App\Foundation\Manager\InstanceManager;
  * 
  * @phpstan-template T of object
  * @psalm-template T of object
+ * 
+ * @depends App\Foundation\Manager\InstanceManager
+ * 
  */
 abstract class Facade
 {
