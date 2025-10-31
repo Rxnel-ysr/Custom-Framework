@@ -2,14 +2,16 @@
 
 use App\Foundation\Database\QueryBuilder;
 use App\Foundation\Manager\ClassManager;
-use App\Foundation\Http\{RouteRequest, Request, Response, HttpHeaders, Route, StaticRequest};
+use App\Foundation\Http\{RouteRequest, Request, Response, HttpHeaders, StaticRequest};
 use App\Foundation\Manager\InstanceManager;
+use App\Support\Facades\Route;
 use App\Foundation\Model;
 use App\Foundation\Reactive\ReactiveHandler;
 use App\Foundation\System\{File, Disk};
 use App\Http\Controllers\test;
 use App\Models\User;
 use App\Support\Facades\DB;
+use App\Support\Facades\DI;
 
 Route::get('/', function () {
    // return dd(Route::dump(), Route::debugPatterns());
@@ -21,7 +23,7 @@ Route::get('/', function () {
 })->name('home');
 
 Route::get('/route', function () {
-   return dd(['route' => Route::$name, 'route_list' => Route::routeList()], get_declared_classes());
+   return dd(['route' => Route::getName(), 'route_list' => Route::routeList(), 'ok' => DI::get('nonce')], get_declared_classes());
    // die;
 });
 
@@ -166,10 +168,10 @@ Route::fallback(function () {
 // // Route::debugTree();
 // dependency()
 
-Route::get('/t1', function(){
+Route::get('/t1', function () {
    return 't1-get';
 });
 
-Route::post('/t1', function(){
+Route::post('/t1', function () {
    return 't1-post';
 })->middleware('test');

@@ -6,7 +6,6 @@ namespace Experimental\App\Foundation\CLI;
 
 use App\Foundation\CLI\Argv;
 use App\Foundation\Manager\InstanceManager;
-use App\Foundation\Traits\Macroable;
 use Throwable;
 use Closure;
 
@@ -17,7 +16,6 @@ use Closure;
  */
 class Command
 {
-    use Macroable;
 
     protected static Argv $argv;
     private static array $command = [];

@@ -6,9 +6,9 @@ use App\Foundation\CLI\Argv;
 use Experimental\App\Foundation\CLI\Command;
 use App\Foundation\Guard\RateLimiterSQL;
 use App\Foundation\Http\Request;
-use App\Foundation\Http\Route;
 use App\Foundation\Http\Middleware;
 use App\Foundation\Manager\InstanceManager;
+use App\Support\Facades\Route;
 use InvalidArgumentException;
 
 // use Experimental\App\Foundation\Http\Route;
@@ -95,7 +95,7 @@ class App
 
         $requestUri = $request->uri();
         if (!str_starts_with($requestUri, '/__')) {
-            $rateLimiterConfig = config($this->configs['rate_limiter']);
+            $rateLimiterConfig = require $this->configs['rate_limiter'];
             $apiPrefix = '/' . trim($this->router['api_prefix'], '/') . '/';
 
             $isApi = str_starts_with($requestUri, $apiPrefix);

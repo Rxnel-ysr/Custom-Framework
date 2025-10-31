@@ -1,5 +1,6 @@
 <?php
-#[Attribute] class Setup
+#[Attribute]
+class Setup
 {
-    public function __construct(public array $args, public array $before = []) {}
+    public function __construct(public array $args = [], public array $before = []) {}
 }

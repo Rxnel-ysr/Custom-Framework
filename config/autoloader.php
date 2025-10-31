@@ -1,6 +1,7 @@
 <?php
 
 use App\Foundation\Generator\TemplateBuilder;
+use App\Foundation\Manager\Resolver;
 
 $root = dirname(__DIR__, 1);
 
@@ -17,7 +18,7 @@ return [
     |
     */
 
-    'debug' => false,
+    'debug' => true,
 
     /*
     |--------------------------------------------------------------------------
@@ -64,7 +65,7 @@ return [
     |
     */
 
-    'check_filemtime' => true,
+    'check_filemtime' => false,
 
     /*
     |--------------------------------------------------------------------------

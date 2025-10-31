@@ -11,47 +11,47 @@ use Throwable;
 /**
  * Regex Router
  */
-class Route extends RouterBase implements RouterInterface
+class RouteRegex extends RouterBase implements RouterInterface
 {
-    public static string $name = 'RegexRouter';
-    private static string $dirRoot;
-    private static array $routes = [];
-    private static array $globalMiddleware = [];
-    private static array $routeMiddleware = [];
-    private static null|array|Closure $fallback = null;
-    private static array $routeList = [];
-    private static array $plugins = [];
-    private static array $namedRoutes = [];
-    private static ?array $lastRoute = null;
+    public string $name = 'RegexRouter';
+    private string $dirRoot;
+    private array $routes = [];
+    private array $globalMiddleware = [];
+    private array $routeMiddleware = [];
+    private null|array|Closure $fallback = null;
+    private array $routeList = [];
+    private array $plugins = [];
+    private array $namedRoutes = [];
+    private ?array $lastRoute = null;
 
     // Group stack for nested groups
-    private static array $groupStack = [];
-    private static array $appliedGroup = [];
+    private array $groupStack = [];
+    private array $appliedGroup = [];
 
     // Current group attributes
-    private static array $currentGroup = [
+    private array $currentGroup = [
         'prefix' => '',
         'middleware' => [],
         'namespace' => '',
     ];
 
-    public static function init(?string $root = null, array $plugins = [])
+    public function init(?string $root = null, array $plugins = [])
     {
-        self::$dirRoot = $root ?? $_SERVER['DOCUMENT_ROOT'] ?? null;
-        self::$plugins = $plugins;
+        $this->dirRoot = $root ?? $_SERVER['DOCUMENT_ROOT'] ?? null;
+        $this->plugins = $plugins;
     }
 
-    public static function getRequestMethod(): string
+    public function getRequestMethod(): string
     {
         return $_POST['_HTTP_METHOD'] ?? $_SERVER['REQUEST_METHOD'] ?? 'GET';
     }
 
-    private static function normalizePath(string $path): string
+    private function normalizePath(string $path): string
     {
         return '/' . trim($path, '/');
     }
 
-    public static function middleware(string|array $middleware, ?callable $callback = null): null|self
+    public function middleware(string|array $middleware, ?callable $callback = null): null|self
     {
         if (!is_array($middleware)) {
             $middleware = [$middleware];
@@ -62,21 +62,21 @@ class Route extends RouterBase implements RouterInterface
         }
 
         // Store route-specific middleware for the last added route
-        if (self::$lastRoute !== null) {
-            $method = self::$lastRoute['method'];
-            $url = self::$lastRoute['url'];
+        if ($this->lastRoute !== null) {
+            $method = $this->lastRoute['method'];
+            $url = $this->lastRoute['url'];
 
             // Update the middleware for this specific route
-            if (isset(self::$routes[$method][$url])) {
-                self::$routes[$method][$url]['middleware'] = array_merge(
-                    self::$routes[$method][$url]['middleware'] ?? [],
+            if (isset($this->routes[$method][$url])) {
+                $this->routes[$method][$url]['middleware'] = array_merge(
+                    $this->routes[$method][$url]['middleware'] ?? [],
                     $middleware
                 );
             }
 
             // Also update lastRoute for chaining
-            self::$lastRoute['middleware'] = array_merge(
-                self::$lastRoute['middleware'] ?? [],
+            $this->lastRoute['middleware'] = array_merge(
+                $this->lastRoute['middleware'] ?? [],
                 $middleware
             );
         } 
@@ -84,7 +84,7 @@ class Route extends RouterBase implements RouterInterface
         return new self();
     }
 
-    private static function parseRoutePattern(string $pattern): array
+    private function parseRoutePattern(string $pattern): array
     {
         $segments = explode('/', trim($pattern, '/'));
         $paramKeys = [];
@@ -151,20 +151,20 @@ class Route extends RouterBase implements RouterInterface
         ];
     }
 
-    public static function add(string $method, string $url, callable|array $action, array $middleware = [])
+    public function add(string $method, string $url, callable|array $action, array $middleware = [])
     {
-        self::$lastRoute = null;
+        $this->lastRoute = null;
 
         // Apply group prefix
-        $url = trim(self::$currentGroup['prefix'] . self::normalizePath($url), '/');
-        self::$routeList[$method][] = '/' . $url;
+        $url = trim($this->currentGroup['prefix'] . self::normalizePath($url), '/');
+        $this->routeList[$method][] = '/' . $url;
 
         // Apply group middleware
-        $middleware = array_merge(self::$currentGroup['middleware'], $middleware);
+        $middleware = array_merge($this->currentGroup['middleware'], $middleware);
 
         // Apply namespace to controller actions
-        if (is_array($action) && !empty(self::$currentGroup['namespace'])) {
-            $action[0] = self::$currentGroup['namespace'] . '\\' . ltrim($action[0], '\\');
+        if (is_array($action) && !empty($this->currentGroup['namespace'])) {
+            $action[0] = $this->currentGroup['namespace'] . '\\' . ltrim($action[0], '\\');
         }
 
         // Parse the URL pattern
@@ -173,7 +173,7 @@ class Route extends RouterBase implements RouterInterface
         $paramKeys = $parsed['paramKeys'];
 
         // Store the route
-        self::$routes[$method][$url] = [
+        $this->routes[$method][$url] = [
             'pattern' => $regexPattern,
             'patternExplanation' => translateRegex($regexPattern),
             'action' => $action,
@@ -182,7 +182,7 @@ class Route extends RouterBase implements RouterInterface
             'url' => $url
         ];
 
-        self::$lastRoute = [
+        $this->lastRoute = [
             'method' => $method,
             'url' => $url,
             'action' => $action,
@@ -193,31 +193,31 @@ class Route extends RouterBase implements RouterInterface
     }
 
     // HTTP verb methods (now return $this for chaining)
-    public static function get(string $url, callable|array $action, array|string $middleware = []): self
+    public function get(string $url, callable|array $action, array|string $middleware = []): self
     {
         self::add('GET', $url, $action, (array) $middleware);
         return new self();
     }
 
-    public static function post(string $url, callable|array $action, array|string $middleware = []): self
+    public function post(string $url, callable|array $action, array|string $middleware = []): self
     {
         self::add('POST', $url, $action, (array) $middleware);
         return new self();
     }
 
-    public static function patch(string $url, callable|array $action, array|string $middleware = []): self
+    public function patch(string $url, callable|array $action, array|string $middleware = []): self
     {
         self::add('PATCH', $url, $action, (array) $middleware);
         return new self();
     }
 
-    public static function put(string $url, callable|array $action, array|string $middleware = []): self
+    public function put(string $url, callable|array $action, array|string $middleware = []): self
     {
         self::add('PUT', $url, $action, (array) $middleware);
         return new self();
     }
 
-    public static function delete(string $url, callable|array $action, array|string $middleware = []): self
+    public function delete(string $url, callable|array $action, array|string $middleware = []): self
     {
         self::add('DELETE', $url, $action, (array) $middleware);
         return new self();
@@ -227,38 +227,38 @@ class Route extends RouterBase implements RouterInterface
     public function name(string $name): self
     {
         if (empty($name)) return $this;
-        self::$namedRoutes[$name] = self::$lastRoute;
+        $this->namedRoutes[$name] = $this->lastRoute;
         return $this;
     }
 
     // Route groups
-    public static function group(array $attributes, callable $callback): void
+    public function group(array $attributes, callable $callback): void
     {
         // Push current group attributes to stack
-        self::$groupStack[] = self::$currentGroup;
+        $this->groupStack[] = $this->currentGroup;
 
         // Merge new attributes
-        self::$appliedGroup[] = self::$currentGroup = [
-            'prefix' => trim(self::$currentGroup['prefix'] . '/' . trim($attributes['prefix'] ?? '', '/'), '/'),
-            'middleware' => array_merge(self::$currentGroup['middleware'], $attributes['middleware'] ?? []),
-            'namespace' => self::$currentGroup['namespace'] . '\\' . trim($attributes['namespace'] ?? '', '\\'),
+        $this->appliedGroup[] = $this->currentGroup = [
+            'prefix' => trim($this->currentGroup['prefix'] . '/' . trim($attributes['prefix'] ?? '', '/'), '/'),
+            'middleware' => array_merge($this->currentGroup['middleware'], $attributes['middleware'] ?? []),
+            'namespace' => $this->currentGroup['namespace'] . '\\' . trim($attributes['namespace'] ?? '', '\\'),
         ];
 
         // Execute the callback
         call_user_func($callback);
 
         // Restore previous group attributes
-        self::$currentGroup = array_pop(self::$groupStack);
+        $this->currentGroup = array_pop($this->groupStack);
     }
 
     // Reverse routing
-    public static function route(string $name, array $parameters = []): string
+    public function route(string $name, array $parameters = []): string
     {
-        if (!isset(self::$namedRoutes[$name])) {
+        if (!isset($this->namedRoutes[$name])) {
             throw new \InvalidArgumentException("Route name [$name] not found.");
         }
 
-        $route = self::$namedRoutes[$name]['url'];
+        $route = $this->namedRoutes[$name]['url'];
 
         foreach ($parameters as $key => $value) {
             $route = str_replace('{' . $key . '}', $value, $route);
@@ -269,7 +269,7 @@ class Route extends RouterBase implements RouterInterface
     }
 
     // Resourceful routing (RESTful)
-    public static function resource(string $name, string $controller, array $options = []): void
+    public function resource(string $name, string $controller, array $options = []): void
     {
         $name = trim($name, '/');
         $only = array_fill_keys($options['only'] ?? ['index', 'show', 'create', 'store', 'edit', 'update', 'destroy'], true);
@@ -299,47 +299,47 @@ class Route extends RouterBase implements RouterInterface
     }
 
     // View routes
-    public static function view(string $uri, string $view, array $data = []): self
+    public function view(string $uri, string $view, array $data = []): self
     {
         return self::get($uri, fn() => view($view, $data));
     }
 
     // Redirect routes
-    public static function redirect(string $from, string $to, int $status = 302): self
+    public function redirect(string $from, string $to, int $status = 302): self
     {
         return self::get($from, fn() => header("Location: $to", true, $status));
     }
 
-    public static function routeList()
+    public function routeList()
     {
-        return self::$routeList;
+        return $this->routeList;
     }
 
-    public static function namedRouteList()
+    public function namedRouteList()
     {
-        return self::$namedRoutes;
+        return $this->namedRoutes;
     }
 
-    public static function stackList()
+    public function stackList()
     {
-        return self::$appliedGroup;
+        return $this->appliedGroup;
     }
 
-    public static function dump()
+    public function dump()
     {
         return [
-            'routes' => self::$routeList,
-            'named_routes' => self::$namedRoutes,
-            'stacks' => self::$appliedGroup,
+            'routes' => $this->routeList,
+            'named_routes' => $this->namedRoutes,
+            'stacks' => $this->appliedGroup,
         ];
     }
 
-    public static function fallback(callable|array $callback)
+    public function fallback(callable|array $callback)
     {
-        self::$fallback = $callback;
+        $this->fallback = $callback;
     }
 
-    private static function execute(callable|array $action, mixed $params)
+    private function execute(callable|array $action, mixed $params)
     {
         if (is_array($action) && count($action) === 2) {
             $instance = new $action[0];
@@ -357,30 +357,30 @@ class Route extends RouterBase implements RouterInterface
         return Debugger::showErrorPage(500, 'Invalid callback');
     }
 
-    public static function dispatch(Request $request)
+    public function dispatch(Request $request)
     {
         $requestUri = trim($request->uri(), '/');
         // echo 'Request uri: ' . $requestUri . '<br>';
         // die;
         $method = self::getRequestMethod();
 
-        if (!isset(self::$routes[$method])) {
-            if (isset(self::$fallback)) {
-                return self::execute(self::$fallback, []);
+        if (!isset($this->routes[$method])) {
+            if (isset($this->fallback)) {
+                return self::execute($this->fallback, []);
             }
             return Debugger::showErrorPage(404, 'Not found');
         }
 
-        if (isset(self::$routes[$method][$requestUri])) {
+        if (isset($this->routes[$method][$requestUri])) {
             // echo 'Here';
             // die;
-            $res = self::$routes[$method][$requestUri];
+            $res = $this->routes[$method][$requestUri];
 
-            foreach (self::$plugins as $fn) {
+            foreach ($this->plugins as $fn) {
                 $fn();
             }
 
-            $middleware = array_merge(self::$globalMiddleware, $res['middleware'] ?? []);
+            $middleware = array_merge($this->globalMiddleware, $res['middleware'] ?? []);
 
             $destination = fn() => self::execute($res['action'], []);
 
@@ -388,10 +388,10 @@ class Route extends RouterBase implements RouterInterface
         }
 
         // echo '<pre>';
-        // print_r(self::$routes[$method]);
+        // print_r($this->routes[$method]);
         // echo '</pre>';
         // die;
-        foreach (self::$routes[$method] as $route) {
+        foreach ($this->routes[$method] as $route) {
             if ($route['pattern'] == null) continue;
             // echo $route['pattern'];
             // continue;
@@ -411,11 +411,11 @@ class Route extends RouterBase implements RouterInterface
                     }
                 }
 
-                foreach (self::$plugins as $fn) {
+                foreach ($this->plugins as $fn) {
                     $fn();
                 }
 
-                $middleware = array_merge(self::$globalMiddleware, $route['middleware'] ?? []);
+                $middleware = array_merge($this->globalMiddleware, $route['middleware'] ?? []);
 
                 $destination = fn() => self::execute($route['action'], $orderedParams);
 
@@ -425,7 +425,7 @@ class Route extends RouterBase implements RouterInterface
 
         // die;
 
-        // $routes = self::$routes[$method];
+        // $routes = $this->routes[$method];
         // $patterns = array_column($routes, 'pattern');
 
         // $matchResults = safe_bulk_match($patterns, $requestUri, 0.05); // 30ms per regex
@@ -459,11 +459,11 @@ class Route extends RouterBase implements RouterInterface
         //     }
         // }
 
-        // foreach (self::$plugins as $fn) {
+        // foreach ($this->plugins as $fn) {
         //     $fn();
         // }
 
-        // $middleware = array_merge(self::$globalMiddleware, $route['middleware'] ?? []);
+        // $middleware = array_merge($this->globalMiddleware, $route['middleware'] ?? []);
 
         // foreach ($middleware as $m) {
         //     if (is_callable($m)) {
@@ -481,26 +481,26 @@ class Route extends RouterBase implements RouterInterface
 
         // die;
 
-        if (isset(self::$fallback)) {
-            return self::execute(self::$fallback, []);
+        if (isset($this->fallback)) {
+            return self::execute($this->fallback, []);
         }
         return Debugger::showErrorPage(404, 'Not found');
     }
 
-    public static function debugRoutes()
+    public function debugRoutes()
     {
         echo "Registered Routes:\n";
-        foreach (self::$routeList as $method => $routes) {
+        foreach ($this->routeList as $method => $routes) {
             echo "$method:\n";
             foreach ($routes as $route) {
                 echo "  $route\n";
             }
         }
     }
-    public static function debugPatterns(): array
+    public function debugPatterns(): array
     {
         $debug = [];
-        foreach (self::$routes as $method => $routes) {
+        foreach ($this->routes as $method => $routes) {
             foreach ($routes as $route) {
                 $debug[$method][] = [
                     'url' => $route['url'],

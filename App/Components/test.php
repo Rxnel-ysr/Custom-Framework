@@ -4,7 +4,7 @@ namespace App\Reactive;
 
 use App\Foundation\Reactive\Reactive;
 
-class test extends Reactive
+class ANJG extends Reactive
 {
     public function view(): string
     {

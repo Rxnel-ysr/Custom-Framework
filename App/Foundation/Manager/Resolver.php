@@ -8,6 +8,11 @@ use ReflectionNamedType;
 use InvalidArgumentException;
 use Setup;
 
+/**
+ * @template T of Object
+ * @depends ./../Attributes/Setup.php
+ * @depends ./../Attributes/Inject.php
+ */
 class Resolver
 {
     /**
@@ -43,6 +48,11 @@ class Resolver
         return self::$instances[$key];
     }
 
+    public static function has(string $key)
+    {
+        return isset(self::$instances[$key]);
+    }
+
     /**
      * Retrieve a singleton instance of the given class.
      *
@@ -72,8 +82,21 @@ class Resolver
         return self::$instances;
     }
 
+    /**
+     * Create and register a new instance of a class.
+     *
+     * @template T of object
+     * @param class-string<T> $class The class name to instantiate.
+     * @param callable(T):void|null $func Optional callback that receives the instance.
+     * @param array $args Constructor arguments.
+     * @param string|null $name Optional name for registration.
+     * @return T The created instance.
+     */
     public static function createInstance(string $class, ?callable $func = null, array $args = [], ?string $name = null)
     {
+        if (self::has($class)) {
+            return self::get($class);
+        }
         $reflect = new ReflectionClass($class);
         $params = [];
 
@@ -90,6 +113,7 @@ class Resolver
                 if (!empty($attrs)) {
                     $injectAttr = $attrs[0]->newInstance();
                     $injectClass = $injectAttr->class ?? ($paramType instanceof ReflectionNamedType ? $paramType->getName() : null);
+                    self::setup($injectClass);
 
                     if ($injectClass === null) {
                         throw new InvalidArgumentException("Unable to resolve Inject target for parameter: $paramName");
@@ -131,9 +155,9 @@ class Resolver
         }
     }
 
-    private static function setup(string $class)
+    public static function setup(string $class)
     {
-        if (isset(self::$visited[$class])) return self::get($class);
+        if (isset(self::$visited[$class])) return;
         self::$visited[$class] = true;
 
         $reflectionClass = new ReflectionClass($class);
@@ -141,10 +165,8 @@ class Resolver
         if (!empty($attrs)) {
             $instance = $attrs[0]->newInstance();
 
-            if (!empty($instance->before)) {
-                foreach ($instance->before as $dep) {
-                    self::setup($dep);
-                }
+            foreach ($instance->before as $dep) {
+                self::setup($dep);
             }
 
             return self::createInstance($class, null, $instance->args);

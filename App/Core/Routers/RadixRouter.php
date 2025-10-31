@@ -3,6 +3,7 @@
 namespace App\Foundation\Http;
 
 use App\Debug\Debugger;
+use App\Foundation\Http\Request;
 use Closure;
 use RouterBase;
 use RouterInterface;
@@ -15,53 +16,65 @@ class RadixNode
     public array $middleware = [];
     public string $path = '';
     public bool $isParam = false;
+    public bool $isLeaf = false;
 }
 
 /**
- * Radix Router
+ * High-Performance Radix Router with Method-Based Roots
  */
-class Route extends RouterBase implements RouterInterface
+class RouteRadix extends RouterBase implements RouterInterface
 {
-    public static string $name = 'RadixRouter';
-    private static RadixNode $root;
-    private static string $dirRoot;
-    private static array $globalMiddleware = [];
-    private static array $routeMiddleware = [];
-    private static null|array|Closure $fallback = null;
-    private static array $routeList = [];
-    private static array $plugins = [];
-    private static array $namedRoutes = [];
-    private static ?array $lastRoute = null;
+    public string $name = 'RadixRouter';
+    
+    // Method-based root nodes for optimal performance
+    private array $roots = [];
+
+    private string $dirRoot;
+    private array $globalMiddleware = [];
+    private array $routeMiddleware = [];
+    private null|array|Closure $fallback = null;
+    private array $routeList = [];
+    private array $plugins = [];
+    private array $namedRoutes = [];
+    private ?array $lastRoute = null;
 
     // Group stack for nested groups
-    private static array $groupStack = [];
-    private static array $appliedGroup = [];
+    private array $groupStack = [];
+    private array $appliedGroup = [];
 
     // Current group attributes
-    private static array $currentGroup = [
+    private array $currentGroup = [
         'prefix' => '',
         'middleware' => [],
         'namespace' => '',
     ];
 
-    public static function init(?string $root = null, array $plugins = [])
+    public function init(?string $root = null, array $plugins = [])
     {
-        self::$root = new RadixNode();
-        self::$dirRoot = $root ?? $_SERVER['DOCUMENT_ROOT'] ?? null;
-        self::$plugins = $plugins;
+        // Initialize method-specific roots
+        $methods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'];
+        foreach ($methods as $method) {
+            $this->roots[$method] = new RadixNode();
+        }
+        
+        $this->dirRoot = $root ?? $_SERVER['DOCUMENT_ROOT'] ?? null;
+        $this->plugins = $plugins;
     }
 
-    public static function getRequestMethod(): string
+    public function getRequestMethod(): string
     {
+        // Single lookup pattern - most common case first
         return $_POST['_HTTP_METHOD'] ?? $_SERVER['REQUEST_METHOD'] ?? 'GET';
     }
 
-    private static function normalizePath(string $path): string
+    private function normalizePath(string $path): string
     {
-        return '/' . trim($path, '/');
+        // Ultra-fast path normalization
+        $path = trim($path, '/');
+        return $path === '' ? '/' : '/' . $path;
     }
 
-    public static function middleware(string|array $middleware, ?callable $callback = null): null|self
+    public function middleware(string|array $middleware, ?callable $callback = null): null|self
     {
         if (!is_array($middleware)) {
             $middleware = [$middleware];
@@ -71,89 +84,67 @@ class Route extends RouterBase implements RouterInterface
             return self::group(['middleware' => $middleware], $callback);
         }
 
-        // Store route-specific middleware for the last added route
-        if (self::$lastRoute !== null) {
-            self::$lastRoute['middleware'] = array_merge(
-                self::$lastRoute['middleware'] ?? [],
+        if ($this->lastRoute !== null) {
+            $this->lastRoute['middleware'] = array_merge(
+                $this->lastRoute['middleware'] ?? [],
                 $middleware
             );
 
-            // Update the node with the new middleware
-            $url = trim(self::$lastRoute['url'], '/');
-            $segments = explode('/', $url);
-            $result = self::searchNode(self::$root, $segments);
-
-            if ($result !== null) {
-                $result['node']->middleware = array_merge(
-                    $result['node']->middleware,
-                    $middleware
-                );
+            // Update the specific method's node
+            $method = $this->lastRoute['method'];
+            $url = trim($this->lastRoute['url'], '/');
+            $segments = $url === '' ? [] : explode('/', $url);
+            
+            if (isset($this->roots[$method])) {
+                $result = self::searchNode($this->roots[$method], $segments);
+                if ($result !== null) {
+                    $result['node']->middleware = array_merge(
+                        $result['node']->middleware,
+                        $middleware
+                    );
+                }
             }
         }
 
         return new self();
     }
 
-    private static function insertNode(RadixNode $node, array $segments, string $method, callable|array $action, array $middleware, array $paramKeys): RadixNode
+    private function insertNode(RadixNode $node, array $segments, string $method, callable|array $action, array $middleware, array $paramKeys): RadixNode
     {
         if (empty($segments)) {
             $node->handlers[$method] = $action;
-            $node->middleware = $middleware; // Set middleware for this node
+            $node->middleware = $middleware;
             $node->paramKeys = $paramKeys;
+            $node->isLeaf = true;
             return $node;
         }
 
         $segment = $segments[0];
         $remainingSegments = array_slice($segments, 1);
 
-        // Check for parameter segment
-        if (preg_match('/\{([a-zA-Z0-9_]+)\}/', $segment, $matches)) {
-            $paramKeys[] = $matches[1];
+        // Fast parameter detection
+        if (isset($segment[0]) && $segment[0] === '{' && substr($segment, -1) === '}') {
+            $paramKeys[] = substr($segment, 1, -1);
             $segment = '{}';
             $isParam = true;
         } else {
             $isParam = false;
         }
 
-        // Look for a matching child
+        // Direct child matching - no cache needed, tree is fast enough
         foreach ($node->children as $child) {
-            // Exact match or parameter match
-            if ($child->path === $segment || $child->isParam) {
+            if ($child->path === $segment || ($child->isParam && $isParam)) {
                 return self::insertNode($child, $remainingSegments, $method, $action, $middleware, $paramKeys);
             }
 
-            // Partial match - split the node
-            $commonPrefix = self::longestCommonPrefix($child->path, $segment);
+            // Prefix matching for radix tree efficiency
+            $commonPrefix = self::fastCommonPrefix($child->path, $segment);
             if ($commonPrefix !== '') {
-                // Split the existing node
-                $splitNode = new RadixNode();
-                $splitNode->path = substr($child->path, strlen($commonPrefix));
-                $splitNode->children = $child->children;
-                $splitNode->handlers = $child->handlers;
-                $splitNode->middleware = $child->middleware;
-                $splitNode->paramKeys = $child->paramKeys;
-                $splitNode->isParam = $child->isParam;
-
-                // Reset the existing node
-                $child->path = $commonPrefix;
-                $child->children = [$splitNode];
-                $child->handlers = [];
-                $child->isParam = false;
-
-                // If we didn't match the full segment, add the remaining part as a new child
-                if ($commonPrefix !== $segment) {
-                    $newNode = new RadixNode();
-                    $newNode->path = substr($segment, strlen($commonPrefix));
-                    $newNode->isParam = $isParam;
-                    $child->children[] = $newNode;
-                    return self::insertNode($newNode, $remainingSegments, $method, $action, $middleware, $paramKeys);
-                }
-
-                return self::insertNode($child, $remainingSegments, $method, $action, $middleware, $paramKeys);
+                return self::splitAndInsert($node, $child, $segment, $remainingSegments, $commonPrefix, $method, $action, $middleware, $paramKeys, $isParam);
             }
         }
 
-        // No matching child found, create a new one
+        // Create new node - this is the slow path but only happens during route registration
         $newNode = new RadixNode();
         $newNode->path = $segment;
         $newNode->isParam = $isParam;
@@ -161,40 +152,77 @@ class Route extends RouterBase implements RouterInterface
         return self::insertNode($newNode, $remainingSegments, $method, $action, $middleware, $paramKeys);
     }
 
-    private static function longestCommonPrefix(string $a, string $b): string
+    private function fastCommonPrefix(string $a, string $b): string
     {
-        $len = min(strlen($a), strlen($b));
-        $result = '';
-        for ($i = 0; $i < $len; $i++) {
+        $minLen = min(strlen($a), strlen($b));
+        for ($i = 0; $i < $minLen; $i++) {
             if ($a[$i] !== $b[$i]) {
-                break;
+                return $i === 0 ? '' : substr($a, 0, $i);
             }
-            $result .= $a[$i];
         }
-        return $result;
+        return $minLen === 0 ? '' : substr($a, 0, $minLen);
     }
 
-    public static function add(string $method, string $url, callable|array $action, array $middleware = [])
+    private function splitAndInsert(RadixNode $parent, RadixNode $child, string $segment, array $remainingSegments, string $commonPrefix, string $method, callable|array $action, array $middleware, array $paramKeys, bool $isParam): RadixNode
     {
-        self::$lastRoute = null;
-        // Apply group prefix
-        $url = trim(self::$currentGroup['prefix'] . self::normalizePath($url), '/');
-        self::$routeList[$method][] = '/' . $url;
+        $splitNode = new RadixNode();
+        $splitNode->path = substr($child->path, strlen($commonPrefix));
+        $splitNode->children = $child->children;
+        $splitNode->handlers = $child->handlers;
+        $splitNode->middleware = $child->middleware;
+        $splitNode->paramKeys = $child->paramKeys;
+        $splitNode->isParam = $child->isParam;
+        $splitNode->isLeaf = $child->isLeaf;
 
-        // Apply group middleware
-        $middleware = array_merge(self::$currentGroup['middleware'], $middleware);
+        $child->path = $commonPrefix;
+        $child->children = [$splitNode];
+        $child->handlers = [];
+        $child->isParam = false;
+        $child->isLeaf = false;
 
-        // Apply namespace to controller actions
-        if (is_array($action) && !empty(self::$currentGroup['namespace'])) {
-            $action[0] = self::$currentGroup['namespace'] . '\\' . ltrim($action[0], '\\');
+        if ($commonPrefix !== $segment) {
+            $newNode = new RadixNode();
+            $newNode->path = substr($segment, strlen($commonPrefix));
+            $newNode->isParam = $isParam;
+            $child->children[] = $newNode;
+            return self::insertNode($newNode, $remainingSegments, $method, $action, $middleware, $paramKeys);
         }
 
-        $segments = explode('/', trim($url, '/'));
+        return self::insertNode($child, $remainingSegments, $method, $action, $middleware, $paramKeys);
+    }
+
+    public function add(string $method, string $url, callable|array $action, array $middleware = [])
+    {
+        $this->lastRoute = null;
+        
+        // Apply group prefix
+        $prefix = $this->currentGroup['prefix'];
+        $url = $prefix === '' ? $url : trim($prefix . '/' . trim($url, '/'), '/');
+        $normalizedUrl = self::normalizePath($url);
+        
+        // Store route for debugging
+        $this->routeList[$method][] = $normalizedUrl;
+
+        // Apply group middleware
+        $middleware = array_merge($this->currentGroup['middleware'], $middleware);
+
+        // Apply namespace
+        if (is_array($action) && !empty($this->currentGroup['namespace'])) {
+            $namespace = $this->currentGroup['namespace'];
+            $action[0] = $namespace . '\\' . ltrim($action[0], '\\');
+        }
+
+        // Prepare segments
+        $trimmedUrl = trim($url, '/');
+        $segments = $trimmedUrl === '' ? [] : explode('/', $trimmedUrl);
         $paramKeys = [];
 
-        self::insertNode(self::$root, $segments, $method, $action, $middleware, $paramKeys);
+        // Insert into method-specific root - no cache needed
+        if (isset($this->roots[$method])) {
+            self::insertNode($this->roots[$method], $segments, $method, $action, $middleware, $paramKeys);
+        }
 
-        self::$lastRoute = [
+        $this->lastRoute = [
             'method' => $method,
             'url' => $url,
             'action' => $action,
@@ -204,16 +232,10 @@ class Route extends RouterBase implements RouterInterface
         return new Self();
     }
 
-    private static function searchNode(RadixNode $node, array $segments, array $params = []): ?array
+    private function searchNode(RadixNode $node, array $segments, array $params = []): ?array
     {
         if (empty($segments)) {
-            if (empty($node->handlers)) {
-                return null; // No handlers for this node
-            }
-            return [
-                'node' => $node,
-                'params' => $params
-            ];
+            return $node->isLeaf ? ['node' => $node, 'params' => $params] : null;
         }
 
         $segment = $segments[0];
@@ -221,7 +243,7 @@ class Route extends RouterBase implements RouterInterface
 
         foreach ($node->children as $child) {
             if ($child->isParam) {
-                // Parameter node matches any segment
+                // Parameter node - match any segment
                 $newParams = $params;
                 $newParams[] = $segment;
                 $result = self::searchNode($child, $remainingSegments, $newParams);
@@ -229,21 +251,18 @@ class Route extends RouterBase implements RouterInterface
                     return $result;
                 }
             } elseif (str_starts_with($segment, $child->path)) {
-                // Exact match or prefix match
+                // Exact or prefix match
                 if ($segment === $child->path) {
-                    // Exact match - proceed with remaining segments
                     $result = self::searchNode($child, $remainingSegments, $params);
-                    if ($result !== null) {
-                        return $result;
-                    }
                 } else {
-                    // Partial match - check if the remaining part matches any child
+                    // Partial match
                     $remainingPart = substr($segment, strlen($child->path));
                     $newSegments = array_merge([$remainingPart], $remainingSegments);
                     $result = self::searchNode($child, $newSegments, $params);
-                    if ($result !== null) {
-                        return $result;
-                    }
+                }
+                
+                if ($result !== null) {
+                    return $result;
                 }
             }
         }
@@ -251,155 +270,136 @@ class Route extends RouterBase implements RouterInterface
         return null;
     }
 
-    // HTTP verb methods (now return $this for chaining)
-    public static function get(string $url, callable|array $action, array|string $middleware = []): self
+    // HTTP verb methods - each uses its own radix tree
+    public function get(string $url, callable|array $action, array|string $middleware = []): self
     {
-        self::add('GET', $url, $action, (array) $middleware);
-        return new self();
+        return self::add('GET', $url, $action, (array) $middleware);
     }
 
-    public static function post(string $url, callable|array $action, array|string $middleware = []): self
+    public function post(string $url, callable|array $action, array|string $middleware = []): self
     {
-        self::add('POST', $url, $action, (array) $middleware);
-        return new self();
+        return self::add('POST', $url, $action, (array) $middleware);
     }
 
-    public static function patch(string $url, callable|array $action, array|string $middleware = []): self
+    public function patch(string $url, callable|array $action, array|string $middleware = []): self
     {
-        self::add('PATCH', $url, $action, (array) $middleware);
-        return new self();
+        return self::add('PATCH', $url, $action, (array) $middleware);
     }
 
-    public static function put(string $url, callable|array $action, array|string $middleware = []): self
+    public function put(string $url, callable|array $action, array|string $middleware = []): self
     {
-        self::add('PUT', $url, $action, (array) $middleware);
-        return new self();
+        return self::add('PUT', $url, $action, (array) $middleware);
     }
 
-    public static function delete(string $url, callable|array $action, array|string $middleware = []): self
+    public function delete(string $url, callable|array $action, array|string $middleware = []): self
     {
-        self::add('DELETE', $url, $action, (array) $middleware);
-        return new self();
+        return self::add('DELETE', $url, $action, (array) $middleware);
+    }
+
+    public function head(string $url, callable|array $action, array|string $middleware = []): self
+    {
+        return self::add('HEAD', $url, $action, (array) $middleware);
+    }
+
+    public function options(string $url, callable|array $action, array|string $middleware = []): self
+    {
+        return self::add('OPTIONS', $url, $action, (array) $middleware);
     }
 
     // Named routes
     public function name(string $name): self
     {
-        if (empty($name)) return $this;
-        self::$namedRoutes[$name] = self::$lastRoute;
+        if ($name !== '' && $this->lastRoute !== null) {
+            $this->namedRoutes[$name] = $this->lastRoute;
+        }
         return $this;
     }
 
     // Route groups
-    public static function group(array $attributes, callable $callback): void
+    public function group(array $attributes, callable $callback): void
     {
-        // Push current group attributes to stack
-        self::$groupStack[] = self::$currentGroup;
+        $this->groupStack[] = $this->currentGroup;
 
-        // Merge new attributes
-        self::$appliedGroup[] = self::$currentGroup = [
-            'prefix' => trim(self::$currentGroup['prefix'] . '/' . trim($attributes['prefix'] ?? '', '/'), '/'),
-            'middleware' => array_merge(self::$currentGroup['middleware'], (is_array($attributes['middleware']) ? $attributes['middleware'] : [$attributes['middleware']]) ?? []),
-            'namespace' => self::$currentGroup['namespace'] . '\\' . trim($attributes['namespace'] ?? '', '\\'),
-        ];
+        $prefix = trim($this->currentGroup['prefix'] . '/' . trim($attributes['prefix'] ?? '', '/'), '/');
+        $middleware = array_merge(
+            $this->currentGroup['middleware'], 
+            (array)($attributes['middleware'] ?? [])
+        );
+        $namespace = $this->currentGroup['namespace'] . 
+                    (isset($attributes['namespace']) ? '\\' . trim($attributes['namespace'], '\\') : '');
 
+        $this->appliedGroup[] = $this->currentGroup = compact('prefix', 'middleware', 'namespace');
 
-        // Execute the callback
-        call_user_func($callback);
+        $callback();
 
-        // Restore previous group attributes
-        self::$currentGroup  = array_pop(self::$groupStack);
+        $this->currentGroup = array_pop($this->groupStack);
     }
 
     // Reverse routing
-    public static function route(string $name, array $parameters = []): string
+    public function route(string $name, array $parameters = []): string
     {
-        if (!isset(self::$namedRoutes[$name])) {
+        if (!isset($this->namedRoutes[$name])) {
             throw new \InvalidArgumentException("Route name [$name] not found.");
         }
 
-        $route = self::$namedRoutes[$name]['url'];
-
+        $route = $this->namedRoutes[$name]['url'];
+        
         foreach ($parameters as $key => $value) {
-            $route = str_replace('{' . $key . '}', $value, $route);
+            $route = str_replace('{' . $key . '}', (string)$value, $route);
         }
 
-        return '/' . $route;
+        return self::normalizePath($route);
     }
 
-    // Resourceful routing (RESTful)
-    public static function resource(string $name, string $controller, array $options = []): void
+    // Resource routing
+    public function resource(string $name, string $controller, array $options = []): void
     {
         $name = trim($name, '/');
-        $only = array_fill_keys($options['only'] ?? ['index', 'show', 'create', 'store', 'edit', 'update', 'destroy'], true);
-        $except = array_fill_keys($options['except'] ?? [], true);
+        $only = array_flip($options['only'] ?? ['index', 'show', 'create', 'store', 'edit', 'update', 'destroy']);
+        $except = array_flip($options['except'] ?? []);
         $names = $options['names'] ?? [];
         $middleware = $options['middleware'] ?? [];
 
         $routes = [
-            'index' => ['GET', "/{$name}", [$controller, 'index']],
-            'create' => ['GET', "/{$name}/create", [$controller, 'create']],
-            'store' => ['POST', "/{$name}", [$controller, 'store']],
-            'show' => ['GET', "/{$name}/{id}", [$controller, 'show']],
-            'edit' => ['GET', "/{$name}/{id}/edit", [$controller, 'edit']],
-            'update' => ['PUT', "/{$name}/{id}", [$controller, 'update']],
-            'destroy' => ['DELETE', "/{$name}/{id}", [$controller, 'destroy']],
+            'index' => ['GET', "/{$name}", 'index'],
+            'create' => ['GET', "/{$name}/create", 'create'],
+            'store' => ['POST', "/{$name}", 'store'],
+            'show' => ['GET', "/{$name}/{id}", 'show'],
+            'edit' => ['GET', "/{$name}/{id}/edit", 'edit'],
+            'update' => ['PUT', "/{$name}/{id}", 'update'],
+            'destroy' => ['DELETE', "/{$name}/{id}", 'destroy'],
         ];
 
-        self::group(['middleware' => $middleware], function () use ($routes, $only, $except, $names, $name) {
-            $index = -1;
-            foreach ($routes as $action => $route) {
-                $index++;
-                if (($only[$action] ?? false) && (!$except[$action] ?? true)) {
-                    self::add($route[0], $route[1], $route[2])->name($names[$index] ?? "{$name}.{$route[2][1]}");
+        self::group(['middleware' => $middleware], function () use ($routes, $only, $except, $names, $name, $controller) {
+            $index = 0;
+            foreach ($routes as $action => [$method, $path, $handler]) {
+                if (isset($only[$action]) && !isset($except[$action])) {
+                    self::add($method, $path, [$controller, $handler])
+                        ->name($names[$index] ?? "{$name}.{$handler}");
                 }
+                $index++;
             }
         });
     }
 
     // View routes
-    public static function view(string $uri, string $view, array $data = []): self
+    public function view(string $uri, string $view, array $data = []): self
     {
         return self::get($uri, fn() => view($view, $data));
     }
 
     // Redirect routes
-    public static function redirect(string $from, string $to, int $status = 302): self
+    public function redirect(string $from, string $to, int $status = 302): self
     {
         return self::get($from, fn() => header("Location: $to", true, $status));
     }
 
-    public static function routeList()
+    public function fallback(callable|array $callback): void
     {
-        return self::$routeList;
+        $this->fallback = $callback;
     }
 
-    public static function namedRouteList()
-    {
-        return self::$namedRoutes;
-    }
-
-    public static function stackList()
-    {
-        return self::$appliedGroup;
-    }
-
-    public static function dump()
-    {
-        return [
-            'routes' => self::$routeList,
-            'named_routes' => self::$namedRoutes,
-            'stacks' => self::$appliedGroup,
-
-        ];
-    }
-
-    public static function fallback(callable|array $callback)
-    {
-        self::$fallback = $callback;
-    }
-
-    private static function execute(callable|array $action, mixed $params)
+    private function execute(callable|array $action, mixed $params)
     {
         if (is_array($action) && count($action) === 2) {
             $instance = new $action[0];
@@ -417,68 +417,80 @@ class Route extends RouterBase implements RouterInterface
         return Debugger::showErrorPage(500, 'Invalid callback');
     }
 
-    public static function dispatch(Request $request)
+    public function dispatch(Request $request)
     {
-        $requestUri = trim($request->uri(), '/');
         $method = self::getRequestMethod();
+        $requestUri = trim($request->uri(), '/');
+        $segments = $requestUri === '' ? [] : explode('/', $requestUri);
+        
+        // Direct lookup in method-specific radix tree - no cache needed!
+        $root = $this->roots[$method] ?? null;
+        // dd($root);
+        
+        if ($root === null) {
+            return self::handleNotFound();
+        }
+        
+        $result = self::searchNode($root, $segments);
 
-        $segments = explode('/', $requestUri);
-        $result = self::searchNode(self::$root, $segments);
+        if ($result !== null) {
+            $node = $result['node'];
+            $params = $result['params'];
 
-        if ($result === null) {
-            if (isset(self::$fallback)) {
-                return self::execute(self::$fallback, []);
+            if (isset($node->handlers[$method])) {
+                // Execute plugins
+                foreach ($this->plugins as $fn) {
+                    $fn();
+                }
+
+                $middleware = array_merge($this->globalMiddleware, $node->middleware);
+                $destination = fn() => self::execute(
+                    $node->handlers[$method], 
+                    array_combine($node->paramKeys, $params)
+                );
+
+                return self::pipeline($request, $middleware, $destination);
             }
-            return Debugger::showErrorPage(404, 'Not found');
         }
 
-        $node = $result['node'];
-        $params = $result['params'];
-
-        if (isset($node->handlers[$method])) {
-            foreach (self::$plugins as $fn) {
-                $fn();
-            }
-
-            $middleware = array_merge(self::$globalMiddleware, $node->middleware ?? []);
-
-            $destination = fn() => self::execute($node->handlers[$method], array_combine($node->paramKeys, $params));
-
-            return self::pipeline($request, $middleware, $destination);
-            // return self::execute($node->handlers[$method], array_combine($node->paramKeys, $params));
-        }
-
-        if (isset(self::$fallback)) {
-            return self::execute(self::$fallback, []);
-        }
-
-        return Debugger::showErrorPage(405, 'Method not allowed');
+        return self::handleNotFound();
     }
 
-    public static function debugTree(?RadixNode $node = null, int $indent = 0)
+    private function handleNotFound()
     {
-        $node = $node ?? self::$root;
+        if (isset($this->fallback)) {
+            return self::execute($this->fallback, []);
+        }
+        return Debugger::showErrorPage(404, 'Not found');
+    }
+
+    // Debug methods
+    public function debugTree(?string $method = 'GET', ?RadixNode $node = null, int $indent = 0): void
+    {
+        if ($method !== null) {
+            $node = $this->roots[$method] ?? $this->roots['GET'];
+        }
+        
+        $node = $node ?? $this->roots['GET'];
         $indentStr = str_repeat(' ', $indent * 2);
 
         echo $indentStr . "Node: " . $node->path .
             ($node->isParam ? ' (param)' : '') .
-            (!empty($node->handlers) ? ' [has handlers]' : '') . "\n";
+            ($node->isLeaf ? ' [LEAF]' : '') .
+            (!empty($node->handlers) ? ' [HANDLERS: ' . implode(',', array_keys($node->handlers)) . ']' : '') . "\n";
 
         foreach ($node->children as $child) {
-            self::debugTree($child, $indent + 1);
+            self::debugTree(null, $child, $indent + 1);
         }
     }
 
-    public static function debugRoutes()
+    public function routeList(): array
     {
-        $list = [];
+        return $this->routeList;
+    }
 
-        foreach (self::$routeList as $method => $routes) {
-            foreach ($routes as $route) {
-                $list[$method][] = $route;
-            }
-        }
-
-        return $list;
+    public function getNamedRoutes(): array
+    {
+        return $this->namedRoutes;
     }
 }

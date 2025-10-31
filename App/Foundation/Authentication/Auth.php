@@ -2,8 +2,9 @@
 
 namespace App\Foundation\Authentication;
 
-(session_status() !== PHP_SESSION_ACTIVE) && session_start();
+use App\Foundation\Manager\Boot;
 
+#[Boot('self::init')]
 class Auth
 {
     protected string $type = 'web';
@@ -14,6 +15,11 @@ class Auth
     private function __construct()
     {
         // Private constructor to enforce singleton pattern
+    }
+
+    public static function init()
+    {
+        (session_status() !== PHP_SESSION_ACTIVE) && session_start();
     }
 
     public static function getInstance(): self

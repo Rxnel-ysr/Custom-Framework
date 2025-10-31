@@ -3,7 +3,7 @@
 namespace App\Foundation\Providers;
 
 use App\Foundation\Http\Request;
-use App\Foundation\Http\Route;
+use App\Support\Facades\Route;
 use App\Support\Facades\Rx;
 
 class AppServiceProvider

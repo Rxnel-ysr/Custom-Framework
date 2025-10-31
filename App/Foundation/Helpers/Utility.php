@@ -149,10 +149,6 @@ function route($name, array $parameters = [])
     return Route::route($name, $parameters);
 }
 
-function config(string $path)
-{
-    return require $path;
-}
 
 function method($method)
 {

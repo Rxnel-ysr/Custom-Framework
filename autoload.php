@@ -2,7 +2,7 @@
 
 use App\Foundation\Manager\Autoloader;
 
-require 'App/Foundation/Manager/Autoloader.php';
+require_once 'App/Foundation/Manager/Autoloader_EXPE.php';
 
 $cfg = require 'config/autoloader.php';
 
@@ -27,6 +27,11 @@ Autoloader::setup(
     $cfg['files'],
     $opt,
 );
+
+Autoloader::registerDepAlises([
+    'Dep' => App\Foundation\Manager\Dep::class,
+    'Boot' => App\Foundation\Manager\Boot::class,
+]);
 // $rs = (hrtime(true) - $start) / 1.0e6 . "ms\n";
 // echo $rs;
 

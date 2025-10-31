@@ -2,6 +2,15 @@
 
 namespace App\Test;
 
+use App\Foundation\Support\Collection;
+use App\Foundation\Support\Str;
+use Dep;
+use Boot;
+
+#[Dep(Str::class)]
+#[Dep(Collection::class)]
+#[Boot([testClassWithInitAndDeps::class, 'init'])]
+#[Boot('App\Test\say')]
 /**
  * A test class with deps and init
  * @depends App\Foundation\Support\Str

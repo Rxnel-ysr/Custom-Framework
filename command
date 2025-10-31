@@ -8,8 +8,8 @@ use App\Foundation\CLI\Argv;
 if (PHP_SAPI !== 'cli') {
     return die('Must run on CLI');
 }
-require 'autoload.php';
-require __DIR__ . '/routes/console.php';
+require_once 'autoload.php';
+require_once __DIR__ . '/routes/console.php';
 
 $status = (require __DIR__ . '/App/Core/bootstrap/bootstrap.php')
     ->handleCommand(new Argv());

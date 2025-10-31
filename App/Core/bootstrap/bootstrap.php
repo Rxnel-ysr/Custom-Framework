@@ -39,28 +39,6 @@ return (static function () {
         log_file: "{$__root}storage/logs/debug.log"
     );
 
-    // Web-only setup
-    // if ($isWeb) {
-        $nonce = base64_encode(random_bytes(16));
-
-        if (!empty($_ENV['CSP'])) {
-            header("Content-Security-Policy: default-src 'self'; media-src 'self'; script-src 'self' 'nonce-$nonce'; style-src 'self' 'nonce-$nonce' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com;");
-        }
-
-        DI::bind('nonce', fn() => $nonce);
-
-        // Validate router choice
-        $choices = array_fill_keys($cfg['router']['choices'], true);
-        $selected = $cfg['router']['selected'] ?? null;
-
-        if (empty($selected) || !isset($choices[$selected])) {
-            throw new InvalidArgumentException("Invalid router: [$selected]");
-        }
-
-        // Boot route handler
-        require $cfg['router']['path'][$selected];
-    // }
-
     // Initialize compiler
     Compile::init(
         $cfg['compiler']['views'],

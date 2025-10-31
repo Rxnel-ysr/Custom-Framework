@@ -3,6 +3,7 @@
 use App\Debug\Debugger;
 use App\Foundation\Compiler\Compile;
 use App\Foundation\Manager\InstanceManager;
+use App\Support\Facades\DI;
 
 // $views = ROOT . '/resources/views';
 
@@ -405,6 +406,43 @@ function arrKeyExists(string $key, array &$array): bool
 {
     return isset($array[$key]) || array_key_exists($key, $array);
 }
+
+function requireTrack(string $file): array
+{
+    static $declared = [];
+
+    $before = $declared ?: get_declared_classes();
+    require_once $file;
+    $after = get_declared_classes();
+    $declared = $after;
+
+    return array_slice($after, count($before));
+}
+
+
+function config(string $config)
+{
+    $path = explode('.', $config);
+    $file = array_shift($path);
+
+    $configFile = DI::get('appConfig')['root'] . "config/{$file}.php";
+    if (!file_exists($configFile)) {
+        throw new Exception("Config file '{$file}.php' not found.");
+    }
+
+    $cfg = require $configFile;
+
+    foreach ($path as $part) {
+        if (is_array($cfg) && arrKeyExists($part, $cfg)) {
+            $cfg = $cfg[$part];
+        } else {
+            throw new Exception("Config key '{$part}' not found in '{$file}.php'.");
+        }
+    }
+
+    return $cfg;
+}
+
 
 
 /**

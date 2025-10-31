@@ -7,15 +7,15 @@ use App\Foundation\Http\MiddlewareException;
 
 interface RouterInterface
 {
-    public static function init(?string $root = null, array $plugins = []);
+    public function init(?string $root = null, array $plugins = []);
     /** Add new route */
-    public static function add(string $method, string $url, callable|array $action, array $middleware = []);
+    public function add(string $method, string $url, callable|array $action, array $middleware = []);
     /** Dispatch router */
-    public static function dispatch(Request $request);
+    public function dispatch(Request $request);
     /** Add middleware */
-    public static function middleware(string|array $middleware);
+    public function middleware(string|array $middleware);
     /** Define fallback if no match */
-    public static function fallback(callable|array $callback);
+    public function fallback(callable|array $callback);
 }
 
 abstract class RouterBase
@@ -49,5 +49,10 @@ abstract class RouterBase
         }
 
         return $pipeline($passable);
+    }
+
+    public function getName()
+    {
+        return $this->name ?? null;
     }
 }

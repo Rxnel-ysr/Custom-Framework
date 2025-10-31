@@ -2,9 +2,7 @@
 
 use App\Foundation\CLI\Argv;
 use Experimental\App\Foundation\CLI\Command;
-use Experimental\App\Foundation\Manager\ClassManager as ManagerClassManager;
 use App\Foundation\Database\Migration;
-use App\Foundation\Manager\ClassManager;
 use App\Foundation\Database\Connection;
 use App\Foundation\Event\Emitter;
 use App\Foundation\Event\Receiver;
@@ -12,11 +10,13 @@ use App\Foundation\Generator\TemplateBuilder;
 use App\Foundation\Manager\Autoloader;
 use App\Foundation\System\Disk;
 use App\Support\Facades\DI;
-use App\Support\Facades\Rx;
 use App\Test\testClassWithInitAndDeps;
 use App\Foundation\Manager\Resolver;
+use Test\Service;
 
-$root = dirname(__DIR__, 2);
+$root = dirname(__DIR__, 1);
+require_once $root . '/App/Foundation/CLI/Command_EXPE.php';
+
 
 $migrationSetup = [
     fn() => Connection::set(require "$root/config/database.php"),
@@ -82,62 +82,21 @@ Command::register('make:controller', function (Argv $argv) {
     ->alias('mc')
     ->help('Make a new controller');
 
-Command::register('make:component', function () use ($root) {
-    $name     = Command::parameter(2, 'Name of component: ', '', 'string');
-    $fileName = $root . '/App/Components/' . str_replace('.', DIRECTORY_SEPARATOR, $name) . '.php';
-    if (file_exists($fileName)) {
-        echo "[WARN] Component already exist [$name]";
-        exit(1);
-    }
-    $componentFilename = $root . '/resources/views/components/' . str_replace('.', DIRECTORY_SEPARATOR, $name) . Rx::getExt();
-
-    $component = <<<PHP
-    <?php
-    namespace App\Reactive;
-
-    use App\Foundation\Reactive\Reactive;
-
-    class $name extends Reactive
-    {
-        public function increment() { return \$this->states['count']++; }
-        public function view(): string { return 'components.$name'; }
-    }
-    PHP;
-
-    $componentView = <<<PHP
-    <div rx:reactive rx:reactive-name="{{ \$id }}" rx:state='@json(\$currentStates)'>
-        <h1>Count: {{ \$count }}</h1>
-        <button rx:action="increment">+1</button>
-    </div>
-    PHP;
-
-    if (!is_dir(dirname($fileName))) mkdir(dirname($fileName), 0755, true);
-    if (!is_dir(dirname($componentFilename))) mkdir(dirname($componentFilename), 0755, true);
-
-    file_put_contents($fileName, $component);
-    file_put_contents($componentFilename, $componentView);
-
-    echo '[INFO] Created component [' . str_replace($root, '', $fileName) . ']' . PHP_EOL;
-    echo '[INFO] Created component view [' . str_replace($root, '', $componentFilename) . ']' . PHP_EOL;
-})
+Command::register('make:component', function () use ($root) {})
     ->alias('mkc')
     ->help('Make a new Reactive Component');
 
 // --- Utilities ---
 Command::register('dump-autoload', function (Argv $a) {
     Autoloader::dumpAutoload($a->flag('c'));
-    if($a->flag('s')){
+    if ($a->flag('s')) {
         Autoloader::loadAll();
-        
     }
 
     return 0;
 })->alias('dal')
     ->help('Dump current mapping and update it');
 
-Command::register('class-methods', fn() =>
-var_export(ClassManager::getMethodDetails(Command::parameter(2, 'Classname: ', ''))))
-    ->alias('cmi');
 
 Command::register('clean-views', function () {
     $views_disk = new Disk(dirname(__DIR__, 1) . '/storage/cache/views');
@@ -219,7 +178,7 @@ Command::register('count', function () {
     }
 
     echo 'Root: ' . dirname(__DIR__) . PHP_EOL;
-    $totalSize = getDirSize(dirname(__DIR__) . '/App/Foundation/Manager', [
+    $totalSize = getDirSize(dirname(__DIR__), [
         'storage/',
         'public/media/',
         '.log',
@@ -240,7 +199,7 @@ Command::register('testtt', function () {
 })->param(['age', 'name']);
 
 
-class test
+class testCommand
 {
     public function index(Argv $argv, string $nama, int $umur, array $alok)
     {
@@ -257,7 +216,7 @@ class test
     }
 }
 
-Command::register('anajay', [test::class, 'index'])->param(['nama:string', 'umur:int', 'alok:array']);
+Command::register('anajay', [testCommand::class, 'index'])->param(['nama:string', 'umur:int', 'alok:array']);
 
 Command::register('invoke', function () {
     testClassWithInitAndDeps::sayHi();
@@ -267,42 +226,6 @@ Command::register('invoke', function () {
 
 Command::register('test-v1', function () {
 
-    class Logger
-    {
-        public function log($msg)
-        {
-            echo "[LOG] $msg\n";
-        }
-    }
-
-    class Database
-    {
-        public function connect()
-        {
-            echo "Connected to database.\n";
-        }
-    }
-
-    class Service
-    {
-        public function __construct(
-            #[Inject(Logger::class)] private Logger $log,
-            #[Inject(Database::class)] private Database $db,
-            public string $name = "default"
-        ) {}
-
-        public function run()
-        {
-            $this->db->connect();
-            $this->log->log("Service {$this->name} started!");
-        }
-    }
-
-    Resolver::set(Logger::class, new Logger());
-    Resolver::set(Database::class, new Database());
-
-    $svc = Resolver::createInstance(Service::class, null, ['name' => 'Ares']);
-    $svc->run();
 
     return 0;
 });
@@ -356,6 +279,14 @@ Command::register('test-v2', function () {
     $emitter2 = new Emitter($receiver2);
 
     $emitter2->emit('live');
+
+    return 0;
+});
+
+
+Command::register('test-v3', function () {
+    $svc = Resolver::createInstance(Service::class, null, ['name' => 'Testing']);
+    $svc->run();
 
     return 0;
 });
