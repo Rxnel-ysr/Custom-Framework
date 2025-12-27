@@ -382,7 +382,7 @@ class Blueprint extends Connection
 
     public function enum(string $column, array $allowed)
     {
-        $this->addColumn($column, 'ENUM(' . implode(', ', $allowed) . ') NOT NULL');
+        $this->addColumn($column, 'ENUM(' . implode(', ', array_map(fn($i) => "'{$i}'",$allowed)) . ') NOT NULL');
         return $this;
     }
 

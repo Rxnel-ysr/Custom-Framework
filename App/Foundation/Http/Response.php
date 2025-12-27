@@ -18,9 +18,12 @@ class Response
         return $this->headers;
     }
 
-    public function json(mixed $data = [], int $code = 200,bool $pretty = false)
+    public function json(mixed $data = [], int $code = 200, array $headers = [], bool $pretty = false)
     {
         $this->headers->contentType('application/json');
+        foreach($headers as $header => $value){
+            $this->headers->customHeader($header, $value);
+        }
         $this->status($code);
         $this->sendHeaders();
         

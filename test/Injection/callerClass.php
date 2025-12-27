@@ -2,8 +2,12 @@
 
 namespace Test;
 
+use App\Foundation\Manager\Resolver;
 use Inject;
+use Dep;
 
+#[Dep('./TestClassDatabase.php')]
+#[Dep('./TestClassLoger.php')]
 /**
  * Undocumented class
  * @depends ./TestClassDatabase.php
@@ -12,7 +16,7 @@ use Inject;
 class Service
 {
     public function __construct(
-        #[Inject(Logger::class)] private Logger $log,
+        #[Inject(Logger::class, ['type' => 'Destrcution'])] private Logger $log,
         #[Inject(Database::class)] private Database $db,
         public string $name = "default"
     ) {}
@@ -23,3 +27,7 @@ class Service
         $this->log->log("Service {$this->name} started! type: {$this->log->type}");
     }
 }
+
+
+$ress = Resolver::buildDefault([Logger::class, Database::class]);
+$t = $ress[0];

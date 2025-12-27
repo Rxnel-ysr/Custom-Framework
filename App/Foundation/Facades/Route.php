@@ -3,6 +3,7 @@
 namespace App\Support\Facades;
 
 use App\Support\Facades\Facade;
+use Dep;
 
 /**
  * Fluent API for route clases
@@ -29,9 +30,8 @@ use App\Support\Facades\Facade;
  * @method static mixed dispatch(Request $request)
  * @method static array routeList()
  * @method static array getNamedRoutes()
- *
- * @package App\Foundation\Http
  */
+#[Dep(Facade::class)]
 class Route extends Facade
 {
     protected static function getFacadeAccessor(): string|object

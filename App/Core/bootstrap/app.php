@@ -2,6 +2,8 @@
 
 use App\App;
 use App\Foundation\Http\Middleware;
+use App\Foundation\Manager\ClassContainer;
+use App\Foundation\Providers\AppServiceProvider;
 use App\Support\Facades\DI;
 
 return (static function () {
@@ -19,6 +21,12 @@ return (static function () {
                 'test' => \App\Http\Middlewares\Test::class
             ]);
         })
+        ->withServices([
+            'container' => ClassContainer::class
+        ])
+        ->withProviders([
+            AppServiceProvider::class
+        ])
         ->withConfig($config['config'])
         ->withDependencies($config['dependencies']);
 })();

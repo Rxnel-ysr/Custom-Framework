@@ -8,12 +8,17 @@ require_once 'Connection.php';
 
 use App\Debug\Debugger;
 use App\Foundation\Database\Connection;
+use App\Foundation\Traits\Strings;
+use InvalidArgumentException;
+use LogicException;
 
 class QueryBuilder extends Connection
 {
+    use Strings;
+
     # Base var
-    private $query;
-    protected $table;
+    public $query = '';
+    protected $table = '';
     protected $columns = [];
     protected $fillable = [];
     protected $guarded = [];
@@ -23,73 +28,111 @@ class QueryBuilder extends Connection
     protected $stmt;
     protected $pdo;
     private $isFetched = false;
+    private $wrapper;
 
     # Relations var
     private $related = [];
-    private $relations = [];
+    public $relations = [];
 
     # Attributes
     protected $restrain = true;
+
+    # Relation cache
+    private $relationCache = [];
 
     /**
      * Query constructor, reuses the singleton PDO connection.
      */
     public function __construct()
     {
-        $this->pdo = self::getInstance();
+        $this->pdo = Connection::getInstance();
     }
 
-    public function fillable($fillable = [])
+    public static function __callStatic($name, $arguments)
+    {
+        return (new self())->$name(...$arguments);
+    }
+
+    public function __call($name, $arguments)
+    {
+        return $this->{'___' . $name}(...$arguments);
+    }
+
+    public function ___next(): self
+    {
+        return new self();
+    }
+
+    public function ___fillable(array $fillable = []): self
     {
         $this->fillable = $fillable;
+        return $this;
     }
 
-    public function guarded($guarded = [])
+    public function ___guarded(array $guarded = []): self
     {
         $this->guarded = $guarded;
+        return $this;
     }
 
-    private function setIsFetched()
+    private function setIsFetched(): void
     {
         $this->isFetched = !$this->isFetched;
+    }
+
+    public function ___wrapWith($string)
+    {
+        $this->wrapper = $string;
+    }
+
+    private function wrap($queryResult)
+    {
+        return new $this->wrapper($queryResult);
+    }
+
+    // In QueryBuilder.php, add a getRelations method:
+    public function getRelations()
+    {
+        return $this->relations;
     }
 
     /**
      * Get ip of person or thing that made the query.
      */
-    private static function getRequestIp()
+    private static function getRequestIp(): string
     {
-        return '[' . $_SERVER['REMOTE_ADDR'] . ']:';
+        return '[' . ($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1') . ']:';
     }
 
     /**
      * Determine to use WHERE or AND in query.
-     * 
-     * @return string WHERE or AND
      */
-    private function whereOrAnd()
+    private function whereOrAnd(): string
     {
-        return (strpos($this->query ?? '', 'WHERE') === false ? ' WHERE' : ' AND') . ' ';
+        return (strpos($this->query, 'WHERE') === false ? ' WHERE' : ' AND') . ' ';
+    }
+
+    private function decideSelect(?array $columns = null): string
+    {
+        return empty($columns) ? (!empty($this->columns) ? implode(', ', $this->columns) : '*') : implode(', ', $columns);
+    }
+
+    protected function filterColumns(array $columns = []): array
+    {
+        if (empty($this->fillable)) {
+            return $columns;
+        }
+
+        return array_diff_key(
+            array_intersect_key($columns, array_flip($this->fillable)),
+            array_flip($this->guarded)
+        );
     }
 
     /**
-     * 
+     * The very first method you'll use to specify the table.
      */
-    private function decideSelect()
-    {
-        return (!empty($this->columns) ? implode(', ', $this->columns) : '*');
-    }
-
-    protected function filterColumns($columns = [])
-    {
-        return array_diff_key(array_intersect_key($columns, array_flip($this->fillable)), array_flip($this->guarded));
-    }
-
-    /**
-     * The very first method you'll use to specify the table, or the query just won't work.
-     * 
-     */
-    public function table($table, $primaryColumn = 'id'): self
+    public function ___table(string $table, string $primaryColumn = 'id'): self
     {
         $this->table = $table;
         $this->primaryColumn = $primaryColumn;
@@ -97,125 +140,464 @@ class QueryBuilder extends Connection
     }
 
     /**
-     * To avoid overwhelming our potato server, if don't need all the data fetched from query, use this, I recommended it.
-     * 
-     * @param array $columns Mention each columns to be selected
+     * Select columns to retrieve.
      */
-    public function select($columns = ['*']): self
+    public function ___select($columns = ['*']): self
     {
-        $columns = implode(', ', $columns ?? $this->columns ?? ['*']);
-        $this->query = 'SELECT ' . $columns . ' FROM ' . $this->table;
+        $columns = is_array($columns) ? $columns : [$columns];
+        $columnsStr = implode(', ', $columns);
+        $this->query = 'SELECT ' . $columnsStr . ' FROM ' . $this->table;
         $this->usedSelect = true;
         return $this;
     }
 
     /**
-     * Define and handle relations in your table.
-     *
-     * This method allows you to specify relations for your table in a structured format:
-     * 
-     * `['type.mode.table']`
-     * 
-     * ### Parameters:
-     * - `type`: Defines the relationship type. Available options:
-     *   - `'has'`: Indicates that the current table "has" a related table.
-     *   - `'belongsTo'`: Indicates that the current table "belongs to" another table.
-     * 
-     * - `mode`: Defines the cardinality of the relationship. Available options:
-     *   - `'one'`: Represents a one-to-one relationship.
-     *   - `'many'`: Represents a one-to-many relationship.
-     * 
-     * - `table`: Specifies the name of the related table.
-     * 
-     * ### Extended Selection (optional):
-     * - You can refine the selection of columns from the related table by appending column names after a colon (`:`).
-     * - Example: `'has.one.users:id.name.email'`
-     *   - Type: `'has'`
-     *   - Mode: `'one'`
-     *   - Table: `'users'`
-     *   - Selected Columns: `'id', 'name', 'email'`
-     * 
-     * ### Optional Features:
-     * - You can further define pivot tables or foreign key columns for many-to-many relationships.
-     * - Example: `['belongsTo.many.tags:id.name:post_tag']`
-     *   - Type: `'belongsTo'`
-     *   - Mode: `'many'`
-     *   - Table: `'tags'`
-     *   - Columns to be selected in `Table`: `'id','name'`
-     *   - Pivot table `'post_tag'`
-     * 
-     *  `Note`: Type will be ignored if you setting pivot table.
-     * 
-     * ### Usage Example:
-     * ```php
-     * $object->with([
-     *     'has.one.users:id.name',
-     *     'belongsTo.many.posts',
-     * ]);
-     * ```
-     * test
-     * ### Behavior:
-     * - The method processes the provided relations and stores them in the `relations` property as an object.
-     * - Each relation is represented as an object containing:
-     *   - `type` (string): The relationship type (`has` or `belongsTo`).
-     *   - `mode` (string): The cardinality (`one` or `many`).
-     *   - `columns` (array): The columns to be selected from the related table.
-     *   - `foreign_key_column` (string, optional): The foreign key column used for many-to-many relationships.
-     *   - `pivot_table` (string, optional): The pivot table for many-to-many relationships.
-     * 
-     * The person who make this is sick when he do it, let appreciated his Masochism.
-     * 
-     * Just remember to name foreign key column to like `<name>_id`, or `id_<name>` but not in completely different name, this code is not sentient enough to do that.
-     * 
-     * @param array $relations List of relations in the defined format.
-     * @param bool $allowBruteForceSearching Set this to if you permitted brute force to search column name pattern
-     * @return self Fluent interface for method chaining.
+     * Switches between "id_<name>" and "<name>_id" formats.
      */
-    public function with($relations = []): self
+    private function switchColumnPattern(string $column): string
     {
-        $result = new \stdClass();
-        foreach ($relations as $relation) {
-            $relationSelection = explode(':', $relation);
-            $parts = explode('.', $relationSelection[0]);
-            $columns =  (isset($relationSelection[1]))
-                ? explode('.', $relationSelection[1])
-                : ['*'];
-
-            $relation = new \stdClass();
-            $relation->type = $parts[0] ?? null;
-            $relation->mode = $parts[1] ?? null;
-            
-            // if left-side condition true, so the right-side will be executed, otherwise it will skip 
-            // I like over-complicated things, but I have goals
-            isset($parts[3]) && $relation->foreign_key_column = $parts[3];
-            isset($parts[4]) && $relation->primary_key_column = $parts[4];
-            isset($relationSelection[2]) && $relation->pivot_table = $relationSelection[2];
-
-            $relation->columns = $columns;
-
-            $result->{$parts[2]} = $relation;
+        if (preg_match('/^id_(\w+)$/', $column, $matches)) {
+            return "{$matches[1]}_id";
         }
 
-        $this->relations = $result;
+        if (preg_match('/^(\w+)_id$/', $column, $matches)) {
+            return 'id_' . $matches[1];
+        }
+
+        return $column;
+    }
+
+    public function ___with(string|array $relations = [], string ...$moreRelation): self
+    {
+        $relations = is_string($relations) ? [$relations] : $relations;
+        $relations = !empty($moreRelation) ? array_merge($relations, $moreRelation) : $relations;
+
+        foreach ($relations as $key => $value) {
+
+            if (is_string($value)) {
+                $this->loadRelationFromString($value);
+                continue;
+            }
+
+            if (is_callable($value)) {
+                $this->loadRelationWithCallback($key, $value);
+                continue;
+            }
+
+            throw new InvalidArgumentException("Relation [$key] must be string, callable.");
+        }
+
         return $this;
     }
 
-    // // SELECT table
-    // private function table($table)
-    // {
-    //     $this->query = "SELECT * FROM $table";
-    //     return $this;
-    // }
+    protected function loadRelationFromString(string $value): void
+    {
+        [$name, $cols] = array_pad(explode(':', $value, 2), 2, null);
+
+        if (!method_exists(static::class, $name)) {
+            throw new LogicException("Relation method [$name] does not exist.");
+        }
+
+        $rel = $this->{$name}();
+        $key = array_key_first($rel);
+        $def = $rel[$key];
+
+        $def->columns = $cols ? explode(',', $cols) : ['*'];
+
+        $this->relations[$key] = $def;
+    }
+
+    protected function loadRelationWithCallback(string $name, \Closure $callback): void
+    {
+        [$name, $cols] = array_pad(explode(':', $name, 2), 2, null);
+
+        if (!method_exists(static::class, $name)) {
+            throw new LogicException("Relation method [$name] does not exist.");
+        }
+
+        $rel = $this->{$name}();
+        $key = array_key_first($rel);
+        $def = $rel[$key];
+
+        $def->columns = $cols ? explode(',', $cols) : ['*'];
+        $def->constraint = $callback;
+
+        $this->relations[$key] = $def;
+    }
+
+    public function resolveModel($modelOrTable)
+    {
+        if (!is_string($modelOrTable) || !class_exists($modelOrTable)) {
+            return null;
+        }
+
+        return new $modelOrTable();
+    }
+
+
+    public function belongsTo($modelOrTable, $localKey = null, $foreignKey = 'id', $name = null)
+    {
+        $name ??= debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2)[1]['function']
+            ?? throw new LogicException('Relation name cannot be resolved.');
+
+        $related = $this->resolveTable($modelOrTable);
+        $localKey ??= self::pluralToSingular($related) . '_id';
+
+        return [
+            $name => (object) [
+                'type'          => 'belongsTo',
+                'mode'          => 'one',
+                'model'         => $this->resolveModel($modelOrTable),
+                'table'         => $related,
+                'foreign_key'     => $foreignKey, // Column in related table
+                'local_key'   => $localKey, // Column in current table
+                'columns'       => ['*'],
+            ]
+        ];
+    }
+
+    public function hasOne($modelOrTable, $foreignKey = null, $localKey = 'id', $name = null)
+    {
+        $name ??= debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2)[1]['function']
+            ?? throw new LogicException('Relation name cannot be resolved.');
+
+        // Auto-detect foreign key if not provided
+        $foreignKey ??= self::pluralToSingular($this->table) . '_id';
+
+        return [
+            $name => (object) [
+                'type'          => 'hasOne',
+                'mode'          => 'one',
+                'table'         => $this->resolveTable($modelOrTable),
+                'model'         => $this->resolveModel($modelOrTable),
+                'local_key'     => $localKey, // Column in current table
+                'foreign_key'   => $foreignKey, // Column in related table
+                'columns'       => ['*'],
+            ]
+        ];
+    }
+
+    public function hasMany($modelOrTable, $foreignKey = null, $localKey = 'id', $name = null)
+    {
+        $name ??= debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2)[1]['function']
+            ?? throw new LogicException('Relation name cannot be resolved.');
+
+        // Auto-detect foreign key if not provided
+        $foreignKey ??= self::pluralToSingular($this->table) . '_id';
+
+        return [
+            $name => (object) [
+                'type'          => 'hasMany',
+                'mode'          => 'many',
+                'table'         => $this->resolveTable($modelOrTable),
+                'model'         => $this->resolveModel($modelOrTable),
+                'local_key'     => $localKey, // Column in current table
+                'foreign_key'   => $foreignKey, // Column in related table
+                'columns'       => ['*'],
+            ]
+        ];
+    }
+
+    public function belongsToMany(
+        $modelOrTable,
+        $pivotTable = null,
+        $foreignPivotKey = null,
+        $relatedPivotKey = null,
+        $parentKey = 'id',
+        $relatedKey = 'id',
+        $name = null,
+        $withPivot = [],
+        $pivotDataKey = 'pivot',
+        $returnType = 'auto'
+    ) {
+        $name ??= debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2)[1]['function']
+            ?? throw new LogicException('Relation name cannot be resolved.');
+
+        // Auto-detect pivot table if not provided
+        if ($pivotTable === null) {
+            $tables = [self::pluralToSingular($this->table), self::pluralToSingular($this->resolveTable($modelOrTable))];
+            sort($tables);
+            $pivotTable = implode('_', $tables);
+        } else {
+            $pivotTable = $this->resolveTable($pivotTable);
+        }
+
+        // Auto-detect foreign keys if not provided
+        $foreignPivotKey ??= self::pluralToSingular($this->table) . '_id';
+        $relatedPivotKey ??= self::pluralToSingular($this->resolveTable($modelOrTable)) . '_id';
+
+        return [
+            $name => (object) [
+                'type'              => 'belongsToMany',
+                'mode'              => 'many',
+                'table'             => $this->resolveTable($modelOrTable),
+
+                'local_key'         => $parentKey,
+                'foreign_key'       => $relatedKey,
+
+                'pivot_table'       => $pivotTable,
+
+                'pivot_local_key'   => $foreignPivotKey,
+                'pivot_foreign_key' => $relatedPivotKey,
+
+                'pivot_columns'     => is_array($withPivot) ? $withPivot : [$withPivot],
+                'return_type'       => $returnType, // 'auto', 'with_pivot', 'separate',
+                'pivot_data_key'    => $pivotDataKey,
+                'columns'           => ['*'],
+            ]
+        ];
+    }
 
     /**
-     * where clause for all the method, you'll need to use this often if you're a backend, or else you'll be cooked
-     * 
-     * @param string $column
-     * @param mixed|array $value Value to match in column
-     * @param string $operator Defaulted to '='
+     * Load many-to-many relation with smart mapping
      */
-    public function where($column, $value, $operator = '='): self
+    private function loadManyToManyRelation($mainItem, $relation): array
     {
+        $cacheKey = $relation->local_key . '_' . $mainItem->id . '_' . $relation->table . '_' .
+            ($relation->pivot_table ?? '') . '_' . implode(',', $relation->pivot_columns ?? []);
+
+        if (isset($this->relationCache[$cacheKey])) {
+            return $this->relationCache[$cacheKey];
+        }
+
+        // Check if we should include pivot columns
+        $includePivotColumns = !empty($relation->pivot_columns) && $relation->pivot_columns !== ['*'];
+
+        // Build pivot select columns
+        $pivotSelect = [$relation->pivot_local_key, $relation->pivot_foreign_key];
+        if ($includePivotColumns) {
+            $pivotSelect = array_merge($pivotSelect, $relation->pivot_columns);
+        }
+
+        // Get pivot table data
+        $pivotData = $this->___next()
+            ->___table($relation->pivot_table)
+            ->___select(array_unique($pivotSelect))
+            ->___where($relation->pivot_local_key, $mainItem->{$relation->local_key})
+            ->___get(null,true);
+
+        if (empty($pivotData)) {
+            $this->relationCache[$cacheKey] = [];
+            return [];
+        }
+
+        $relatedIds = array_column($pivotData, $relation->pivot_foreign_key);
+
+        // Get related data
+        $relatedData = $this->___next()
+            ->___table($relation->table)
+            ->___select($relation->columns)
+            ->___where($relation->foreign_key, $relatedIds, 'in')
+            ->___get(null,true);
+
+        // Create a map of related_id => related_item
+        $relatedMap = [];
+        foreach ($relatedData as $item) {
+            $relatedMap[$item->{$relation->foreign_key}] = $item;
+        }
+
+        // Build the result based on pivot columns
+        $result = [];
+
+        foreach ($pivotData as $pivotRow) {
+            // dd($pivotRow);
+            // print_rpre($pivotRow);
+            // exit;
+            $relatedId = $pivotRow->{$relation->pivot_foreign_key};
+
+            if (!isset($relatedMap[$relatedId])) {
+                continue;
+            }
+
+            $relatedItem = clone $relatedMap[$relatedId];
+
+            if ($includePivotColumns) {
+                // If we have pivot columns, create a pivot object
+                $pivotAttributes = [];
+                foreach ($relation->pivot_columns as $column) {
+                    if (isset($pivotRow->{$column})) {
+                        $pivotAttributes[$column] = $pivotRow->{$column};
+                    }
+                }
+
+                // Remove foreign keys from pivot attributes
+                unset(
+                    $pivotAttributes[$relation->pivot_local_key],
+                    $pivotAttributes[$relation->pivot_foreign_key]
+                );
+
+                if (!empty($pivotAttributes)) {
+                    $relatedItem->{$relation->pivot_data_key} = (object) $pivotAttributes;
+                }
+            }
+
+            $result[] = $relatedItem;
+        }
+
+        $this->relationCache[$cacheKey] = $result;
+        return $result;
+    }
+
+    /**
+     * Alternative: Return structured object with both paths
+     */
+    private function loadManyToManyRelationStructured($mainItem, $relation): object
+    {
+        $cacheKey = $relation->local_key . '_' . $mainItem->id . '_' . $relation->table . '_' .
+            ($relation->pivot_table ?? '') . '_structured';
+
+        if (isset($this->relationCache[$cacheKey])) {
+            return $this->relationCache[$cacheKey];
+        }
+
+        // Build pivot select columns
+        $pivotSelect = [$relation->pivot_local_key, $relation->pivot_foreign_key];
+        $includePivotColumns = !empty($relation->pivot_columns) && $relation->pivot_columns !== ['*'];
+
+        if ($includePivotColumns) {
+            $pivotSelect = array_merge($pivotSelect, $relation->pivot_columns);
+        }
+
+        // Get pivot table data
+        $pivotData = $this->___next()
+            ->___table($relation->pivot_table)
+            ->___select(array_unique($pivotSelect))
+            ->___where($relation->pivot_local_key, $mainItem->{$relation->local_key})
+            ->___get(null,true);
+
+        if (empty($pivotData)) {
+            $result = (object) [
+                'related' => [],
+                'pivot' => []
+            ];
+            $this->relationCache[$cacheKey] = $result;
+            return $result;
+        }
+
+        $relatedIds = array_column($pivotData, $relation->pivot_foreign_key);
+
+        // Get related data
+        $relatedData = $this->___next()
+            ->___table($relation->table)
+            ->___select($relation->columns)
+            ->___where($relation->foreign_key, $relatedIds, 'in')
+            ->___get(null,true);
+
+        $result = (object) [
+            'related' => $relatedData,
+            'pivot' => $pivotData
+        ];
+
+        $this->relationCache[$cacheKey] = $result;
+        return $result;
+    }
+
+    private function processRelations($data)
+    {
+        if (empty($this->relations)) {
+            return $data;
+        }
+
+        $isArray = is_array($data);
+        $items = $isArray ? $data : [$data];
+
+        foreach ($items as $item) {
+            foreach ($this->relations as $relationTableName => $relation) {
+                $relationKey = $relationTableName;
+
+                if (!isset($item->$relationKey)) {
+                    if (isset($relation->pivot_table)) {
+                        // For belongsToMany relations
+                        $includePivotColumns = !empty($relation->pivot_columns) && $relation->pivot_columns !== ['*'];
+
+                        if ($includePivotColumns) {
+                            // Option A: Return related data with pivot attached
+                            $result = $this->loadManyToManyRelation($item, $relation);
+                            // print_rpred($item,  $relation, $result);
+
+                            // print_rpred($item, $relation);
+                            $item->$relationKey = isset($relation->model) ? new ($relation->model)($result) : $result;
+                        } else {
+                            // Option B: Return structured object with both related and pivot
+                            $result = $this->loadManyToManyRelationStructured($item, $relation);
+
+                            // Option B1: Store both
+                            $item->$relationKey = $result->related;
+
+                            // Option B2: Or just store related
+                            // $item->$relationKey = $result->related;
+                        }
+                    } else {
+                        $result = $this->loadDirectRelation($item, $relation);
+                        
+                        $item->$relationKey = $relation->model ? new ($relation->model)($result) : $result;
+                    }
+                }
+            }
+        }
+
+        if (!$isArray) {
+            return $items[0];
+        }
+
+        return $items;
+    }
+
+    // Helper method for loadDirectRelation (without parentTable parameter)
+    private function loadDirectRelation($mainItem, $relation)
+    {
+        $cacheKey = $mainItem->id . '_' . $relation->table . '_' . $relation->type . '_' . $relation->mode;
+
+        if (isset($this->relationCache[$cacheKey])) {
+            return $this->relationCache[$cacheKey];
+        }
+
+        $builder = $this->___next()->___table($relation->table)->___select($relation->columns);
+
+        if (isset($relation->constraint)) {
+            ($relation->constraint)($builder);
+        }
+
+        // Handle different relation types
+        switch ($relation->type) {
+            case 'hasOne':
+            case 'hasMany':
+                $builder->___where($relation->foreign_key, $mainItem->{$relation->local_key});
+                break;
+
+            case 'belongsTo':
+                $builder->___where($relation->foreign_key, $mainItem->{$relation->local_key});
+                break;
+
+            default:
+                throw new LogicException("Unknown relation type: {$relation->type}");
+        }
+
+        $result = $relation->mode === 'one'
+            ? $builder->___first(true)
+            : $builder->___get(null,true);
+
+        $this->relationCache[$cacheKey] = $result;
+        return $result;
+    }
+
+    protected function resolveTable($modelOrTable): string
+    {
+        if (!is_string($modelOrTable) || !class_exists($modelOrTable)) {
+            return $modelOrTable;
+        }
+
+        return (new $modelOrTable())->getTableName();
+    }
+
+
+    /**
+     * where clause
+     */
+    public function ___where($column, $value, string $operator = '='): self
+    {
+        $operator = strtoupper($operator);
+
         if ($operator === 'BETWEEN' || $operator === 'NOT BETWEEN') {
             if (!is_array($value) || count($value) !== 2) {
                 throw new \InvalidArgumentException('The BETWEEN operator requires an array with exactly two values.');
@@ -223,164 +605,122 @@ class QueryBuilder extends Connection
 
             $this->query .= $this->whereOrAnd() . $column . ' ' . $operator . ' ? AND ?';
             $this->bindings = array_merge($this->bindings, $value);
-
             return $this;
         }
 
         if (is_array($value)) {
             $placeholders = implode(', ', array_fill(0, count($value), '?'));
+            $operatorUpper = strtoupper($operator);
 
-            $this->query .= $this->whereOrAnd() . $column . ($operator == '!=' ? ' NOT IN' : ' IN') . ' (' . $placeholders . ')';
+            if ($operatorUpper === 'IN' || $operatorUpper === 'NOT IN') {
+                $this->query .= $this->whereOrAnd() . $column . ' ' . $operatorUpper . ' (' . $placeholders . ')';
+            } else {
+                $this->query .= $this->whereOrAnd() . $column . ' ' . $operator . ' (' . $placeholders . ')';
+            }
+
             $this->bindings = array_merge($this->bindings, $value);
             return $this;
         }
 
-        if ($value == null || strtolower($value) == 'null') {
-            $this->query .= $this->whereOrAnd() . $column . ($operator == '!=' ? ' IS NOT NULL' : ' IS NULL');
+        if ($value === null || strtolower((string)$value) === 'null') {
+            $nullOperator = ($operator === '!=' || $operator === '<>') ? ' IS NOT NULL' : ' IS NULL';
+            $this->query .= $this->whereOrAnd() . $column . $nullOperator;
             return $this;
         }
 
-        $this->query .= $this->whereOrAnd() .  $column . ' ' . $operator . ' ?';
+        $this->query .= $this->whereOrAnd() . $column . ' ' . $operator . ' ?';
         $this->bindings[] = $value;
         return $this;
     }
 
     /**
-     * Or where clause for all the method, addition to where()
-     * 
-     * @param string $column
-     * @param mixed|array $value Value to match in column
-     * @param string $operator Defaulted to '='
+     * Or where clause
      */
-    public function orWhere($column, $value, $operator = '=')
+    public function ___orWhere($column, $value, string $operator = '='): self
     {
         $this->query .= ' OR';
 
-        if ($operator === 'BETWEEN' || $operator === 'NOT BETWEEN') {
-            if (!is_array($value) || count($value) !== 2) {
-                throw new \InvalidArgumentException('The BETWEEN operator requires an array with exactly two values.');
-            }
-
-            $this->query .= ' ' . $column . ' ' . $operator . ' ? AND ?';
-            $this->bindings = array_merge($this->bindings, $value);
-            return $this;
-        }
-
         if (is_array($value)) {
             $placeholders = implode(', ', array_fill(0, count($value), '?'));
-
-            $this->query .= ' ' . $column . ($operator == '!=' ? ' NOT IN' : ' IN') . ' (' . $placeholders . ')';
+            $this->query .= ' ' . $column . ($operator === '!=' ? ' NOT IN' : ' IN') . ' (' . $placeholders . ')';
             $this->bindings = array_merge($this->bindings, $value);
             return $this;
         }
 
-        if ($value == null || strtolower($value) == 'null') {
-            $this->query .= ' ' . $column . ($operator == '!=' ? ' IS NOT NULL' : ' IS NULL');
+        if ($value === null || strtolower((string)$value) === 'null') {
+            $nullOperator = ($operator === '!=' ? ' IS NOT NULL' : ' IS NULL');
+            $this->query .= ' ' . $column . $nullOperator;
             return $this;
         }
 
-        $this->query .=  ' ' . $column . ' ' . $operator . ' ?';
+        $this->query .= ' ' . $column . ' ' . $operator . ' ?';
         $this->bindings[] = $value;
         return $this;
     }
 
     /**
-     * Dedicated to only find row matched given primary key
-     * 
-     * @param int $primaryKey Primary key to search
-     * 
-     * @return self|false Will return an object or false if there is no match found
+     * Find by primary key
      */
-    public function find($primaryKey)
+    public function ___find($primaryKey)
     {
-        $this->query .= $this->whereOrAnd() . $this->primaryColumn . ' = ?';
-        $this->bindings[] = $primaryKey;
-        getBoolEnv('APP_DEBUG', false) &&  error_log($this->getRequestIp() . $this->query);
-        getBoolEnv('APP_DEBUG', false) &&  error_log($this->getRequestIp() . 'Parameter: ' . json_encode($this->bindings));
-        return $this;
+        return $this->___where($this->primaryColumn, $primaryKey)->___first();
     }
 
     /**
-     * Friendly reminder, you need to add table() before this, so that all these method will work or you can just make new class extending this class
-     * @param array $data `['column' => 'value']`
+     * Insert data
      */
-    public function insert($data = []): self
+    public function ___insert(array $data = []): self
     {
         $filtered = $this->filterColumns($data);
+
+        if (empty($filtered)) {
+            throw new \InvalidArgumentException('No valid columns to insert.');
+        }
 
         $columns = implode(', ', array_keys($filtered));
         $placeholders = implode(', ', array_fill(0, count($filtered), '?'));
 
         $this->query = 'INSERT INTO ' . $this->table . ' (' . $columns . ') VALUES (' . $placeholders . ')';
-        $this->bindings = array_values($data);
-        getBoolEnv('APP_DEBUG', false) &&  error_log($this->query);
-        getBoolEnv('APP_DEBUG', false) &&  error_log(json_encode($this->bindings));
+        $this->bindings = array_values($filtered);
+
+        // error_log($this->getRequestIp() . $this->query);
+        // error_log($this->getRequestIp() . 'Parameter: ' . json_encode($this->bindings));
+
         $this->stmt = $this->pdo->prepare($this->query);
         $this->stmt->execute($this->bindings);
+
+        $this->resetQuery();
         return $this;
     }
 
-    /**
-     * Get all record within array and inside array there is all of object from query
-     * 
-     */
-    public function get($skipRelations = false)
+    public function ___create(array $data): self
     {
-        try {
-            $query = $this->usedSelect ? '' : 'SELECT ' . $this->decideSelect() . ' FROM ' . $this->table;
-            getBoolEnv('APP_DEBUG', false) &&  error_log($this->getRequestIp() . $query . $this->query);
-            getBoolEnv('APP_DEBUG', false) &&  error_log($this->getRequestIp() . 'Parameter: ' . json_encode($this->bindings));
-
-            $this->stmt = $this->pdo->prepare($query . $this->query);
-            $this->stmt->execute($this->bindings);
-            $this->resetQuery();
-
-            return $main_body = $this->stmt->fetchAll(\PDO::FETCH_ASSOC) ?: [];
-
-            if (empty($main_body)) return $main_body;
-
-            if (empty($this->relations) || $skipRelations) {
-                return new static(array_map(function ($item) {
-                    $item = new static($item);
-                    $item->setIsFetched();
-                    return $item;
-                }, $main_body));
-            }
-
-            return $this->processRelations($main_body);
-        } catch (\PDOException $e) {
-            Debugger::dumpErr($e);
-            return [];
-        }
+        return $this->___insert($data);
     }
 
     /**
-     * Get the very first record in order as an object
+     * Get all records
      */
-    public function first($skipRelations = false)
+    public function ___get($columns = null, bool $skipRelations = false)
     {
         try {
-            $query = $this->usedSelect ? '' : 'SELECT ' . $this->decideSelect() . ' FROM ' . $this->table;
-            $this->query .= ' LIMIT 1';
-            getBoolEnv('APP_DEBUG', false) &&  error_log($this->getRequestIp() . $query . $this->query);
-            getBoolEnv('APP_DEBUG', false) &&  error_log($this->getRequestIp() . 'Parameter: ' . json_encode($this->bindings));
+            $selectClause = $this->usedSelect ? '' : 'SELECT ' . $this->decideSelect($columns) . ' FROM ' . $this->table;
+            $fullQuery = $selectClause . $this->query;
 
-            $this->stmt = $this->pdo->prepare($query . $this->query);
+            // error_log($this->getRequestIp() . $fullQuery);
+            // error_log($this->getRequestIp() . 'Parameter: ' . json_encode($this->bindings));
+
+            $this->stmt = $this->pdo->prepare($fullQuery);
             $this->stmt->execute($this->bindings);
+            $results = $this->stmt->fetchAll(\PDO::FETCH_OBJ) ?: [];
+
             $this->resetQuery();
 
-            $main_body = $this->stmt->fetch(\PDO::FETCH_OBJ);
-            if (!$main_body) {
-                return null;
+            if (empty($results) || empty($this->relations) || $skipRelations) {
+                return $results;
             }
 
-            if (empty($this->relations) || $skipRelations) {
-                $data = new static($main_body);
-                $data->setIsFetched();
-                return $data;
-            }
-
-            return $this->processRelations($main_body);
+            return $this->processRelations($results);
         } catch (\PDOException $e) {
             Debugger::dumpErr($e);
             return null;
@@ -388,293 +728,172 @@ class QueryBuilder extends Connection
     }
 
     /**
-     * Dedicated to only find and fetch row matched given primaryKey
-     * 
-     * @param int $primaryKey Primary key primaryKey to search
-     * 
-     * @return object|false Will return an object or false if there is no match found
+     * Get first record
      */
-    public function fetchWherePrimary($primaryKey, $skipRelations = false)
+    public function ___first(bool $skipRelations = false)
     {
-        $query = $this->usedSelect ? '' : 'SELECT ' . $this->decideSelect() . ' FROM ' . $this->table;
-        $this->query .= $this->whereOrAnd() . $this->primaryColumn . ' = ?';
-        $this->bindings[] = $primaryKey;
-        getBoolEnv('APP_DEBUG', false) &&  error_log($this->getRequestIp() . $query . $this->query);
-        getBoolEnv('APP_DEBUG', false) &&  error_log($this->getRequestIp() . 'Parameter: ' . json_encode($this->bindings));
+        try {
+            $selectClause = $this->usedSelect ? '' : 'SELECT ' . $this->decideSelect() . ' FROM ' . $this->table;
+            $fullQuery = $selectClause . $this->query . ' LIMIT 1';
 
-        $this->stmt = $this->pdo->prepare($query . $this->query);
-        $this->stmt->execute($this->bindings);
+            // error_log($this->getRequestIp() . $fullQuery);
+            // error_log($this->getRequestIp() . 'Parameter: ' . json_encode($this->bindings));
 
-        $user_data = $this->stmt->fetch(\PDO::FETCH_OBJ);
-        if (!$user_data) {
-            return false;
+            $this->stmt = $this->pdo->prepare($fullQuery);
+            $this->stmt->execute($this->bindings);
+            $result = $this->stmt->fetch(\PDO::FETCH_OBJ);
+
+            $this->resetQuery();
+
+            if (!$result) {
+                return null;
+            }
+
+            if (empty($this->relations) || $skipRelations) {
+                return $result;
+            }
+
+            return $this->processRelations($result);
+        } catch (\PDOException $e) {
+            Debugger::dumpErr($e);
+            return null;
         }
-        return (!empty($this->relations) && !$skipRelations) ? $this->processRelations($user_data) : new static($user_data);
     }
 
+    /**
+     * Find by primary key and fetch
+     */
+    public function ___fetchWherePrimary($primaryKey, bool $skipRelations = false)
+    {
+        $this->___where($this->primaryColumn, $primaryKey);
+        return $this->___first($skipRelations);
+    }
 
     /**
-     * Same like delete(), don't forget to add where() before this
-     * 
-     * @param array $data Data that will be updated in database, accept a key value pairs array, example:
-     * 
-     *  ```php
-     * $object->table('user')->find(1)->update(["username" => "new_username"]);
-     * ```
-     * 
-     * That will select id `1` at table `user` and update column `username` with `new_username`
-     * 
-     * @param array $data `['column' => 'value']`
-     * @param bool $ignoreWhereWarning [optional]
-     * 
-     * Set this to `true` to bypass where warning and if you `EXTREMELY` aware and have `CONSENT` of what you wanna do.
-     * 
+     * Update data
      */
-    public function update($data = [], $ignoreWhereWarning = false)
+    public function ___update(array $data = [], bool $ignoreWhereWarning = false): \PDOStatement
     {
         if (strpos($this->query, 'WHERE') === false && !$ignoreWhereWarning) {
-            getBoolEnv('APP_DEBUG', false) &&  error_log('You need to specify what to update in ' . $this->table . ' table, else you\'ll update everything');
-            throw new \Exception("Missing where clause");
+            throw new \Exception('Missing WHERE clause for update operation.');
         }
+
         if ($ignoreWhereWarning) {
-            getBoolEnv('APP_DEBUG', false) &&  error_log('WARNING: Ignoring WHERE clause, all records will be updated!');
+            error_log('WARNING: Ignoring WHERE clause, all records will be updated!');
         }
+
         $filtered = $this->filterColumns($data);
-        $set = [];
-        foreach (array_keys($filtered) as $key) {
-            $set[] = $key . ' = ?';
+
+        if (empty($filtered)) {
+            throw new \InvalidArgumentException('No valid columns to update.');
         }
+
+        $setClause = [];
+        foreach (array_keys($filtered) as $key) {
+            $setClause[] = $key . ' = ?';
+        }
+
+        $setString = implode(', ', $setClause);
+        $fullQuery = 'UPDATE ' . $this->table . ' SET ' . $setString . $this->query;
+
         $this->bindings = array_merge(array_values($filtered), $this->bindings);
-        $query = 'UPDATE ' . $this->table . ' SET ' . implode(', ', $set);
-        getBoolEnv('APP_DEBUG', false) &&  error_log($this->getRequestIp() . $query . $this->query);
-        getBoolEnv('APP_DEBUG', false) &&  error_log(json_encode($this->bindings));
-        $this->stmt = $this->pdo->prepare($query . $this->query);
+
+        // error_log($this->getRequestIp() . $fullQuery);
+        // error_log($this->getRequestIp() . 'Parameter: ' . json_encode($this->bindings));
+        // dd($fullQuery);
+
+        $this->stmt = $this->pdo->prepare($fullQuery);
         $this->stmt->execute($this->bindings);
+
+        $this->resetQuery();
         return $this->stmt;
     }
 
     /**
-     * This will delete everything if you are no specify which row to delete with where().
-     * Anyways, be careful with this one, but I am not that careless, I'll put exception here just in case there is no where()
-     * 
-     * @param bool $ignoreWhereWarning Set this to `true` to bypass where warning and if you `EXTREMELY` aware of what you wanna do
+     * Delete records
      */
-    public function delete($ignoreWhereWarning = false)
+    public function ___delete(bool $ignoreWhereWarning = false): \PDOStatement
     {
         if (strpos($this->query, 'WHERE') === false && !$ignoreWhereWarning) {
-            getBoolEnv('APP_DEBUG', false) &&  error_log('You need to specify what to delete in ' . $this->table . ' table, else you\'ll delete everything');
-            throw new \Exception('Missing where clause');
+            throw new \Exception('Missing WHERE clause for delete operation.');
         }
+
         if ($ignoreWhereWarning) {
-            getBoolEnv('APP_DEBUG', false) &&  error_log('WARNING: Ignoring WHERE clause, all records will be deleted!');
+            error_log('WARNING: Ignoring WHERE clause, all records will be deleted!');
         }
-        $query = 'DELETE FROM ' . $this->table;
-        getBoolEnv('APP_DEBUG', false) &&  error_log($this->getRequestIp() . $query . $this->query);
-        getBoolEnv('APP_DEBUG', false) &&  error_log(json_encode($this->bindings));
-        $this->stmt = $this->pdo->prepare($query . $this->query);
+
+        $fullQuery = 'DELETE FROM ' . $this->table . $this->query;
+
+        // error_log($this->getRequestIp() . $fullQuery);
+        // error_log($this->getRequestIp() . 'Parameter: ' . json_encode($this->bindings));
+
+        $this->stmt = $this->pdo->prepare($fullQuery);
         $this->stmt->execute($this->bindings);
+
+        $this->resetQuery();
         return $this->stmt;
     }
 
-    private function processRelations($data)
-    {
-        $parent_table = rtrim($this->table, 's');
-
-        foreach ($this->relations as $relation_table_name => $relation) {
-            if (isset($relation->pivot_table)) {
-                $main_body = $data;
-                // printAsJson($main_body);
-                $main_body_ids = array_map(fn($body) => $body->id, $main_body);
-                // echo "you are here";
-                $related_foreign_key_column = $relation->foreign_key_column ?? rtrim($relation_table_name, 's') . '_id';
-
-                $pivot_table_data = $this->table($relation->pivot_table)->where($relation->primary_key_column ?? $parent_table . '_id', $main_body_ids)->get(true);
-
-                $related_table_ids = array_column($pivot_table_data, $related_foreign_key_column);;
-                $related_data = $this->table($relation_table_name)->select($relation->columns)->where('id', $related_table_ids)->get(true);
-
-                return $this->linkManyToManyRelation($main_body, $pivot_table_data, $related_data, $relation->primary_key_column ?? $parent_table . '_id', $related_foreign_key_column, $relation_table_name);
-            } else {
-                $parent_id_table = $this->primaryColumn ?? 'id';
-                foreach ($data as $body) {
-                    $array_or_object = is_array($data) ? $body : $data;
-
-                    $query = $this->table($relation_table_name)
-                        ->select($relation->columns);
-
-                    if ($relation->type === 'has') {
-                        $relationQuery = $query->where(
-                            $relation->foreign_key_column ?? $parent_table . '_id',
-                            $array_or_object->$parent_id_table
-                        );
-                    } else {
-                        $parent_id_table = $relation->foreign_key_column ?? rtrim($relation_table_name, 's') . '_id';
-
-                        $relationQuery = $query->where(
-                            'id',
-                            $array_or_object->$parent_id_table
-                        );
-                    }
-
-                    $relation_data = ($relation->mode === 'one')
-                        ? $relationQuery->first(true)
-                        : $relationQuery->get(true);
-
-                    if (is_array($data)) {
-                        $body->{$relation_table_name} = $relation_data;
-                    } else {
-                        $this->related[$relation_table_name] = $relation_data;
-                    }
-                }
-                if (is_array($data)) {
-                    return array_map(function ($item) {
-                        $item = new static($item);
-                        $item->setIsFetched();
-                        return $item;
-                    }, $data);
-                } else {
-                    $data = new static((object)array_merge((array)$data, $this->related));
-                    $data->setIsFetched();
-                    return $data;
-                }
-            }
-        }
-    }
-
-    private function linkManyToManyRelation(
-        array $mainItems,      // Main dataset (e.g., posts)
-        array $pivotTable, // Relation mappings (e.g., post_tag table)
-        array $relatedItems,   // Related dataset (e.g., tags)
-        string $mainKey,       // Key in pivotTable to link with mainItems (e.g., post_id)
-        string $relationKey, // Key in pivotTable to link with relatedItems (e.g., tag_id)
-        string $tableName = 'related'
-    ): array {
-        $linkedResult = []; // Final result to hold enriched main items
-
-        foreach ($mainItems as $mainItem) {
-            // Filter mappings for the current main item
-            $filteredMappings = array_filter(
-                $pivotTable,
-                fn($mapping) => $mapping->$mainKey == $mainItem->id
-            );
-
-            // Map filtered relations to the actual related items
-            $linkedRelations = array_map(function ($mapping) use ($relatedItems, $relationKey) {
-                foreach ($relatedItems as $relatedItem) {
-                    if ($relatedItem->id == $mapping->$relationKey) {
-                        return $relatedItem; // Found related item
-                    }
-                }
-            }, $filteredMappings);
-
-            // Attach related items to the main item if they exist
-            $enrichedItem = clone $mainItem;
-            if (!empty($linkedRelations)) {
-                $enrichedItem->$tableName = array_values(array_filter($linkedRelations));
-            } else {
-                $enrichedItem->$tableName = [];
-            }
-
-            $linkedResult[] = $enrichedItem; // Add enriched item to result
-        }
-
-        return $linkedResult;
-    }
-
-    private function objectLinkRelation(
-        object $main,
-        array $related,
-        string $primaryKey,
-        string $foreignKey,
-        string $tableName = 'related'
-    ) {
-        // Filter related items that match the relationship
-        $relatedItems = array_filter($related, function ($relation) use ($main, $primaryKey, $foreignKey) {
-            return $relation->$foreignKey == $main->$primaryKey;
-        });
-
-        // Convert related items to an indexed array
-        $relatedItems = array_values($relatedItems);
-
-        // Clone the main object to prevent mutation
-        $mainWithRelation = clone $main;
-
-        // Add the related items under the specified relation name
-        $mainWithRelation->$tableName = $relatedItems;
-
-        return $mainWithRelation;
-    }
-
-    private function arrayLinkRelation(
-        array $main,
-        array $related,
-        string $primaryKey,
-        string $foreignKey,
-        string $tableName = 'related'
-    ) {
-        $result = array_map(function ($mainItem) use ($related, $primaryKey, $foreignKey, $tableName) {
-            $relatedItems = array_filter($related, function ($relatedItem) use ($mainItem, $primaryKey, $foreignKey) {
-                return $relatedItem->$foreignKey == $mainItem->$primaryKey;
-            });
-
-            $mainItem->{$tableName} = array_values($relatedItems); // Add related items as 'posts'
-            return (object)$mainItem; // Convert main item to \stdClass
-        }, $main);
-
-        return $result;
-    }
-
-
-    public function limit($limitNumber)
+    /**
+     * Add limit clause
+     */
+    public function ___limit(int $limitNumber): self
     {
         $this->query .= ' LIMIT ' . $limitNumber;
         return $this;
     }
 
     /**
-     * I almost forgot how query works, I take quick asking to ChatGPt and now I remember, haha.
-     * Available option for type is INNER, LEFT, and RIGHT. Defaulted to INNER
-     * 
-     * @param string $table
-     * @param string $ownerTableColumn
-     * @param string $foreignKey
-     * @param string $operator defaulted to '='
-     * @param string $type defaulted to INNER
-     * 
+     * Add offset clause
      */
-    public function join($table, $ownerTableColumn, $foreignKey, $operator = '=', $type = 'INNER'): self
+    public function ___offset(int $offsetNumber): self
+    {
+        $this->query .= ' OFFSET ' . $offsetNumber;
+        return $this;
+    }
+
+    /**
+     * Join tables
+     */
+    public function ___join(string $table, string $ownerTableColumn, string $foreignKey, string $operator = '=', string $type = 'INNER'): self
     {
         $this->query .= ' ' . $type . ' JOIN ' . $table . ' ON ' . $ownerTableColumn . ' ' . $operator . ' ' . $foreignKey;
         return $this;
     }
 
     /**
-     * This method is means to order result by ascending or descending order.
-     * In case I forget I'll just put option here ASC/DESC ~Ronel
-     * 
-     * @param string $column
-     * @param string $direction ['ASC','DESC']
-     * 
+     * Order by clause
      */
-    public function orderBy($column, $direction = 'ASC'): self
+    public function ___orderBy(string $column, string $direction = 'ASC'): self
     {
+        $direction = strtoupper($direction);
+        if (!in_array($direction, ['ASC', 'DESC'])) {
+            throw new \InvalidArgumentException('Direction must be ASC or DESC');
+        }
+
         $this->query .= ' ORDER BY ' . $column . ' ' . $direction;
         return $this;
     }
 
-    public function restrain($state)
+    /**
+     * Group by clause
+     */
+    public function ___groupBy(string $column): self
+    {
+        $this->query .= ' GROUP BY ' . $column;
+        return $this;
+    }
+
+    public function ___restrain(bool $state): self
     {
         $this->restrain = $state;
         return $this;
     }
 
     /**
-     * This method can be used with execute() to perform a raw sql query (Prepared for old but gold)
-     * 
-     * @param string $sql Sql query to be perform
-     * @param array $bindings Use this if you prefer placeholder
+     * Raw SQL query
      */
-    public function raw($sql, $bindings = []): self
+    public function ___raw(string $sql, array $bindings = []): self
     {
         $this->query .= $sql . ' ';
         $this->bindings = array_merge($this->bindings, $bindings);
@@ -682,106 +901,114 @@ class QueryBuilder extends Connection
     }
 
     /**
-     * This method was used there is no direct execution by insert() and update() now its deprecated.
-     * You can just use others for regular CRUD operations, or you still can use it for raw() query to perform complex query
-     *  @return void
-     * 
+     * Execute raw query
      */
-    public function execute(): void
+    public function ___execute(): \PDOStatement
     {
         $upperQuery = strtoupper($this->query);
 
         if ($this->restrain && str_contains($upperQuery, 'DROP')) {
-            throw new \Exception('Drop action detected, aborted unless explicitly restrain set to false.');
+            throw new \Exception('DROP action detected, aborted unless explicitly restrain set to false.');
         }
 
         if (
-            $this->restrain &&
-            (str_contains($upperQuery, 'DELETE') || str_contains($upperQuery, 'UPDATE')) &&
-            !str_contains($upperQuery, 'WHERE')
+            $this->restrain && (str_contains($upperQuery, 'DELETE') || str_contains($upperQuery, 'UPDATE'))
+            && !str_contains($upperQuery, 'WHERE')
         ) {
-            throw new \Exception('Delete/Update action without where clause detected, aborted unless explicitly restrain set to false.');
+            throw new \Exception('DELETE/UPDATE action without WHERE clause detected, aborted unless explicitly restrain set to false.');
         }
-        getBoolEnv('APP_DEBUG', false) &&  error_log($this->getRequestIp() . $this->query);
-        getBoolEnv('APP_DEBUG', false) &&  error_log(json_encode($this->bindings));
+
+        // error_log($this->getRequestIp() . $this->query);
+        // error_log($this->getRequestIp() . 'Parameter: ' . json_encode($this->bindings));
+
         $this->stmt = $this->pdo->prepare($this->query);
         $this->stmt->execute($this->bindings);
+
+        $this->resetQuery();
+        return $this->stmt;
     }
 
     /**
-     * Fetch one result from raw query.
-     * Will return object if success or else null if there is none
-     * 
-     * @return object|null
+     * Fetch one result
      */
-    public function fetch(): object|false
+    public function ___fetch(): object|false
     {
         return $this->stmt->fetch(\PDO::FETCH_OBJ);
     }
 
     /**
-     * Fetch all result from raw query.
-     * Will always return Array, whatever, if there is no match, will return empty array
+     * Fetch all results
      */
-    public function fetchAll(): array
+    public function ___fetchAll(): array
     {
         return $this->stmt->fetchAll(\PDO::FETCH_OBJ);
     }
 
     /**
-     * This thing first spawned to me when I leaning python sqlite query, hoo so all are same?
-     * 
-     * @return string|false Returned id of last successful query or false if no insert query were made 
-     * 
+     * Get last insert ID
      */
-    public function lastInsertId(): string|false
+    public function ___lastInsertId(): string|false
     {
-        return ($this->pdo->lastInsertId() == '0') ? false : $this->pdo->lastInsertId();
-    }
-
-    public function lastRowId(): string
-    {
-        return $this->stmt->lastRowId();
+        $id = $this->pdo->lastInsertId();
+        return ($id === '0' || $id === false) ? false : $id;
     }
 
     /**
-     * I am not sure if this a correct way to closing a connection, this just set the pdo to null.
-     * Update! now I know the correct way!
-     * 
-     * @return bool
+     * Close cursor
      */
-    public function close(): self
+    public function ___close(): bool
     {
-        $this->pdo = null;
-        return $this->stmt->closeCursor();
+        return $this->stmt ? $this->stmt->closeCursor() : true;
     }
-
-    public function purge(): void
-    {
-        foreach ($this as $key => $value) {
-            unset($this->$key);
-        }
-    }
-
 
     /**
-     * Reset the query builder
-     * 
+     * Clear all properties
      */
-    private function resetQuery()
+    public function ___purge(): void
+    {
+        $this->query = '';
+        $this->table = '';
+        $this->columns = [];
+        $this->fillable = [];
+        $this->guarded = [];
+        $this->primaryColumn = 'id';
+        $this->usedSelect = false;
+        $this->bindings = [];
+        $this->stmt = null;
+        $this->relations = [];
+        $this->related = [];
+        $this->isFetched = false;
+        $this->restrain = true;
+        $this->relationCache = [];
+    }
+
+    /**
+     * Reset query builder state
+     */
+    private function resetQuery(): self
     {
         $this->query = '';
         $this->bindings = [];
         $this->usedSelect = false;
+        $this->relationCache = [];
         return $this;
     }
 
     /**
-     * Get numbers of affected row from previous query
-     * 
+     * Get number of affected rows
      */
-    public function rowCount()
+    public function ___rowCount(): int
     {
-        return $this->stmt->rowCount();
+        return $this->stmt ? $this->stmt->rowCount() : 0;
+    }
+
+    /**
+     * Magic isset for relations
+     */
+    public function _____isset($name)
+    {
+        return isset($this->relations->$name);
     }
 }
+
+// Working simple relation

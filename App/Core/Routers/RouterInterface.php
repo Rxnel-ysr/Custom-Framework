@@ -1,9 +1,15 @@
 <?php
 
-use App\Foundation\Http\Middleware;
+namespace App\Foundation\Http;
+
+use App\Debug\Debugger;
+use App\Foundation\Exceptions\Framework\LowLevelException;
+use App\Foundation\Exceptions\Http\BaseHttpException;
+use App\Foundation\Exceptions\Http\Json\JsonBaseHttpException;
 use App\Foundation\Http\Request;
 use App\Foundation\Manager\InstanceManager;
-use App\Foundation\Http\MiddlewareException;
+use Closure;
+use Throwable;
 
 interface RouterInterface
 {
@@ -27,7 +33,7 @@ abstract class RouterBase
      */
     public static function pipeline($passable, array $pipes, Closure $destination): mixed
     {
-        /** @var App\Foundation\Http\Middleware $middleware */
+        /** @var \App\Foundation\Http\Middleware $middleware */
         $middleware = InstanceManager::getInstance('_appMiddleware');
 
         $pipes = array_map(
@@ -38,21 +44,53 @@ abstract class RouterBase
             )
         );
 
+        $pipeline = array_reduce(
+            array_reverse($pipes),
+            fn($next, $pipe) => fn($passable) => $pipe['instance']->handle($passable, $next, ...$pipe['parameters']),
+            $destination
+        );
+
         try {
-            $pipeline = array_reduce(
-                array_reverse($pipes),
-                fn($next, $pipe) => fn($passable) => $pipe['instance']->handle($passable, $next, ...$pipe['parameters']),
-                $destination
-            );
+            $res = $pipeline($passable);
         } catch (Throwable $e) {
-            throw new MiddlewareException($e->getMessage(), 1, $e);
+            return self::resolveException($e);
         }
 
-        return $pipeline($passable);
+        switch (true) {
+            case is_string($res):
+                echo $res;
+                return $res;
+            case is_array($res):
+                return response()->json($res);
+            default:
+                return $res;
+        }
     }
 
     public function getName()
     {
         return $this->name ?? null;
+    }
+
+    private static function resolveException(Throwable $e)
+    {
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+        return match (true) {
+            $e instanceof JsonBaseHttpException => $e->handle(),
+
+            $e instanceof BaseHttpException =>
+                Debugger::showErrorPage(
+                    $e->httpCode(),
+                    $e->getMessage(),
+                    $e->getSubMessage()
+                ),
+            
+            $e instanceof LowLevelException => 
+                Debugger::dumpErr($e, false, true),
+
+            default => throw $e,
+        };
     }
 }

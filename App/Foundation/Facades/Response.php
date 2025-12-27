@@ -3,7 +3,9 @@
 namespace App\Support\Facades;
 
 use App\Support\Facades\Facade;
+use Dep;
 
+#[Dep(Facade::class)]
 /**
  * @method self status(int $code)
  * @method self header(string $key, string $value)

@@ -18,9 +18,11 @@ class App
 {
     private array $dependencies = [];
     private array $dependency_names = [];
+    private array $providers = [];
     public array $configs = [];
     private array $router = [];
     public string $root;
+    protected $services = [];
 
     public function __construct(string $root)
     {
@@ -30,6 +32,16 @@ class App
     public static function configure($root)
     {
         return new self($root);
+    }
+
+    public function __get($name)
+    {
+        return $this->services[$name] ?? null;
+    }
+
+    public function setService($name, $service)
+    {
+        $this->services[$name] = $service;
     }
 
     /**
@@ -75,11 +87,31 @@ class App
         return $this;
     }
 
+    public function withProviders(array $providers)
+    {
+        $this->providers = array_map(fn($item) => createInstance($item),$providers);
+        return $this;
+    }
+
+    public function withServices(array $services)
+    {
+        foreach($services as $name => $service){
+            $this->services[$name] = createInstance($service, null, $name);
+        }
+        return $this;
+    }
+
+    public function setupProviders()
+    {
+        foreach($this->providers as $provider){
+            $provider->register($this);
+            $provider->boot($this);
+        }
+    }
+
     public function withMiddleware(callable $callable)
     {
-        $middleware = new Middleware();
-        InstanceManager::setInstance('_appMiddleware', $middleware);
-        $callable($middleware);
+        createInstance(Middleware::class, $callable, '_appMiddleware');
         return $this;
     }
 
@@ -125,7 +157,9 @@ class App
 
         $routeFile = $isApi ? $this->router['api'] : $this->router['web'];
 
-        require $this->root . '/' . ltrim($routeFile, '/');
+        Route::group(['prefix' => $isApi ? '/api' : ''], function () use ($routeFile) {
+            require $this->root . '/' . ltrim($routeFile, '/');
+        });
 
         if ($request->method() === 'OPTIONS') {
             return response()->json(['options' => ['GET', 'HEAD', 'POST', 'PATCH', 'PUT', 'DELETE']]);
@@ -141,12 +175,12 @@ class App
         // file_put_contents($this->root . '/public/result.txt',$res);
     }
 
-    public function handleCommand(Argv $arg)
+    public function handleCommand()
     {
         foreach ($this->dependencies as $dependency) {
             require_once $this->root . DIRECTORY_SEPARATOR . $dependency;
         }
-        return Command::standBy($arg);
+        return Command::standBy($GLOBALS['argv']);
     }
 }
 /**

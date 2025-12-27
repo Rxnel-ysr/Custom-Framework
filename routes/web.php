@@ -7,8 +7,14 @@ use App\Foundation\Manager\InstanceManager;
 use App\Support\Facades\Route;
 use App\Foundation\Model;
 use App\Foundation\Reactive\ReactiveHandler;
+use App\Foundation\Support\Str;
 use App\Foundation\System\{File, Disk};
 use App\Http\Controllers\test;
+use App\Http\Requests\Api\TestRequest;
+use App\Models\Comments;
+use App\Models\Post;
+use App\Models\Student;
+use App\Models\Testable;
 use App\Models\User;
 use App\Support\Facades\DB;
 use App\Support\Facades\DI;
@@ -174,4 +180,28 @@ Route::get('/t1', function () {
 
 Route::post('/t1', function () {
    return 't1-post';
+})->middleware('test');
+
+Route::get('/ungger', function () {
+   $base = User::where('name', null, '!=');
+
+   $user5 = $base->with('comments', 'posts')->find(3);
+
+   $nothing = $base->find(999999);
+
+   $aloks = $base->limit(5)->get()
+      ->filter(fn($_) => strlen($_->name) > 3, true);
+   // abort(403, 'Action unauthorized', 'Hi, mind going back?');
+
+   return [
+      'user5' => $user5,
+      'nothing' => $nothing,
+      'aloks' => $aloks
+   ];
+});
+
+Route::get('/req', function (TestRequest $request) {
+   $data = $request->validated();
+
+   return 'ok, ' . $data['nama'];
 })->middleware('test');

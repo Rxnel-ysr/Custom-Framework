@@ -3,7 +3,9 @@
 namespace App\Support\Facades;
 
 use App\Support\Facades\Facade;
+use Dep;
 
+#[Dep(Facade::class)]
 /**
  * A facade class of Container class
  * @method static void bind(string $key, callable $resolver)

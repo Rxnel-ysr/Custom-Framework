@@ -2,9 +2,7 @@
 
 namespace App\Foundation\Generator;
 
-use Exception;
-
-class TemplateBuilderException extends Exception {}
+use App\Foundation\Exceptions\Framework\Compiler\TemplateBuilderException;
 
 class TemplateBuilder
 {

@@ -6,8 +6,9 @@ use App\Foundation\Model;
 
 class User extends Model
 {
-    protected $table = 'users';
-    protected $primary = 'id';
+    protected $hidden = [
+        'password'
+    ];
 
     protected $fillable = [
         'name',
@@ -18,5 +19,19 @@ class User extends Model
     public function hello()
     {
         return 'hello I am is ' . $this->name;
+    }
+
+    public function posts()
+    {
+        return $this->hasMany(
+            Post::class,
+            'user_id',
+            'id',
+        );
+    }
+
+    public function comments()
+    {
+        return $this->hasMany(Comments::class);
     }
 }

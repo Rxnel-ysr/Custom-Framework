@@ -1,13 +1,14 @@
 <?php
 
+use App\Foundation\Exceptions\Http\Json\NotFoundException;
 use App\Foundation\Http\Response;
-use App\Foundation\Http\Route;
 use App\Http\Controllers\Test;
+use App\Support\Facades\Route;
 
-Route::get('/hi', function (Response $res) {
+Route::get('/haha', function (Response $res) {
+    throw new NotFoundException("Not found", "gk onok cik");
+
     return $res->json([
         'message' => 'sausage!'
     ]);
 });
-
-Route::fallback(fn(Response $res) => $res->status(404)->json(['message' => 'Not found']));

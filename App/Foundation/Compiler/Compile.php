@@ -5,10 +5,8 @@ namespace App\Foundation\Compiler;
 require_once __DIR__ . '/Rx.php';
 
 use App\Support\Facades\DI;
-use Exception;
+use App\Foundation\Exceptions\Framework\Compiler\CompilerException;
 use ReflectionFunction;
-
-class CompilerException extends Exception {}
 
 class Compile
 {

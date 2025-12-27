@@ -18,7 +18,7 @@ return [
     |
     */
 
-    'debug' => true,
+    'debug' => false,
 
     /*
     |--------------------------------------------------------------------------
@@ -33,6 +33,22 @@ return [
 
     'auto-resolve' => true,
 
+    'system_scan' => [
+        'ignore' => [
+            'App/Core/error/',
+            'resources/',
+            'storage/',
+            'config/',
+            'public/',
+            'routes/',
+        ],
+        'prioritize' => [
+            'App/',
+            'test/'
+        ],
+        'root-scan' => false
+    ],
+
     'psr-4' => [
         'Experimental\\App' => 'App/'
     ],
@@ -41,6 +57,10 @@ return [
         'App\\Foundation\\Http\\Route'
     ],
 
+    'resolution' => [
+        'dep' => true,
+        'boot' => true
+    ],
 
     /*
     |--------------------------------------------------------------------------
@@ -65,7 +85,7 @@ return [
     |
     */
 
-    'check_filemtime' => false,
+    'check_filemtime' => true,
 
     /*
     |--------------------------------------------------------------------------

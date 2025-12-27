@@ -2,6 +2,8 @@
 
 use App\Debug\Debugger;
 use App\Foundation\Compiler\Compile;
+use App\Foundation\Exceptions\Http\NotFoundException;
+use App\Foundation\Exceptions\Http\UnauthorizedException;
 use App\Foundation\Manager\InstanceManager;
 use App\Support\Facades\DI;
 
@@ -370,7 +372,7 @@ function callFuncWithParams(
 
         // Dependency injection
         if ($autoResolve && $paramType instanceof ReflectionNamedType && !$paramType->isBuiltin()) {
-            $args[] = InstanceManager::getInstance($paramType->getName());
+            $args[] = InstanceManager::getInstance('container')->make($paramType->getName());
             continue;
         }
 
@@ -838,6 +840,20 @@ function print_rpre(...$something)
     echo '</pre>';
 }
 
+/**
+ * Print anything and exit
+ *
+ * @param mixed[]  ...$something
+ * @return void
+ */
+function print_rpred(...$something)
+{
+    echo '<pre>';
+    print_r($something);
+    echo '</pre>';
+    die(1);
+}
+
 
 function safe_bulk_match(array $patterns, string $subject, float $timeout = 0.05): array
 {
@@ -947,9 +963,16 @@ function retrieveEnv(string $name, string $type = 'string', $default = null)
     }
 }
 
-function abort($errorCode, $message = '', $subMessage = '')
+function abort($errorCode, $message = '', $subMessage= '')
 {
-    return Debugger::showErrorPage($errorCode, $message, $subMessage);
+    switch($errorCode){
+        case 404:
+            throw new NotFoundException($message, $subMessage);
+        case 403:
+            throw new UnauthorizedException($message, $subMessage);
+        default:
+        
+    }
 }
 
 function createInstance(object|string $class, ?callable $func = null, ?string $name = null, mixed ...$args)

@@ -3,78 +3,81 @@
 namespace App\Foundation\Manager;
 
 use Inject;
+use Setup;
 use ReflectionClass;
 use ReflectionNamedType;
 use InvalidArgumentException;
-use Setup;
+use Generator;
+use Exception;
+use Dep;
 
+#[Dep('./../Attributes/Setup.php')]
+#[Dep('./../Attributes/Inject.php')]
 /**
- * @template T of Object
  * @depends ./../Attributes/Setup.php
  * @depends ./../Attributes/Inject.php
  */
 class Resolver
 {
     /**
-     * Stores instances of various classes.
+     * Stores instances of various classes, keyed by class and constructor signature.
      *
      * @var array<string, object>
      */
     private static array $instances = [];
 
     /**
-     * Preventing circular depedency
+     * Prevent circular dependency recursion.
      *
      * @var array<string, bool>
      */
     private static array $visited = [];
 
-    /**
-     * Retrieve a singleton instance of the given class.
-     *
-     * @param string $key The class name or key identifier.
-     * @param mixed ...$args Optional parameters for the constructor.
-     * @return object The singleton instance of the requested class.
-     * @throws Exception If the class does not exist.
-     */
+    /* -----------------------------------------------------------------
+        Instance Handling
+    ----------------------------------------------------------------- */
+
+    private static function makeKey(string $class, array $args = []): string
+    {
+        return $class . ':' . md5(serialize($args));
+    }
+
+    private static function getInstance(string $class, array $args = []): ?object
+    {
+        return self::$instances[self::makeKey($class, $args)] ?? null;
+    }
+
+    private static function setInstance(string $class, array $args, object $instance): void
+    {
+        self::$instances[self::makeKey($class, $args)] = $instance;
+    }
+
     public static function get(string $key, ...$args): object
     {
-        if (!isset(self::$instances[$key])) {
+        $keyHash = self::makeKey($key, $args);
+        if (!isset(self::$instances[$keyHash])) {
             if (!class_exists($key)) {
-                throw new \Exception("Class $key does not exist.");
+                throw new Exception("Class $key does not exist.");
             }
-            self::$instances[$key] = new $key(...$args);
+            self::$instances[$keyHash] = new $key(...$args);
         }
-        return self::$instances[$key];
+        return self::$instances[$keyHash];
     }
 
-    public static function has(string $key)
+    public static function has(string $key, array $args = []): bool
     {
-        return isset(self::$instances[$key]);
+        return isset(self::$instances[self::makeKey($key, $args)]);
     }
 
-    /**
-     * Retrieve a singleton instance of the given class.
-     *
-     * @param string $key The class name or key identifier.
-     * @param object Instance to be keep
-     * @return object The singleton instance of the requested class.
-     */
-    public static function set(string $key, object $instance): object
+    public static function set(string $key, object $instance, array $args = []): object
     {
-        self::$instances[$key] = $instance;
+        self::setInstance($key, $args, $instance);
         return $instance;
     }
 
-    /**
-     * Reset given given instace
-     *
-     * @param string $key The class name or key identifier.
-     * @return void
-     */
-    public static function reset(string $key): void
+    public static function reset(string $key, array $args = []): void
     {
-        unset(self::$instances[$key]);
+        unset(self::$instances[self::makeKey($key, $args)]);
     }
 
     public static function allInstances(): array
@@ -82,24 +85,31 @@ class Resolver
         return self::$instances;
     }
 
+    /* -----------------------------------------------------------------
+        Instance Creation & Dependency Resolution
+    ----------------------------------------------------------------- */
+
     /**
      * Create and register a new instance of a class.
      *
-     * @template T of object
-     * @param class-string<T> $class The class name to instantiate.
-     * @param callable(T):void|null $func Optional callback that receives the instance.
+     * @template A of object
+     * @param class-string<A> $class The class name to instantiate.
+     * @param callable(A):void|null $func Optional callback that receives the instance.
      * @param array $args Constructor arguments.
-     * @param string|null $name Optional name for registration.
-     * @return T The created instance.
+     * @param string|null $name Optional custom key for registration.
+     * @return A The created or cached instance.
      */
-    public static function createInstance(string $class, ?callable $func = null, array $args = [], ?string $name = null)
+    public static function make(string $class, ?callable $func = null, array $args = [], ?string $name = null)
     {
-        if (self::has($class)) {
-            return self::get($class);
+        $key = $name ?? $class;
+
+        // Return existing instance if same class and identical args already exist
+        if ($existing = self::getInstance($key, $args)) {
+            return $existing;
         }
+
         $reflect = new ReflectionClass($class);
         $params = [];
-
         $isAssoc = !array_is_list($args);
         $constructor = $reflect->getConstructor();
 
@@ -109,21 +119,19 @@ class Resolver
                 $paramType = $param->getType();
                 $attrs = $param->getAttributes(Inject::class);
 
-                // 1️⃣ Inject only if attribute present
+                // Inject attribute-based dependencies
                 if (!empty($attrs)) {
                     $injectAttr = $attrs[0]->newInstance();
                     $injectClass = $injectAttr->class ?? ($paramType instanceof ReflectionNamedType ? $paramType->getName() : null);
-                    self::setup($injectClass);
-
                     if ($injectClass === null) {
                         throw new InvalidArgumentException("Unable to resolve Inject target for parameter: $paramName");
                     }
-
-                    $params[] = self::get($injectClass);
+                    self::setup($injectClass, $injectAttr);
+                    $params[] = self::getInstance($injectClass, $injectAttr->args ?? []) ?? self::get($injectClass, ...($injectAttr->args ?? []));
                     continue;
                 }
 
-                // 2️⃣ Fallback to passed args or defaults
+                // Fallback to user-passed args or defaults
                 if ($isAssoc && array_key_exists($paramName, $args)) {
                     $value = $args[$paramName];
                 } elseif (!$isAssoc && array_key_exists($index, $args)) {
@@ -138,38 +146,57 @@ class Resolver
             }
         }
 
-        $instance = new $class(...$params);
+        $instance = $reflect->newInstanceArgs($params);
 
         if (is_callable($func)) {
             $func($instance);
         }
 
-        self::set($name ?? $class, $instance);
+        self::setInstance($key, $args, $instance);
         return $instance;
     }
 
-    public static function build(array $classes)
+    /**
+     * Build all default setups.
+     *
+     * @template B of object
+     * @param class-string<B>[] $classes
+     * @return B[]
+     */
+    public static function buildDefault(array $classes): array
     {
+        $res = [];
         foreach ($classes as $class) {
-            self::setup($class);
+            $res[] = self::setup($class);
         }
+        return $res;
     }
 
-    public static function setup(string $class)
+    /**
+     * Setup dependency resolution for annotated classes.
+     *
+     * @template C of object
+     * @param class-string<C> $class
+     * @param Inject|array<string, mixed> $inject
+     * @return C
+     */
+    public static function setup(string $class, Inject|array $inject = [])
     {
         if (isset(self::$visited[$class])) return;
         self::$visited[$class] = true;
 
         $reflectionClass = new ReflectionClass($class);
         $attrs = $reflectionClass->getAttributes(Setup::class);
-        if (!empty($attrs)) {
-            $instance = $attrs[0]->newInstance();
 
-            foreach ($instance->before as $dep) {
+        if (!empty($attrs)) {
+            $setupAttr = $attrs[0]->newInstance();
+
+            foreach ($setupAttr->before as $dep) {
                 self::setup($dep);
             }
 
-            return self::createInstance($class, null, $instance->args);
+            $args = $inject instanceof Inject ? $inject->args : (!empty($inject) ? $inject : $setupAttr->args);
+            return self::make($class, null, $args);
         }
     }
 }

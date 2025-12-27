@@ -1,16 +1,5 @@
 <?php
 return array (
-  'testCommand' => 
-  array (
-    'filepath' => 'routes/console.php',
-    'depends' => 
-    array (
-    ),
-    'boot' => 
-    array (
-    ),
-    'filemtime' => 1761887697,
-  ),
   'App\\Http\\Controllers\\testing' => 
   array (
     'filepath' => 'App/Http/Controllerstesting.php',
@@ -22,6 +11,39 @@ return array (
     ),
     'filemtime' => 1749717795,
   ),
+  'App\\Http\\Requests\\Api\\BaseProblemJsonRequest' => 
+  array (
+    'filepath' => 'App/Http/Requests/Api/BaseProblemJsonRequest.php',
+    'depends' => 
+    array (
+    ),
+    'boot' => 
+    array (
+    ),
+    'filemtime' => 1766773734,
+  ),
+  'App\\Http\\Requests\\Api\\TestRequest' => 
+  array (
+    'filepath' => 'App/Http/Requests/Api/TestRequest.php',
+    'depends' => 
+    array (
+    ),
+    'boot' => 
+    array (
+    ),
+    'filemtime' => 1766773307,
+  ),
+  'App\\Http\\Middlewares\\ApiHandler' => 
+  array (
+    'filepath' => 'App/Http/Middlewares/ApiHandler.php',
+    'depends' => 
+    array (
+    ),
+    'boot' => 
+    array (
+    ),
+    'filemtime' => 1761987278,
+  ),
   'App\\Http\\Middlewares\\Test' => 
   array (
     'filepath' => 'App/Http/Middlewares/Test.php',
@@ -31,7 +53,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1761563744,
+    'filemtime' => 1766805930,
   ),
   'App\\Http\\Controllers\\ResourcesController' => 
   array (
@@ -141,7 +163,18 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1747559703,
+    'filemtime' => 1766644527,
+  ),
+  'App\\Models\\Post' => 
+  array (
+    'filepath' => 'App/Models/Post.php',
+    'depends' => 
+    array (
+    ),
+    'boot' => 
+    array (
+    ),
+    'filemtime' => 1766280823,
   ),
   'App\\Models\\Test' => 
   array (
@@ -154,6 +187,39 @@ return array (
     ),
     'filemtime' => 1747444586,
   ),
+  'App\\Models\\Student' => 
+  array (
+    'filepath' => 'App/Models/Student.php',
+    'depends' => 
+    array (
+    ),
+    'boot' => 
+    array (
+    ),
+    'filemtime' => 1766220503,
+  ),
+  'App\\Models\\Testable' => 
+  array (
+    'filepath' => 'App/Models/Testable.php',
+    'depends' => 
+    array (
+    ),
+    'boot' => 
+    array (
+    ),
+    'filemtime' => 1766580409,
+  ),
+  'App\\Models\\Comments' => 
+  array (
+    'filepath' => 'App/Models/Comments.php',
+    'depends' => 
+    array (
+    ),
+    'boot' => 
+    array (
+    ),
+    'filemtime' => 1766317180,
+  ),
   'App\\App' => 
   array (
     'filepath' => 'App/Core/app.php',
@@ -163,7 +229,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1761880736,
+    'filemtime' => 1766805461,
   ),
   'App\\Foundation\\Http\\TrieNode' => 
   array (
@@ -174,7 +240,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1761881211,
+    'filemtime' => 1766600413,
   ),
   'App\\Foundation\\Http\\RouteTrie' => 
   array (
@@ -185,9 +251,9 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1761881211,
+    'filemtime' => 1766600413,
   ),
-  'RouterInterface' => 
+  'App\\Foundation\\Http\\RouterInterface' => 
   array (
     'filepath' => 'App/Core/Routers/RouterInterface.php',
     'depends' => 
@@ -196,9 +262,9 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1761881008,
+    'filemtime' => 1766806911,
   ),
-  'RouterBase' => 
+  'App\\Foundation\\Http\\RouterBase' => 
   array (
     'filepath' => 'App/Core/Routers/RouterInterface.php',
     'depends' => 
@@ -207,7 +273,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1761881008,
+    'filemtime' => 1766806911,
   ),
   'App\\Foundation\\Http\\RouteRegex' => 
   array (
@@ -218,7 +284,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1761881206,
+    'filemtime' => 1766600396,
   ),
   'App\\Foundation\\Http\\RadixNode' => 
   array (
@@ -229,7 +295,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1761881180,
+    'filemtime' => 1766674986,
   ),
   'App\\Foundation\\Http\\RouteRadix' => 
   array (
@@ -240,7 +306,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1761881180,
+    'filemtime' => 1766674986,
   ),
   'App\\Foundation\\Http\\HttpHeaders' => 
   array (
@@ -262,7 +328,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1757510157,
+    'filemtime' => 1766767613,
   ),
   'App\\Foundation\\Http\\ReqRequest' => 
   array (
@@ -274,6 +340,17 @@ return array (
     array (
     ),
     'filemtime' => 1748006536,
+  ),
+  'App\\Foundation\\Http\\FormDataRequest' => 
+  array (
+    'filepath' => 'App/Foundation/Http/FormDataRequest.php',
+    'depends' => 
+    array (
+    ),
+    'boot' => 
+    array (
+    ),
+    'filemtime' => 1766805318,
   ),
   'App\\Foundation\\Http\\StaticFile' => 
   array (
@@ -295,7 +372,29 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1754485173,
+    'filemtime' => 1766768847,
+  ),
+  'App\\Foundation\\Database\\QueryBuilder___' => 
+  array (
+    'filepath' => 'App/Foundation/Database/QB-Multi.php',
+    'depends' => 
+    array (
+    ),
+    'boot' => 
+    array (
+    ),
+    'filemtime' => 1766642037,
+  ),
+  'App\\Foundation\\Database\\Cast' => 
+  array (
+    'filepath' => 'App/Foundation/Database/Cast.php',
+    'depends' => 
+    array (
+    ),
+    'boot' => 
+    array (
+    ),
+    'filemtime' => 1766566867,
   ),
   'App\\Foundation\\Database\\QueryBuilder' => 
   array (
@@ -306,7 +405,18 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1757231328,
+    'filemtime' => 1766644572,
+  ),
+  'DEPRECATED\\Experimental\\App\\Foundation\\Database\\QueryBuilder2_' => 
+  array (
+    'filepath' => 'App/Foundation/Database/QueryBuilder_DPRECATED.php',
+    'depends' => 
+    array (
+    ),
+    'boot' => 
+    array (
+    ),
+    'filemtime' => 1766642031,
   ),
   'Experimental\\App\\Foundation\\Model' => 
   array (
@@ -319,16 +429,27 @@ return array (
     ),
     'filemtime' => 1761554105,
   ),
-  'Experimental\\App\\Foundation\\Database\\QueryBuilder' => 
+  'DEPRECATED\\App\\Foundation\\Database\\QueryBuilder__' => 
   array (
-    'filepath' => 'App/Foundation/Database/QueryBuilder_EXPE.php',
+    'filepath' => 'App/Foundation/Database/QueryBuilder_DEPRECATED2.php',
     'depends' => 
     array (
     ),
     'boot' => 
     array (
     ),
-    'filemtime' => 1761554141,
+    'filemtime' => 1766642025,
+  ),
+  'App\\Foundation\\Database\\QueryBuilder2' => 
+  array (
+    'filepath' => 'App/Foundation/Database/QueryBuilder copy 2.php',
+    'depends' => 
+    array (
+    ),
+    'boot' => 
+    array (
+    ),
+    'filemtime' => 1766642011,
   ),
   'App\\Foundation\\Database\\Connection' => 
   array (
@@ -350,7 +471,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1761311278,
+    'filemtime' => 1766220117,
   ),
   'App\\Foundation\\Database\\Schema' => 
   array (
@@ -361,7 +482,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1761311278,
+    'filemtime' => 1766220117,
   ),
   'App\\Foundation\\Database\\Blueprint' => 
   array (
@@ -372,7 +493,18 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1761311278,
+    'filemtime' => 1766220117,
+  ),
+  'App\\Foundation\\Database\\QueryBuilderCopy' => 
+  array (
+    'filepath' => 'App/Foundation/Database/QueryBuilder copy.php',
+    'depends' => 
+    array (
+    ),
+    'boot' => 
+    array (
+    ),
+    'filemtime' => 1766642021,
   ),
   'App\\Foundation\\Model' => 
   array (
@@ -383,7 +515,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1761554141,
+    'filemtime' => 1766642877,
   ),
   'App\\Foundation\\Traits\\Strings' => 
   array (
@@ -394,7 +526,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1754394308,
+    'filemtime' => 1766587148,
   ),
   'App\\Foundation\\Traits\\Macroable' => 
   array (
@@ -407,71 +539,88 @@ return array (
     ),
     'filemtime' => 1757160431,
   ),
-  'App\\Support\\Facades\\Route' => 
+  'App\\Foundation\\Traits\\Collection' => 
   array (
-    'filepath' => 'App/Foundation/Facades/Route.php',
+    'filepath' => 'App/Foundation/Traits/Collection.php',
     'depends' => 
     array (
     ),
     'boot' => 
     array (
     ),
-    'filemtime' => 1761882871,
+    'filemtime' => 1766273779,
+  ),
+  'App\\Support\\Facades\\Route' => 
+  array (
+    'filepath' => 'App/Foundation/Facades/Route.php',
+    'depends' => 
+    array (
+      0 => 'App\\Support\\Facades\\Facade',
+    ),
+    'boot' => 
+    array (
+    ),
+    'filemtime' => 1766245437,
   ),
   'App\\Support\\Facades\\Response' => 
   array (
     'filepath' => 'App/Foundation/Facades/Response.php',
     'depends' => 
     array (
+      0 => 'App\\Support\\Facades\\Facade',
     ),
     'boot' => 
     array (
     ),
-    'filemtime' => 1749467851,
+    'filemtime' => 1761907943,
   ),
   'App\\Support\\Facades\\DB' => 
   array (
     'filepath' => 'App/Foundation/Facades/DB.php',
     'depends' => 
     array (
+      0 => 'App\\Support\\Facades\\Facade',
     ),
     'boot' => 
     array (
     ),
-    'filemtime' => 1761554141,
+    'filemtime' => 1766248595,
   ),
   'App\\Support\\Facades\\Request' => 
   array (
     'filepath' => 'App/Foundation/Facades/Request.php',
     'depends' => 
     array (
+      0 => 'App\\Support\\Facades\\Facade',
     ),
     'boot' => 
     array (
     ),
-    'filemtime' => 1747473456,
+    'filemtime' => 1761907936,
   ),
   'App\\Support\\Facades\\DI' => 
   array (
     'filepath' => 'App/Foundation/Facades/DI.php',
     'depends' => 
     array (
+      0 => 'App\\Support\\Facades\\Facade',
     ),
     'boot' => 
     array (
     ),
-    'filemtime' => 1760431625,
+    'filemtime' => 1761907921,
   ),
   'App\\Support\\Facades\\Rx' => 
   array (
     'filepath' => 'App/Foundation/Facades/Rx.php',
     'depends' => 
     array (
+      0 => 'App\\Support\\Facades\\Facade',
     ),
     'boot' => 
     array (
     ),
-    'filemtime' => 1760431688,
+    'filemtime' => 1761907967,
   ),
   'App\\Support\\Facades\\Facade' => 
   array (
@@ -482,7 +631,184 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1760431666,
+    'filemtime' => 1766203815,
+  ),
+  'App\\Support\\Facades\\Model' => 
+  array (
+    'filepath' => 'App/Foundation/Facades/Model.php',
+    'depends' => 
+    array (
+      0 => 'App\\Support\\Facades\\Facade',
+    ),
+    'boot' => 
+    array (
+    ),
+    'filemtime' => 1766568606,
+  ),
+  'App\\Foundation\\Exceptions\\Http\\NotFoundException' => 
+  array (
+    'filepath' => 'App/Foundation/Exceptions/Http/NotFoundException.php',
+    'depends' => 
+    array (
+    ),
+    'boot' => 
+    array (
+    ),
+    'filemtime' => 1766805688,
+  ),
+  'App\\Foundation\\Exceptions\\Http\\BaseHttpException' => 
+  array (
+    'filepath' => 'App/Foundation/Exceptions/Http/BaseHttpException.php',
+    'depends' => 
+    array (
+    ),
+    'boot' => 
+    array (
+    ),
+    'filemtime' => 1766805911,
+  ),
+  'App\\Foundation\\Exceptions\\Http\\UnauthorizedException' => 
+  array (
+    'filepath' => 'App/Foundation/Exceptions/Http/UnauthorizedException.php',
+    'depends' => 
+    array (
+    ),
+    'boot' => 
+    array (
+    ),
+    'filemtime' => 1766805757,
+  ),
+  'App\\Foundation\\Exceptions\\Http\\Json\\NotFoundException' => 
+  array (
+    'filepath' => 'App/Foundation/Exceptions/Http/Json/NotFoundException.php',
+    'depends' => 
+    array (
+    ),
+    'boot' => 
+    array (
+    ),
+    'filemtime' => 1766772590,
+  ),
+  'App\\Foundation\\Exceptions\\Http\\Json\\BadRequestException' => 
+  array (
+    'filepath' => 'App/Foundation/Exceptions/Http/Json/BadRequestException.php',
+    'depends' => 
+    array (
+    ),
+    'boot' => 
+    array (
+    ),
+    'filemtime' => 1766772594,
+  ),
+  'App\\Foundation\\Exceptions\\Http\\Json\\JsonBaseHttpException' => 
+  array (
+    'filepath' => 'App/Foundation/Exceptions/Http/Json/JsonBaseHttpException.php',
+    'depends' => 
+    array (
+    ),
+    'boot' => 
+    array (
+    ),
+    'filemtime' => 1766805353,
+  ),
+  'App\\Foundation\\Exceptions\\Framework\\HighLevelException' => 
+  array (
+    'filepath' => 'App/Foundation/Exceptions/Framework/HighLevelException.php',
+    'depends' => 
+    array (
+    ),
+    'boot' => 
+    array (
+    ),
+    'filemtime' => 1766806400,
+  ),
+  'App\\Foundation\\Exceptions\\Framework\\Primitive\\BadMethodCallException' => 
+  array (
+    'filepath' => 'App/Foundation/Exceptions/Framework/Primitive/BadMethodCallException.php',
+    'depends' => 
+    array (
+    ),
+    'boot' => 
+    array (
+    ),
+    'filemtime' => 1766806616,
+  ),
+  'App\\Foundation\\Exceptions\\Framework\\Primitive\\InvalidArgumentException' => 
+  array (
+    'filepath' => 'App/Foundation/Exceptions/Framework/Primitive/InvalidArgumentException.php',
+    'depends' => 
+    array (
+    ),
+    'boot' => 
+    array (
+    ),
+    'filemtime' => 1766806515,
+  ),
+  'App\\Foundation\\Exceptions\\Framework\\Primitive\\LogicException' => 
+  array (
+    'filepath' => 'App/Foundation/Exceptions/Framework/Primitive/LogicException.php',
+    'depends' => 
+    array (
+    ),
+    'boot' => 
+    array (
+    ),
+    'filemtime' => 1766806546,
+  ),
+  'App\\Foundation\\Exceptions\\Framework\\Primitive\\BadFunctionCallException' => 
+  array (
+    'filepath' => 'App/Foundation/Exceptions/Framework/Primitive/BadFunctionCallException.php',
+    'depends' => 
+    array (
+    ),
+    'boot' => 
+    array (
+    ),
+    'filemtime' => 1766806949,
+  ),
+  'App\\Foundation\\Exceptions\\Framework\\LowLevelException' => 
+  array (
+    'filepath' => 'App/Foundation/Exceptions/Framework/LowLevelException.php',
+    'depends' => 
+    array (
+    ),
+    'boot' => 
+    array (
+    ),
+    'filemtime' => 1766806427,
+  ),
+  'App\\Foundation\\Exceptions\\Framework\\Guard\\CSRFException' => 
+  array (
+    'filepath' => 'App/Foundation/Exceptions/Framework/Guard/CSRFException.php',
+    'depends' => 
+    array (
+    ),
+    'boot' => 
+    array (
+    ),
+    'filemtime' => 1766807308,
+  ),
+  'App\\Foundation\\Exceptions\\Framework\\Compiler\\CompilerException' => 
+  array (
+    'filepath' => 'App/Foundation/Exceptions/Framework/Compiler/CompilerException.php',
+    'depends' => 
+    array (
+    ),
+    'boot' => 
+    array (
+    ),
+    'filemtime' => 1766806796,
+  ),
+  'App\\Foundation\\Exceptions\\Framework\\Compiler\\TemplateBuilderException' => 
+  array (
+    'filepath' => 'App/Foundation/Exceptions/Framework/Compiler/TemplateBuilderException.php',
+    'depends' => 
+    array (
+    ),
+    'boot' => 
+    array (
+    ),
+    'filemtime' => 1766807011,
   ),
   'App\\Foundation\\Configuration\\Env' => 
   array (
@@ -504,7 +830,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1761777655,
+    'filemtime' => 1761991976,
   ),
   'Setup' => 
   array (
@@ -515,7 +841,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1761816654,
+    'filemtime' => 1761991890,
   ),
   'App\\Foundation\\Reactive\\ReactiveHandler' => 
   array (
@@ -539,17 +865,6 @@ return array (
     ),
     'filemtime' => 1760187478,
   ),
-  'App\\Foundation\\Generator\\TemplateBuilderException' => 
-  array (
-    'filepath' => 'App/Foundation/Generator/TemplateBuilder.php',
-    'depends' => 
-    array (
-    ),
-    'boot' => 
-    array (
-    ),
-    'filemtime' => 1760195789,
-  ),
   'App\\Foundation\\Generator\\TemplateBuilder' => 
   array (
     'filepath' => 'App/Foundation/Generator/TemplateBuilder.php',
@@ -559,7 +874,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1760195789,
+    'filemtime' => 1766807043,
   ),
   'App\\Foundation\\Authentication\\Auth' => 
   array (
@@ -572,6 +887,17 @@ return array (
     ),
     'filemtime' => 1761883261,
   ),
+  'Experimental\\App\\Foundation\\CLI\\CommandException' => 
+  array (
+    'filepath' => 'App/Foundation/CLI/Command_EXPE.php',
+    'depends' => 
+    array (
+    ),
+    'boot' => 
+    array (
+    ),
+    'filemtime' => 1762410248,
+  ),
   'Experimental\\App\\Foundation\\CLI\\Command' => 
   array (
     'filepath' => 'App/Foundation/CLI/Command_EXPE.php',
@@ -581,18 +907,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1761813665,
-  ),
-  'Experimental\\App\\Foundation\\CLI\\ParamBag' => 
-  array (
-    'filepath' => 'App/Foundation/CLI/Command_EXPE.php',
-    'depends' => 
-    array (
-    ),
-    'boot' => 
-    array (
-    ),
-    'filemtime' => 1761813665,
+    'filemtime' => 1762410248,
   ),
   'Experimental\\App\\Foundation\\CLI\\CommandBuilder' => 
   array (
@@ -603,7 +918,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1761813665,
+    'filemtime' => 1762410248,
   ),
   'App\\Foundation\\CLI\\Command' => 
   array (
@@ -614,7 +929,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1760269807,
+    'filemtime' => 1762248976,
   ),
   'App\\Foundation\\CLI\\ParamBag' => 
   array (
@@ -625,7 +940,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1760269807,
+    'filemtime' => 1762248976,
   ),
   'App\\Foundation\\CLI\\CommandBuilder' => 
   array (
@@ -636,7 +951,18 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1760269807,
+    'filemtime' => 1762248976,
+  ),
+  'App\\Foundation\\CLI\\ArgvException' => 
+  array (
+    'filepath' => 'App/Foundation/CLI/Argv.php',
+    'depends' => 
+    array (
+    ),
+    'boot' => 
+    array (
+    ),
+    'filemtime' => 1762344325,
   ),
   'App\\Foundation\\CLI\\Argv' => 
   array (
@@ -647,7 +973,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1760269250,
+    'filemtime' => 1762344325,
   ),
   'Utils' => 
   array (
@@ -658,7 +984,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1761880182,
+    'filemtime' => 1766191785,
   ),
   'Unix' => 
   array (
@@ -671,7 +997,7 @@ return array (
     ),
     'filemtime' => 1747444587,
   ),
-  'App\\Support\\Facades\\Model' => 
+  'App\\Support\\Facades\\Nop\\Model' => 
   array (
     'filepath' => 'App/Foundation/Helpers/Facade.php',
     'depends' => 
@@ -680,7 +1006,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1747444587,
+    'filemtime' => 1766203443,
   ),
   'App\\Foundation\\Support\\Str' => 
   array (
@@ -691,7 +1017,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1760400950,
+    'filemtime' => 1766311306,
   ),
   'App\\Foundation\\Support\\Type' => 
   array (
@@ -702,7 +1028,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1761705405,
+    'filemtime' => 1766203700,
   ),
   'App\\Foundation\\Support\\TypeChecker' => 
   array (
@@ -713,7 +1039,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1761705405,
+    'filemtime' => 1766203700,
   ),
   'App\\Foundation\\Support\\Collection' => 
   array (
@@ -724,7 +1050,18 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1760058865,
+    'filemtime' => 1766642821,
+  ),
+  'App\\Foundation\\Support\\Time\\Time' => 
+  array (
+    'filepath' => 'App/Foundation/Support/Time/Time.php',
+    'depends' => 
+    array (
+    ),
+    'boot' => 
+    array (
+    ),
+    'filemtime' => 1766547063,
   ),
   'App\\Foundation\\Manager\\Container' => 
   array (
@@ -735,7 +1072,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1761773303,
+    'filemtime' => 1766673028,
   ),
   'App\\Foundation\\Manager\\ContainerException' => 
   array (
@@ -746,7 +1083,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1761773303,
+    'filemtime' => 1766673028,
   ),
   'Experimental\\App\\Foundation\\Manager\\ClassManager' => 
   array (
@@ -775,11 +1112,13 @@ return array (
     'filepath' => 'App/Foundation/Manager/Resolver.php',
     'depends' => 
     array (
+      0 => './../Attributes/Setup.php',
+      1 => './../Attributes/Inject.php',
     ),
     'boot' => 
     array (
     ),
-    'filemtime' => 1761884226,
+    'filemtime' => 1762166322,
   ),
   'App\\Foundation\\Manager\\SessionManager' => 
   array (
@@ -801,7 +1140,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1761797507,
+    'filemtime' => 1762166599,
   ),
   'App\\Foundation\\Manager\\AutoloaderRuntimeException' => 
   array (
@@ -812,7 +1151,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1761797507,
+    'filemtime' => 1762166599,
   ),
   'App\\Foundation\\Manager\\Autoloader' => 
   array (
@@ -823,7 +1162,62 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1761797507,
+    'filemtime' => 1762166599,
+  ),
+  'App\\Foundation\\Manager\\ClassContainer' => 
+  array (
+    'filepath' => 'App/Foundation/Manager/ClassContainer.php',
+    'depends' => 
+    array (
+    ),
+    'boot' => 
+    array (
+    ),
+    'filemtime' => 1766766299,
+  ),
+  'App\\Foundation\\Manager\\ClassContainerException' => 
+  array (
+    'filepath' => 'App/Foundation/Manager/ClassContainer.php',
+    'depends' => 
+    array (
+    ),
+    'boot' => 
+    array (
+    ),
+    'filemtime' => 1766766299,
+  ),
+  'App\\Foundation\\Manager\\NotFoundException' => 
+  array (
+    'filepath' => 'App/Foundation/Manager/ClassContainer.php',
+    'depends' => 
+    array (
+    ),
+    'boot' => 
+    array (
+    ),
+    'filemtime' => 1766766299,
+  ),
+  'App\\Foundation\\Manager\\CircularDependencyException' => 
+  array (
+    'filepath' => 'App/Foundation/Manager/ClassContainer.php',
+    'depends' => 
+    array (
+    ),
+    'boot' => 
+    array (
+    ),
+    'filemtime' => 1766766299,
+  ),
+  'App\\Foundation\\Manager\\UnresolvedParameter' => 
+  array (
+    'filepath' => 'App/Foundation/Manager/ClassContainer.php',
+    'depends' => 
+    array (
+    ),
+    'boot' => 
+    array (
+    ),
+    'filemtime' => 1766766299,
   ),
   'App\\Foundation\\Manager\\ClassManager' => 
   array (
@@ -878,7 +1272,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1750246355,
+    'filemtime' => 1766807365,
   ),
   'App\\Foundation\\Http\\MiddlewareException' => 
   array (
@@ -889,7 +1283,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1761563697,
+    'filemtime' => 1766657510,
   ),
   'App\\Foundation\\Http\\Middleware' => 
   array (
@@ -900,7 +1294,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1761563697,
+    'filemtime' => 1766657510,
   ),
   'App\\Foundation\\System\\File' => 
   array (
@@ -944,7 +1338,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1757494288,
+    'filemtime' => 1762344132,
   ),
   'App\\Foundation\\Event\\EmitterInterface' => 
   array (
@@ -1023,17 +1417,6 @@ return array (
     ),
     'filemtime' => 1749873294,
   ),
-  'App\\Foundation\\Compiler\\CompilerException' => 
-  array (
-    'filepath' => 'App/Foundation/Compiler/Compile.php',
-    'depends' => 
-    array (
-    ),
-    'boot' => 
-    array (
-    ),
-    'filemtime' => 1760320165,
-  ),
   'App\\Foundation\\Compiler\\Compile' => 
   array (
     'filepath' => 'App/Foundation/Compiler/Compile.php',
@@ -1043,7 +1426,29 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1760320165,
+    'filemtime' => 1766806841,
+  ),
+  'App\\Contracts\\Interfaces\\TestInterface' => 
+  array (
+    'filepath' => 'App/Contracts/Interfaces/TestInterface.php',
+    'depends' => 
+    array (
+    ),
+    'boot' => 
+    array (
+    ),
+    'filemtime' => 1766673371,
+  ),
+  'App\\Contracts\\Implementation\\TestImplementation' => 
+  array (
+    'filepath' => 'App/Contracts/Implementation/TestImplementation.php',
+    'depends' => 
+    array (
+    ),
+    'boot' => 
+    array (
+    ),
+    'filemtime' => 1766673438,
   ),
   'App\\Foundation\\Providers\\AppServiceProvider' => 
   array (
@@ -1054,7 +1459,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1761880684,
+    'filemtime' => 1766772059,
   ),
   'Test\\Database' => 
   array (
@@ -1072,11 +1477,13 @@ return array (
     'filepath' => 'test/Injection/callerClass.php',
     'depends' => 
     array (
+      0 => './TestClassDatabase.php',
+      1 => './TestClassLoger.php',
     ),
     'boot' => 
     array (
     ),
-    'filemtime' => 1761841867,
+    'filemtime' => 1762166350,
   ),
   'Test\\Logger' => 
   array (
@@ -1096,6 +1503,7 @@ return array (
     array (
       0 => 'App\\Foundation\\Support\\Str',
       1 => 'App\\Foundation\\Support\\Collection',
+      2 => 'App\\Foundation\\Traits\\Macroable',
     ),
     'boot' => 
     array (
@@ -1106,7 +1514,7 @@ return array (
       ),
       1 => 'App\\Test\\say',
     ),
-    'filemtime' => 1761889677,
+    'filemtime' => 1761910393,
   ),
   'TestErrHandler' => 
   array (

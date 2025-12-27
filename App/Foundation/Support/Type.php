@@ -100,9 +100,6 @@ class Type
 
         // Special string cases
         if ($type === 'string') {
-            if (class_exists('Normalizer') && Normalizer::isNormalized($var)) {
-                return 'normalized_string';
-            }
             if (preg_match('//u', $var) === 1) {
                 return 'unicode_string';
             }

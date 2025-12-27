@@ -137,6 +137,9 @@ class Container
                 if ($this->has($typeName)) {
                     $dependencies[] = $this->get($typeName);
                     continue;
+                } else {
+                    $dependencies[] = $this->make($typeName);
+                    continue;
                 }
             }
 

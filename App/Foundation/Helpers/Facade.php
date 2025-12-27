@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Support\Facades;
+namespace App\Support\Facades\Nop;
 
 use App\Foundation\Model as BaseModel;
 use App\Foundation\Manager\InstanceManager;

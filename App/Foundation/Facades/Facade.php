@@ -29,9 +29,11 @@ abstract class Facade
     protected static function resolveFacadeInstance()
     {
         $accessor = static::getFacadeAccessor();
-        return is_object($accessor)
+        $instance = is_object($accessor)
             ? $accessor
             : InstanceManager::getInstance($accessor);
+        static::afterCreate($instance);
+        return $instance;
     }
 
     /**
@@ -48,7 +50,36 @@ abstract class Facade
      */
     public function __call(string $method, array $args)
     {
-        $instance = static::resolveFacadeInstance();
+        $instance = static::resolveFacadeInstance(); 
         return $instance->$method(...$args);
     }
+
+    /**
+     * Undocumented function
+     *
+     * @param string[] $methods
+     * @param array[] $args
+     * @return void
+     */
+    public static function callMethods(array $methods, array $args): void
+    {
+        $instance = static::resolveFacadeInstance();
+
+        foreach ($methods as $i => $method) {
+            if (!method_exists($instance, $method)) {
+                throw new \BadMethodCallException("Method {$method} does not exist.");
+            }
+
+            $instance->{$method}(...($args[$i] ?? []));
+        }
+    }
+
+    /**
+     * Runs after instantiation
+     *
+     * @param T $instance
+     * @return void|mixed
+     */
+    public static function afterCreate($instance)
+    {}
 }

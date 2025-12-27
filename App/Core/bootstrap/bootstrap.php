@@ -4,6 +4,7 @@ use App\Debug\Debugger;
 use App\Foundation\Compiler\Compile;
 use App\Foundation\Database\Connection;
 use App\Foundation\Configuration\Env;
+use App\Foundation\Manager\Container;
 use App\Foundation\Manager\InstanceManager;
 use App\Foundation\Providers\AppServiceProvider;
 use App\Foundation\System\Disk;
@@ -34,7 +35,7 @@ return (static function () {
     Debugger::init(
         isWeb: $isWeb,
         errorLevel: E_ALL & ~E_WARNING,
-        error_page: "{$__root}App/Core/error copy.php",
+        error_page: "{$__root}App/Core/error/error.php",
         store_at_log: false,
         log_file: "{$__root}storage/logs/debug.log"
     );
@@ -57,10 +58,7 @@ return (static function () {
 
     // Boot and register service providers
     createInstance(Disk::class, null, 'appDisk', "{$__root}public");
-    createInstance(AppServiceProvider::class, function (AppServiceProvider $provider) {
-        $provider->register();
-        $provider->boot();
-    });
+    $app->setupProviders();
 
     // Return fully booted App instance
     return $app;

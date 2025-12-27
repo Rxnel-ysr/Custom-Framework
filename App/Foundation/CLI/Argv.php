@@ -7,13 +7,16 @@ namespace App\Foundation\CLI;
 use App\Foundation\Traits\Macroable;
 use ArrayIterator;
 use Closure;
+use Exception;
 use IteratorAggregate;
 use Traversable;
+
+class ArgvException extends Exception {}
 
 class Argv implements IteratorAggregate
 {
     use Macroable;
-    
+
     private array $raw = [];
     private array $positionals = [];
     private array $options = [];
@@ -26,18 +29,20 @@ class Argv implements IteratorAggregate
     private ?array $allowedFlags;
     private ?Closure $onUnknown;
     private ?Closure $condition;
+    private bool $strict = false;
 
     /**
      * @param array|null   $args         argv input
      * @param array<string> $allowedOptions list of allowed long options (--foo)
      * @param array<string> $allowedFlags list of allowed flags (-f)
      * @param Closure|null $onUnknown Closure to be executed when there is unknown parameter, closure: function(string $param, string $type): void
-     * @param Closure|null $condition Closure to be executed to check params based on criteria defined in closure, closure: function(self $argv): mixed
+     * @param (Closure():bool)|null $condition Closure to be executed to check params based on criteria defined in closure, closure: function(self $argv): mixed
      */
     public function __construct(
         ?array $args = null,
         ?array $allowedOptions = null,
         ?array $allowedFlags = null,
+        bool $strict = false,
         ?Closure $onUnknown = null,
         ?Closure $condition = null
     ) {
@@ -48,6 +53,7 @@ class Argv implements IteratorAggregate
         $this->allowedOptionsShortHand = [];
         $this->allowedFlags = [];
         $this->allowedFlagsShortHand = [];
+        $this->strict = $strict;
 
         // Build whitelist maps for options
         if ($allowedOptions) {
@@ -88,7 +94,7 @@ class Argv implements IteratorAggregate
             $arg = $args[$i];
 
             if (str_starts_with($arg, '--')) {
-                // Handle long options (--option)
+                // Handle long options (--option or --option=value)
                 $key = null;
                 $val = true;
 
@@ -101,12 +107,21 @@ class Argv implements IteratorAggregate
                     $key = substr($arg, 2);
                 }
 
-                // Check if option is allowed
-                if (!empty($this->allowedOptions) && !isset($this->allowedOptions[$key])) {
+                // Strict: must exist in allowedOptions
+                if ($this->strict && !isset($this->allowedOptions[$key])) {
+                    // echo 'Should be';
                     $this->triggerUnknown($key, 'option');
-                } else {
-                    $this->options[$key] = $val;
+                    continue;
                 }
+
+                // Non-strict but has a whitelist
+                if (!$this->strict && !empty($this->allowedOptions) && !isset($this->allowedOptions[$key])) {
+                    // echo 'Should be';
+                    $this->triggerUnknown($key, 'option');
+                    continue;
+                }
+
+                $this->options[$key] = $val;
                 continue;
             }
 
@@ -114,33 +129,30 @@ class Argv implements IteratorAggregate
                 // Handle short options/flags (-f, -abc, -o value)
                 $key = substr($arg, 1);
 
-                // Check if it's a shorthand option with value (-o=value or -o value)
+                // Check for -o=value shorthand
                 if (str_contains($key, '=')) {
                     [$key, $val] = explode('=', $key, 2);
 
-                    // Check if it's a shorthand for an option
                     if (isset($this->allowedOptionsShortHand[$key])) {
                         $long = $this->allowedOptionsShortHand[$key];
                         $this->options[$long] = $val;
-                    }
-                    // Check if it's a shorthand for a flag
-                    elseif (isset($this->allowedFlagsShortHand[$key])) {
+                    } elseif (isset($this->allowedFlagsShortHand[$key])) {
                         $long = $this->allowedFlagsShortHand[$key];
                         $this->flags[$long] = true;
-                    }
-                    // Otherwise, treat as unknown
-                    elseif (!empty($this->allowedFlags) && !isset($this->allowedFlags[$key])) {
-                        $this->triggerUnknown($key, 'flag');
                     } else {
-                        $this->flags[$key] = true;
+                        if ($this->strict) {
+                            // echo 'Should be';
+                            $this->triggerUnknown($key, 'flag');
+                        } else {
+                            $this->flags[$key] = true;
+                        }
                     }
                     continue;
                 }
 
-                // Check if it's a single character that matches a shorthand option
+                // Short option shorthand (-o value)
                 if (isset($this->allowedOptionsShortHand[$key])) {
                     $long = $this->allowedOptionsShortHand[$key];
-                    // Check if next argument is a value (not another option)
                     if (isset($args[$i + 1]) && !str_starts_with($args[$i + 1], '-')) {
                         $this->options[$long] = $args[++$i];
                     } else {
@@ -149,19 +161,22 @@ class Argv implements IteratorAggregate
                     continue;
                 }
 
-                // Check if it's a single character that matches a shorthand flag
+                // Short flag shorthand (-f)
                 if (isset($this->allowedFlagsShortHand[$key])) {
                     $long = $this->allowedFlagsShortHand[$key];
                     $this->flags[$long] = true;
                     continue;
                 }
+                // echo "\n\nHERE\n\n";
 
-                // Handle combined flags (-abc)
+                // Combined flags (-abc)
                 if (strlen($key) > 1) {
-                    // Check if this is actually a combined flag or a single flag with value
                     $isCombinedFlag = true;
+                    // echo "\n\nHERE\n\n";
+                    // var_dump($this->strict);
+                    // exit;
                     foreach (str_split($key) as $ch) {
-                        if (!empty($this->allowedFlags) && !isset($this->allowedFlags[$ch])) {
+                        if ($this->strict && !isset($this->allowedFlags[$ch])) {
                             $isCombinedFlag = false;
                             break;
                         }
@@ -169,25 +184,38 @@ class Argv implements IteratorAggregate
 
                     if ($isCombinedFlag) {
                         foreach (str_split($key) as $ch) {
-                            $this->flags[$ch] = true;
+                            if ($this->strict && !isset($this->allowedFlags[$ch])) {
+                                // echo 'Should be';
+                                $this->triggerUnknown($ch, 'flag');
+                            } else {
+                                $this->flags[$ch] = true;
+                            }
                         }
                     } else {
-                        // Treat as single flag, might have value in next arg
-                        if (!empty($this->allowedFlags) && isset($this->allowedFlags[$key])) {
-                            $this->flags[$key] = true;
-                        } else {
+                        if ($this->strict && !isset($this->allowedFlags[$key])) {
+                            // echo 'Should be';
                             $this->triggerUnknown($key, 'flag');
+                        } else {
+                            $this->flags[$key] = true;
                         }
                     }
                     continue;
                 }
 
-                // Single character flag
-                if (empty($this->allowedFlags) || isset($this->allowedFlags[$key])) {
-                    $this->flags[$key] = true;
-                } else {
+                // Single flag (-f)
+                if ($this->strict) {
+                    if (!isset($this->allowedFlags[$key])) {
+                        // echo 'Should be';
+                        $this->triggerUnknown($key, 'flag');
+                        continue;
+                    }
+                } elseif (!empty($this->allowedFlags) && !isset($this->allowedFlags[$key])) {
+                    // echo 'Should be';
                     $this->triggerUnknown($key, 'flag');
+                    continue;
                 }
+
+                $this->flags[$key] = true;
                 continue;
             }
 
@@ -195,10 +223,12 @@ class Argv implements IteratorAggregate
             $this->positionals[] = str_starts_with($arg, '\\') ? substr($arg, 1) : $arg;
         }
 
-        $this->executeConditionIfExists();
+        if (!$this->executeConditionIfExists()) {
+            throw new ArgvException("Condition fail to meet requirement");
+        }
     }
 
-    private function executeConditionIfExists(): mixed
+    private function executeConditionIfExists(): bool
     {
         return isset($this->condition) ? ($this->condition)($this) : true;
     }
@@ -207,6 +237,8 @@ class Argv implements IteratorAggregate
     {
         if ($this->onUnknown) {
             ($this->onUnknown)($param, $type);
+        } elseif ($this->strict) {
+            throw new ArgvException("Unknown param '{$param}' with type of '{$type}'");
         }
     }
 
@@ -263,7 +295,7 @@ class Argv implements IteratorAggregate
         return $this->positionals[$i] ?? $default;
     }
 
-    public function option(string $name, mixed $default = null, ): mixed
+    public function option(string $name, mixed $default = null,): mixed
     {
         return $this->options[$name] ?? $default;
     }

@@ -5,199 +5,6 @@ namespace App\Foundation\Http;
 use DateTime;
 use DateTimeZone;
 
-// class Request_
-// {
-//     /**
-//      * Retrieve an input value from $_REQUEST.
-//      *
-//      * @param string $key The key to retrieve.
-//      * @param mixed $default The default value if key is not found.
-//      * @return mixed The request input value or default.
-//      */
-//     public static function input($key, $default = null)
-//     {
-//         return $_REQUEST[$key] ?? $default;
-//     }
-
-//     /**
-//      * Retrieve all request inputs except the CSRF key.
-//      *
-//      * @return array The filtered request array.
-//      */
-//     public static function all()
-//     {
-//         return array_filter($_REQUEST, fn($key) => $key !== 'csrf_key', ARRAY_FILTER_USE_KEY);
-//     }
-
-//     public function except(array $keys)
-//     {
-//         return array_filter($this->all(), fn($key) => in_array($key, $keys), ARRAY_FILTER_USE_KEY);
-//     }
-
-//     /**
-//      * Extracts the Bearer token from the Authorization header.
-//      *
-//      * @return string|null The Bearer token if found, otherwise null.
-//      */
-//     public static function getBearerToken(): ?string
-//     {
-//         $headers = getallheaders();
-
-//         if (isset($headers['Authorization']) && str_starts_with($headers['Authorization'], 'Bearer ')) {
-//             return substr($headers['Authorization'], 7);
-//         }
-
-//         return null;
-//     }
-
-//     /**
-//      * Check if a request key exists.
-//      *
-//      * @param string $key The key to check.
-//      * @return bool True if the key exists, false otherwise.
-//      */
-//     public static function has($key)
-//     {
-//         return isset($_REQUEST[$key]);
-//     }
-
-//     /**
-//      * Retrieve a query string parameter from $_GET.
-//      *
-//      * @param string $key The key to retrieve.
-//      * @param mixed $default The default value if key is not found.
-//      * @return mixed The query parameter value or default.
-//      */
-//     public static function query($key, $default = null)
-//     {
-//         return $_GET[$key] ?? $default;
-//     }
-
-//     /**
-//      * Retrieve a value from $_POST.
-//      *
-//      * @param string $key The key to retrieve.
-//      * @param mixed $default The default value if key is not found.
-//      * @return mixed The post parameter value or default.
-//      */
-//     public static function post($key, $default = null)
-//     {
-//         return $_POST[$key] ?? $default;
-//     }
-
-//     /**
-//      * Get the request method (GET, POST, etc.).
-//      *
-//      * @return string The HTTP request method.
-//      */
-//     public static function method()
-//     {
-//         return $_SERVER['REQUEST_METHOD'];
-//     }
-
-//     public static function capture(): self
-//     {
-//         return new self;
-//     }
-
-//     public static function url()
-//     {
-//         return strtok($_SERVER['REQUEST_URI'], '?');
-//     }
-
-//     public static function urlQuery()
-//     {
-//         return $_SERVER['QUERY_STRING'];
-//     }
-
-//     /**
-//      * Check if the request method matches a given method.
-//      *
-//      * @param string $method The method to check (e.g., GET, POST).
-//      * @return bool True if it matches, false otherwise.
-//      */
-//     public static function isMethod($method)
-//     {
-//         return strtoupper($method) === $_SERVER['REQUEST_METHOD'];
-//     }
-
-//     /**
-//      * Retrieve an uploaded file from $_FILES.
-//      *
-//      * @param string $key The file input name
-//      * @param string|null $option Consist of tmp, name, size, type, error
-//      * @return ($option is null ? array{tmp_name: string, name: string, size: int, type: string, error: int} : string|int|null) The uploaded file data or null if not found
-//      * @phpstan-return ($option is null ? array : string|int|null)
-//      * @psalm-return ($option is null ? array : string|int|null)
-//      */
-//     public static function file(string $key, ?string $option = null): mixed
-//     {
-//         $options = [
-//             'tmp' => 'tmp_name',
-//             'name' => 'name',
-//             'size' => 'size',
-//             'type' => 'type',
-//             'error' => 'error'
-//         ];
-//         return (!$option ? $_FILES[$key] : $_FILES[$key][$options[$option]]) ?? null;
-//     }
-
-//     /**
-//      * Retrieve a specific header value.
-//      *
-//      * @param string $key The header key to retrieve.
-//      * @return ($key is null ? array : string|null) The header value, return all header if key not specified, or the header value if exist.
-//      */
-//     public static function header(?string $key = null)
-//     {
-//         $headers = getallheaders();
-//         return is_null($key) ? $headers : ($headers[$key] ?? null);
-//     }
-
-//     /**
-//      * Validate request data against a set of rules.
-//      *
-//      * @param array $rules The validation rules (e.g., ['email' => 'required|email|max:255']).
-//      * @return bool|void Returns true if validation passes, otherwise halts execution with JSON errors.
-//      */
-//     public static function validate(array $rules)
-//     {
-//         $errors = [];
-
-//         foreach ($rules as $key => $rule) {
-//             $value = self::input($key);
-//             foreach (explode('|', $rule) as $r) {
-//                 if ($r === 'required' && empty($value)) {
-//                     $errors[$key][] = "The $key field is required.";
-//                 }
-//                 if ($r === 'email' && !filter_var($value, FILTER_VALIDATE_EMAIL)) {
-//                     $errors[$key][] = "The $key must be a valid email.";
-//                 }
-//                 if (str_starts_with($r, 'max:') && strlen($value) > explode(':', $r)[1]) {
-//                     $errors[$key][] = "The $key may not be greater than " . explode(':', $r)[1] . " characters.";
-//                 }
-//             }
-//         }
-
-//         if (!empty($errors)) {
-//             die(json_encode(['errors' => $errors], JSON_PRETTY_PRINT));
-//         }
-//         return true;
-//     }
-
-//     /**
-//      * Retrieve JSON request body as an array.
-//      *
-//      * @return array The parsed JSON body or an empty array if invalid.
-//      */
-//     public static function json(): array
-//     {
-//         $rawInput = file_get_contents("php://input");
-//         $decoded = json_decode($rawInput, true);
-//         return is_array($decoded) ? $decoded : [];
-//     }
-// }
-
 class Request
 {
     /**
@@ -264,7 +71,7 @@ class Request
         $this->headers = getallheaders();
         $this->method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
         $this->fullUri = $_SERVER['REQUEST_URI'] ?? '';
-        $this->uri = strtok($this->fullUri, '?');
+        $this->uri = strstr($this->fullUri, '?', true);
         $this->queryString = $_SERVER['QUERY_STRING'] ?? '';
     }
 
@@ -408,6 +215,16 @@ class Request
     }
 
     /**
+     * Get the request URI with query string.
+     *
+     * @return string
+     */
+    public function fullUri(): string
+    {
+        return $this->fullUri;
+    }
+
+    /**
      * Get the request URI without query string.
      *
      * @return string
@@ -418,11 +235,11 @@ class Request
     }
 
     /**
-     * Get the full request URL 
+     * Get the server base 
      *
      * @return string
      */
-    public function url(): string
+    public function domain(): string
     {
         $protocol =
             !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'
@@ -431,7 +248,17 @@ class Request
 
         $host = $_SERVER['HTTP_HOST'];
 
-        return $protocol . '://' . $host . $this->fullUri;
+        return $protocol . '://' . $host;
+    }
+
+    /**
+     * Get the full request URL 
+     *
+     * @return string
+     */
+    public function url(): string
+    {
+        return $this->domain() . $this->fullUri;
     }
 
     /**

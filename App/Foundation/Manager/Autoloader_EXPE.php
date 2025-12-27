@@ -7,6 +7,7 @@ namespace App\Foundation\Manager;
 use Attribute;
 use Exception;
 use FilesystemIterator;
+use Generator;
 use RecursiveCallbackFilterIterator;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
@@ -39,20 +40,34 @@ class Autoloader
     private static int $flags;
 
     /**
-     * @var array<string, array{filepath: string, depends: array<int, string>, boot: array<int, string>}> $classes Autoloader main classmap
+     * @var array<string, array{filepath: string, depends: string[], boot: string[]}> $classes Autoloader main classmap
      */
     private static array $classes;
 
     /**
-     * @var array<string, array{filepath: string, depends: array<int, string>, boot: array<int, string>}> $classes Autoloader cache classmap
+     * @var array<string, array{filepath: string, depends: string[], boot: string[]}> $classes Autoloader cache classmap
      */
     private static array $cache_classes;
 
     /**
-     * @var array{classmap: string, cache_classmap: string, where_to_look_class: string, psr-4: array<string, string>} $setting Autoloader settings
+     * @var array{
+     *  classmap: string,
+     *  cache_classmap: string,
+     *  where_to_look_class: string,
+     *  system_scan:array{
+     *      root-scan: bool,
+     *      prioritize: string[]
+     *  },
+     *  psr-4: array<string, string>
+     * } $setting Autoloader settings
      */
     private static array $setting;
 
+    /**
+     * Attribute classes aliases
+     *
+     * @var array<string, string>
+     */
     private static array $depAliases = [];
 
     /**
@@ -69,6 +84,13 @@ class Autoloader
      * @var bool $cold Autoloader state, true when autoloader has not yet build deps graph
      */
     private static bool $cold = false;
+
+    /**
+     * On off switch to deps and boot resolution
+     *
+     * @var boolean $resolution
+     */
+    private static bool $resolution = true;
 
     /**
      *  Enable debug mode and print autolaoder actions
@@ -95,6 +117,16 @@ class Autoloader
      */
     public const READ_ONLY = 16;
 
+    /**
+     * Enable Depedency resolution
+     */
+    public const DEP_RESOLUTION = 32;
+
+    /**
+     * Enable Boot resolution
+     */
+    public const BOOT_RESOLUTION = 64;
+
     private const EMPTY_CLASSMAP_TEMPLATE = "<?php\nreturn [];\n";
 
     /**
@@ -102,7 +134,18 @@ class Autoloader
      * 
      * @param string $root
      * @param int $flags
-     * @param array{classmap: string, cache_classmap: string, where_to_look_class: string} $setting
+     * @param array{
+     *     classmap: string,
+     *     cache_classmap: string,
+     *     where_to_look_class: string,
+     *     except: string[],
+     *     psr-4: string[],
+     *     system-scan: array{
+     *         ignore: string[],
+     *         prioritize: string[],
+     *         root-scan: bool
+     *     }
+     * } $setting
      * @param string[] $files
      */
     public static function setup(
@@ -112,7 +155,12 @@ class Autoloader
             'cache_classmap' => 'path/to/cache/class/map.php',
             'where_to_look_class' => 'path/to/dir/containing/class.php',
             'except' => [],
-            'psr-4' => []
+            'psr-4' => [],
+            'system_scan' => [
+                'prioritize' => [],
+                'ignore' => [],
+                'root-scan' => false
+            ],
         ],
         array $files = [],
         int $flags = 0,
@@ -122,7 +170,8 @@ class Autoloader
             'cache_classmap' => 'path/to/cache/class/map.php',
             'where_to_look_class' => 'path/to/dir/containing/class.php',
             'except' => [],
-            'psr-4' => []
+            'psr-4' => [],
+            'system_scan' => [],
         ];
 
 
@@ -150,14 +199,20 @@ class Autoloader
 
             if ((self::AUTO_INIT & $flags) && empty(self::$classes)) {
                 self::$cold = true;
-                $classes = [];
-                foreach (self::scanForClasses(self::$root, true, true) as $class => $spec) {
+                $res = [];
+
+                foreach (self::systemScan(true, true) as $class => $spec) {
                     $spec['filepath'] = self::normalizePathToRelative($spec['filepath']);
-                    $classes[$class] = $spec;
+                    $res[$class] = $spec;
                 }
 
-                self::updateClassesMapping($classes);
-                self::updateCacheClassesMapping($classes);
+                // var_dump($res);
+
+                // var_dump($res);
+                // die;
+
+                self::updateClassesMapping($res);
+                self::updateCacheClassesMapping($res);
             }
 
             self::$setting['where_to_look_class'] = rtrim(self::$setting['where_to_look_class'], '/\\') . DIRECTORY_SEPARATOR;
@@ -169,7 +224,44 @@ class Autoloader
         }
     }
 
-    public static function registerDepAlises(array $aliases)
+    private static function systemScan(
+        bool $check_filemtime = true,
+        bool $skip_dep_check = false
+    ): Generator {
+        $ignoredDirs = array_map(fn($d) => rtrim($d, '/') . '/', self::$setting['system_scan']['ignore'] ?? []);
+        $prioritized = self::$setting['system_scan']['prioritize'] ?? [];
+        $rootScan    = self::$setting['system_scan']['root-scan'] ?? false;
+        $ignoredDirsRoot = $ignoredDirs;
+
+        foreach ($prioritized as $dir) {
+            $dir = trim($dir, '/');
+
+            $tobeIgnored = [];
+            foreach ($ignoredDirs as $key => $ignore) {
+                if (strncmp($ignore, $dir, strlen($dir)) === 0) {
+                    $tobeIgnored[] = substr($ignore, strlen($dir) + 1);
+                    unset($ignoredDirs[$key]);
+                }
+            }
+            // var_dump($tobeIgnored);
+
+            yield from self::scanForClasses(
+                self::$root . "/{$dir}",
+                $check_filemtime,
+                $skip_dep_check,
+                $tobeIgnored
+            );
+
+            $ignoredDirsRoot[] = "{$dir}/";
+        }
+
+        if ($rootScan) {
+            // var_dump($ignoredDirsRoot);
+            yield from self::scanForClasses(self::$root, $check_filemtime, $skip_dep_check, $ignoredDirsRoot);
+        }
+    }
+
+    public static function registerAttributeAlises(array $aliases)
     {
         self::$depAliases = $aliases;
         foreach (self::$depAliases as $alias => $designated) {
@@ -185,7 +277,7 @@ class Autoloader
         }
     }
 
-    private static function resolveDepAlias(string $original)
+    public static function resolveAlias(string $original)
     {
         if (isset(self::$depAliases[$original])) {
             return self::$depAliases[$original];
@@ -265,17 +357,20 @@ class Autoloader
         array $ignore_files = [],
         array $except_files = []
     ): array {
-        $directory = rtrim($directory, DIRECTORY_SEPARATOR);
+        $directory = rtrim(realpath($directory), DIRECTORY_SEPARATOR);
         $classes = [];
         $visited = [];
 
-        // Preprocess ignore dirs once
+        // Normalize ignore dirs (absolute + trailing slash)
         $ignoreDirsNormalized = [];
         foreach ($ignore_dirs as $dir) {
-            $ignoreDirsNormalized[] = trim($dir, '/\\') . DIRECTORY_SEPARATOR;
+            $fullPath = realpath($directory . DIRECTORY_SEPARATOR . trim($dir, '/\\'));
+            if ($fullPath !== false) {
+                $ignoreDirsNormalized[] = str_replace('\\', '/', $fullPath) . '/';
+            }
         }
 
-        // Flip arrays to hash maps (O(1) lookups)
+        // Fast lookup maps
         $ignoreFilesSet = $ignore_files ? array_flip($ignore_files) : [];
         $exceptFilesSet = $except_files ? array_flip($except_files) : [];
 
@@ -288,30 +383,22 @@ class Autoloader
                 static function ($file, $key, $iterator) use (
                     $directory,
                     $ignoreDirsNormalized,
-                    $exceptFilesSet,
                     &$visited
                 ): bool {
-                    if (!$file->isDir()) {
-                        return true; // keep file
-                    }
+                    $realPath = str_replace('\\', '/', $file->getRealPath());
 
-                    $realPath = $file->getRealPath();
+                    // Prevent recursion loops
                     if (isset($visited[$realPath])) {
                         return false;
                     }
                     $visited[$realPath] = true;
 
-                    $relativePath = substr($realPath, strlen($directory) + 1);
-
-                    // Explicit exceptions win
-                    if (isset($exceptFilesSet[$relativePath])) {
-                        return true;
-                    }
-
-                    // Fast prefix check
-                    foreach ($ignoreDirsNormalized as $ignoreDirPath) {
-                        if (strncmp($relativePath, $ignoreDirPath, strlen($ignoreDirPath)) === 0) {
-                            return false;
+                    // Ignore matching directories
+                    if ($file->isDir()) {
+                        foreach ($ignoreDirsNormalized as $ignorePath) {
+                            if (str_starts_with($realPath . '/', $ignorePath)) {
+                                return false;
+                            }
                         }
                     }
 
@@ -321,12 +408,12 @@ class Autoloader
             RecursiveIteratorIterator::LEAVES_ONLY
         );
 
-        $classes = [];
         foreach ($iterator as $file) {
             if ($file->isFile() && $file->getExtension() === 'php') {
-                $relativePath = substr($file->getPathname(), strlen($directory) + 1);
+                $relativePath = substr(str_replace('\\', '/', $file->getPathname()), strlen($directory) + 1);
 
-                if (isset($ignoreFilesSet[$relativePath])) {
+                // Skip ignored files unless excepted
+                if (isset($ignoreFilesSet[$relativePath]) && !isset($exceptFilesSet[$relativePath])) {
                     continue;
                 }
 
@@ -338,6 +425,7 @@ class Autoloader
 
         return $classes;
     }
+
 
     /**
      *  Get a class's @depends and @boot
@@ -354,12 +442,12 @@ class Autoloader
 
         $reflectClass = new ReflectionClass($classname);
 
-        foreach ($reflectClass->getAttributes(self::resolveDepAlias(Dep::class)) as $dep) {
+        foreach ($reflectClass->getAttributes(self::resolveAlias(Dep::class)) as $dep) {
             $dep = $dep->newInstance();
             $result['depends'][] = $dep->name;
         }
 
-        foreach ($reflectClass->getAttributes(self::resolveDepAlias(Boot::class)) as $boot) {
+        foreach ($reflectClass->getAttributes(self::resolveAlias(Boot::class)) as $boot) {
             $boot = $boot->newInstance();
             $result['boot'][] = $boot->name;
         }
@@ -372,7 +460,7 @@ class Autoloader
      * Extract classes from a file with their @depends and @boot
      *
      * @param string $filePath
-     * @return array<string, array{filepath: string, depends: array<int, string>, boot: array<int, string>}>
+     * @return array<string, array{filepath: string, depends: string[], boot: string[]}>
      */
     private static function extractClassesFromFile(string $filePath, bool $check_filemtime = false, bool $skipDepCheck = false): array
     {
@@ -440,26 +528,31 @@ class Autoloader
     }
 
 
-    public static function log($msg)
+    private static function log($msg)
     {
         if (self::DEBUG & self::$flags) error_log($msg);
     }
 
-    public static function loadAll(): void
+    private static function loadAll(): void
     {
         foreach (self::$classes as $class => $spec) {
             self::loadClass($class, false, $spec);
         }
     }
 
+    public static function enableResolution(bool $toggle = true)
+    {
+        self::$resolution = $toggle;
+    }
+
     /**
      * Load class and resolve init methods and dependencies
      *
-     * @param array{filepath: string, depends: array<int, string>, boot: array<int, string>, filemtime: int} $class
+     * @param array{filepath: string, depends: string[], boot: string[], filemtime: int} $class
      * @param string $classname The fully qualified class name being loaded
      * @return bool
      */
-    public static function loadClass(string $classname, bool $check_filemtime, array $spec)
+    private static function loadClass(string $classname, bool $check_filemtime, array $spec)
     {
         $classPath = self::$root . $spec['filepath'];
         if ($check_filemtime) {
@@ -468,60 +561,63 @@ class Autoloader
             }
         }
 
-
         $classDir = dirname($classPath) . DIRECTORY_SEPARATOR;
 
-        foreach ($spec['depends'] ?? [] as $dependency) {
-            self::log("Auto-loader: Begin attempt to resolve dependency [{$dependency}] from class [{$classname}]");
-            if (strpos($dependency, '.php') !== false) {
-                $depPath = realpath($classDir . $dependency);
-                if ($depPath && strpos($depPath, self::$root) === 0) {
-                    self::log("Auto-loader: Resolved file dependency [{$dependency}] from class [{$classname}]");
-                    require_once $depPath;
-                } else {
-                    throw new AutoloaderRuntimeException("Invalid dependency path: [{$dependency}]");
+        if (self::$resolution && (self::$flags & self::DEP_RESOLUTION)) {
+            foreach ($spec['depends'] ?? [] as $dependency) {
+                self::log("Auto-loader: Begin attempt to resolve dependency [{$dependency}] from class [{$classname}]");
+                if (strpos($dependency, '.php') !== false) {
+                    $depPath = realpath($classDir . $dependency);
+                    if ($depPath && strpos($depPath, self::$root) === 0) {
+                        self::log("Auto-loader: Resolved file dependency [{$dependency}] from class [{$classname}]");
+                        require_once $depPath;
+                    } else {
+                        throw new AutoloaderRuntimeException("Invalid dependency path: [{$dependency}]");
+                    }
+                    continue;
+                } else if (!$exist =  self::exists($dependency)) {
+                    self::method_x($dependency);
+                    self::log("Auto-loader: Resolved class dependency [{$dependency}] from class [{$classname}]");
+                    continue;
                 }
-                continue;
-            } else if (!$exist =  self::exists($dependency)) {
-                self::method_x($dependency);
-                self::log("Auto-loader: Resolved class dependency [{$dependency}] from class [{$classname}]");
-                continue;
-            }
 
-            if ($exist) {
-                self::log("Auto-loader: Skipping class dependency [{$dependency}] from class [{$classname}] because its already loaded");
-                continue;
-            }
+                if ($exist) {
+                    self::log("Auto-loader: Skipping class dependency [{$dependency}] from class [{$classname}] because its already loaded");
+                    continue;
+                }
 
-            self::log("Auto-loader: Cannot resolve dependency [{$dependency}] from class [{$classname}]");
+                self::log("Auto-loader: Cannot resolve dependency [{$dependency}] from class [{$classname}]");
+            }
         }
 
         require_once $classPath;
 
-        foreach ($spec['boot'] ?? [] as $setup) {
-            $isArr = is_array($setup);
-            $setupName = $isArr ? $setup[1] : $setup;
-            self::log("Auto-loader: Begin attempt to boot [$setupName] from class [{$classname}]");
-            if ($isArr) {
-                [$initClass, $method] = $setup;
-                if (method_exists($initClass, $method)) {
-                    call_user_func([$initClass, $method]);
+        if (self::$resolution && (self::$flags & self::BOOT_RESOLUTION)) {
+            foreach ($spec['boot'] ?? [] as $setup) {
+                $isArr = is_array($setup);
+                $setupName = $isArr ? $setup[1] : $setup;
+                self::log("Auto-loader: Begin attempt to boot [$setupName] from class [{$classname}]");
+                if ($isArr) {
+                    [$initClass, $method] = $setup;
+                    if (method_exists($initClass, $method)) {
+                        call_user_func([$initClass, $method]);
+                        self::log("Auto-loader: Called [{$setupName}] boot method successfully");
+                    } elseif (self::DEBUG & self::$flags) {
+                        self::log("Auto-loader: Boot method not found: [{$setupName}]");
+                    }
+                    continue;
+                } elseif (function_exists($setup)) {
+                    $setup();
+                    self::log("Auto-loader: Called [{$setupName}] boot function successfully");
+                    continue;
+                } elseif (method_exists($classname, $setup)) {
+                    call_user_func([$classname, $setup]);
                     self::log("Auto-loader: Called [{$setupName}] boot method successfully");
-                } elseif (self::DEBUG & self::$flags) {
-                    self::log("Auto-loader: Boot method not found: [{$setupName}]");
+                    continue;
                 }
-                continue;
-            } elseif (function_exists($setup)) {
-                $setup();
-                self::log("Auto-loader: Called [{$setupName}] boot function successfully");
-                continue;
-            } elseif (method_exists($classname, $setup)) {
-                call_user_func([$classname, $setup]);
-                self::log("Auto-loader: Called [{$setupName}] boot method successfully");
-                continue;
-            }
 
-            self::log("Auto-loader: Invalid boot callable: [{$setupName}] from class [{$classname}]");
+                self::log("Auto-loader: Invalid boot callable: [{$setupName}] from class [{$classname}]");
+            }
         }
 
         return true;
@@ -575,11 +671,10 @@ class Autoloader
      */
     public static function dumpAutoload(bool $with_cache = false): void
     {
-
-        $classes = self::scanForClasses(self::$root, true);
+        self::enableResolution(false);
 
         $res = [];
-        foreach ($classes as $cls => $spec) {
+        foreach (self::systemScan(true, false) as $cls => $spec) {
             $spec['filepath'] = self::normalizePathToRelative($spec['filepath']);
             $res[$cls] = $spec;
         }
@@ -640,7 +735,7 @@ class Autoloader
      * @param array $specs
      * @return void
      */
-    public static function registerNewClass(string|array $class, array $specs): void
+    private static function registerNewClass(string|array $class, array $specs): void
     {
         if (is_array($class)) {
             $tmp = array_combine($class, $specs);
@@ -661,7 +756,7 @@ class Autoloader
      * @param array $classes
      * @return void
      */
-    public static function updateClassesMapping(array $classes): void
+    private static function updateClassesMapping(array $classes): void
     {
         self::$classes = $classes;
         self::saveClassMap(self::$setting['classmap'], self::$classes);
@@ -673,7 +768,7 @@ class Autoloader
      * @param array $classes
      * @return void
      */
-    public static function updateCacheClassesMapping(array $classes): void
+    private static function updateCacheClassesMapping(array $classes): void
     {
         self::$cache_classes = $classes;
         self::saveClassMap(self::$setting['cache_classmap'], self::$cache_classes);
@@ -746,7 +841,7 @@ class Autoloader
      * @param array $specs
      * @return void
      */
-    public static function cachedResolvedClass(string|array $class, array $specs): void
+    private static function cachedResolvedClass(string|array $class, array $specs): void
     {
         self::registerNewClass($class, $specs);
         if (is_array($class)) {
@@ -766,7 +861,7 @@ class Autoloader
      * @param string $class
      * @return array|false
      */
-    public static function loadClassFromCache(string $class): array|false
+    private static function loadClassFromCache(string $class): array|false
     {
         if (isset(self::$cache_classes[$class]) && file_exists(self::$root . self::$cache_classes[$class]['filepath'])) {
             self::loadClass($class, false, self::$cache_classes[$class]);
@@ -782,7 +877,7 @@ class Autoloader
      * @param string $class
      * @return string|false
      */
-    public static function resolve(string $class): string|false
+    private static function resolve(string $class): string|false
     {
         $c = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $class);
         $class_base_name = basename($c);
@@ -825,6 +920,7 @@ class Autoloader
             if (!$res && !(self::READ_ONLY & self::$flags)) {
                 // var_dump(['must refresh' => !$bool]);
                 self::log("Auto-loader: Re-scanning class [{$class}] because its content has been edited");
+                require_once self::$root . self::$classes[$class]['filepath'];
                 $extracted = self::extractClassesFromFile(self::$classes[$class]['filepath'], (bool)(self::CHECK_FILEMTIME & self::$flags));
                 self::registerNewClass(array_keys($extracted), array_map(function ($arr) {
                     $arr['filepath'] = self::normalizePathToRelative($arr['filepath']);
@@ -932,28 +1028,29 @@ class Autoloader
             return false;
         }
 
-        $classes = self::scanForClasses(self::$root, true, true);
+        $classes = self::systemScan(true, true);
+
         $normalizedClasses = [];
 
         foreach ($classes as $cls => $spec) {
             $spec['filepath'] = self::normalizePathToRelative($spec['filepath']);
             $normalizedClasses[$cls] = $spec;
+
+            if ($class === $cls) {
+                require_once $spec['filepath'];
+
+                if (self::exists($class)) {
+                    self::cachedResolvedClass($class, $spec);
+                    return true;
+                }
+
+                self::log('Auto-loader: Method 5 failed (class, invalid?)');
+            } else {
+                self::log('Auto-loader: Method 5 failed (class cant be found)');
+            }
         }
 
         self::updateClassesMapping($normalizedClasses);
-
-        if (isset($classes[$class])) {
-            require_once $classes[$class]['filepath'];
-
-            if (self::exists($class)) {
-                self::cachedResolvedClass($class, $normalizedClasses[$class]);
-                return true;
-            }
-
-            self::log('Auto-loader: Method 5 failed (class, invalid?)');
-        } else {
-            self::log('Auto-loader: Method 5 failed (class cant be found)');
-        }
 
         return false;
     }

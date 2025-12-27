@@ -2,19 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Experimental\App\Foundation\Database;
+namespace DEPRECATED\App\Foundation\Database;
 
 require_once 'Connection.php';
 
 use App\Debug\Debugger;
 use App\Foundation\Database\Connection;
-use App\Foundation\Traits\Strings;
-use stdClass;
 
-class QueryBuilder extends Connection
+class QueryBuilder__ extends Connection
 {
-    use Strings;
-
     # Base var
     private $query;
     protected $table;
@@ -30,7 +26,7 @@ class QueryBuilder extends Connection
 
     # Relations var
     private $related = [];
-    public $relations = [];
+    private $relations = [];
 
     # Attributes
     protected $restrain = true;
@@ -40,7 +36,7 @@ class QueryBuilder extends Connection
      */
     public function __construct()
     {
-        $this->pdo = Connection::getInstance();
+        $this->pdo = self::getInstance();
     }
 
     public function fillable($fillable = [])
@@ -79,9 +75,9 @@ class QueryBuilder extends Connection
     /**
      * 
      */
-    private function decideSelect(?array $columns = null)
+    private function decideSelect()
     {
-        return empty($columns) ? (!empty($this->columns) ? implode(', ', $this->columns) : '*') : implode(',', $columns);
+        return (!empty($this->columns) ? implode(', ', $this->columns) : '*');
     }
 
     protected function filterColumns($columns = [])
@@ -111,33 +107,6 @@ class QueryBuilder extends Connection
         $this->query = 'SELECT ' . $columns . ' FROM ' . $this->table;
         $this->usedSelect = true;
         return $this;
-    }
-
-    /**
-     * Switches between "id_<name>" and "<name>_id" formats.
-     *
-     * This function checks the input pattern and switches it to the opposite format.
-     * - If the input matches "id_<name>", it converts to "<name>_id".
-     * - If the input matches "<name>_id", it converts to "id_<name>".
-     *
-     * @param string $column The column name to switch.
-     * 
-     * @return string The switched column name.
-     */
-    private function switchColumnPattern(string $column): string
-    {
-        // Match 'id_<name>'
-        if (preg_match('/^id_(\w+)$/', $column, $matches)) {
-            return "{$matches[1]}_id";
-        }
-
-        // Match '<name>_id'
-        if (preg_match('/^(\w+)_id$/', $column, $matches)) {
-            return 'id_' . $matches[1];
-        }
-
-        // Return the original column if no pattern matches
-        return $column;
     }
 
     /**
@@ -204,18 +173,18 @@ class QueryBuilder extends Connection
      */
     public function with($relations = []): self
     {
-        $result = new stdClass();
+        $result = new \stdClass();
         foreach ($relations as $relation) {
             $relationSelection = explode(':', $relation);
             $parts = explode('.', $relationSelection[0]);
-            $columns =  isset($relationSelection[1])
+            $columns =  (isset($relationSelection[1]))
                 ? explode('.', $relationSelection[1])
                 : ['*'];
 
-            $relation = new stdClass();
+            $relation = new \stdClass();
             $relation->type = $parts[0] ?? null;
             $relation->mode = $parts[1] ?? null;
-
+            
             // if left-side condition true, so the right-side will be executed, otherwise it will skip 
             // I like over-complicated things, but I have goals
             isset($parts[3]) && $relation->foreign_key_column = $parts[3];
@@ -326,8 +295,8 @@ class QueryBuilder extends Connection
     {
         $this->query .= $this->whereOrAnd() . $this->primaryColumn . ' = ?';
         $this->bindings[] = $primaryKey;
-        error_log($this->getRequestIp() . $this->query);
-        error_log($this->getRequestIp() . 'Parameter: ' . json_encode($this->bindings));
+        getBoolEnv('APP_DEBUG', false) &&  error_log($this->getRequestIp() . $this->query);
+        getBoolEnv('APP_DEBUG', false) &&  error_log($this->getRequestIp() . 'Parameter: ' . json_encode($this->bindings));
         return $this;
     }
 
@@ -344,8 +313,8 @@ class QueryBuilder extends Connection
 
         $this->query = 'INSERT INTO ' . $this->table . ' (' . $columns . ') VALUES (' . $placeholders . ')';
         $this->bindings = array_values($data);
-        error_log($this->query);
-        error_log(json_encode($this->bindings));
+        getBoolEnv('APP_DEBUG', false) &&  error_log($this->query);
+        getBoolEnv('APP_DEBUG', false) &&  error_log(json_encode($this->bindings));
         $this->stmt = $this->pdo->prepare($this->query);
         $this->stmt->execute($this->bindings);
         return $this;
@@ -355,23 +324,30 @@ class QueryBuilder extends Connection
      * Get all record within array and inside array there is all of object from query
      * 
      */
-    public function get($columns = null, $skipRelations = false)
+    public function get($skipRelations = false)
     {
         try {
-            $query = ($this->usedSelect ? '' : 'SELECT ') . $this->decideSelect($columns) . ' FROM ' . $this->table;
-            // if (!empty($this->relations) || !$skipRelations) {
-            //     foreach ($this->relations as $table => $relation) {
-            //     }
-            // }
-
-            error_log($this->getRequestIp() . $query . $this->query);
-            error_log($this->getRequestIp() . 'Parameter: ' . json_encode($this->bindings));
+            $query = $this->usedSelect ? '' : 'SELECT ' . $this->decideSelect() . ' FROM ' . $this->table;
+            getBoolEnv('APP_DEBUG', false) &&  error_log($this->getRequestIp() . $query . $this->query);
+            getBoolEnv('APP_DEBUG', false) &&  error_log($this->getRequestIp() . 'Parameter: ' . json_encode($this->bindings));
 
             $this->stmt = $this->pdo->prepare($query . $this->query);
             $this->stmt->execute($this->bindings);
             $this->resetQuery();
 
-            return new static($this->stmt->fetchAll(\PDO::FETCH_OBJ) ?: []);
+            return $main_body = $this->stmt->fetchAll(\PDO::FETCH_ASSOC) ?: [];
+
+            if (empty($main_body)) return $main_body;
+
+            if (empty($this->relations) || $skipRelations) {
+                return new static(array_map(function ($item) {
+                    $item = new static($item);
+                    $item->setIsFetched();
+                    return $item;
+                }, $main_body));
+            }
+
+            return $this->processRelations($main_body);
         } catch (\PDOException $e) {
             Debugger::dumpErr($e);
             return [];
@@ -386,8 +362,8 @@ class QueryBuilder extends Connection
         try {
             $query = $this->usedSelect ? '' : 'SELECT ' . $this->decideSelect() . ' FROM ' . $this->table;
             $this->query .= ' LIMIT 1';
-            error_log($this->getRequestIp() . $query . $this->query);
-            error_log($this->getRequestIp() . 'Parameter: ' . json_encode($this->bindings));
+            getBoolEnv('APP_DEBUG', false) &&  error_log($this->getRequestIp() . $query . $this->query);
+            getBoolEnv('APP_DEBUG', false) &&  error_log($this->getRequestIp() . 'Parameter: ' . json_encode($this->bindings));
 
             $this->stmt = $this->pdo->prepare($query . $this->query);
             $this->stmt->execute($this->bindings);
@@ -423,8 +399,8 @@ class QueryBuilder extends Connection
         $query = $this->usedSelect ? '' : 'SELECT ' . $this->decideSelect() . ' FROM ' . $this->table;
         $this->query .= $this->whereOrAnd() . $this->primaryColumn . ' = ?';
         $this->bindings[] = $primaryKey;
-        error_log($this->getRequestIp() . $query . $this->query);
-        error_log($this->getRequestIp() . 'Parameter: ' . json_encode($this->bindings));
+        getBoolEnv('APP_DEBUG', false) &&  error_log($this->getRequestIp() . $query . $this->query);
+        getBoolEnv('APP_DEBUG', false) &&  error_log($this->getRequestIp() . 'Parameter: ' . json_encode($this->bindings));
 
         $this->stmt = $this->pdo->prepare($query . $this->query);
         $this->stmt->execute($this->bindings);
@@ -457,11 +433,11 @@ class QueryBuilder extends Connection
     public function update($data = [], $ignoreWhereWarning = false)
     {
         if (strpos($this->query, 'WHERE') === false && !$ignoreWhereWarning) {
-            error_log('You need to specify what to update in ' . $this->table . ' table, else you\'ll update everything');
+            getBoolEnv('APP_DEBUG', false) &&  error_log('You need to specify what to update in ' . $this->table . ' table, else you\'ll update everything');
             throw new \Exception("Missing where clause");
         }
         if ($ignoreWhereWarning) {
-            error_log('WARNING: Ignoring WHERE clause, all records will be updated!');
+            getBoolEnv('APP_DEBUG', false) &&  error_log('WARNING: Ignoring WHERE clause, all records will be updated!');
         }
         $filtered = $this->filterColumns($data);
         $set = [];
@@ -470,8 +446,8 @@ class QueryBuilder extends Connection
         }
         $this->bindings = array_merge(array_values($filtered), $this->bindings);
         $query = 'UPDATE ' . $this->table . ' SET ' . implode(', ', $set);
-        error_log($this->getRequestIp() . $query . $this->query);
-        error_log(json_encode($this->bindings));
+        getBoolEnv('APP_DEBUG', false) &&  error_log($this->getRequestIp() . $query . $this->query);
+        getBoolEnv('APP_DEBUG', false) &&  error_log(json_encode($this->bindings));
         $this->stmt = $this->pdo->prepare($query . $this->query);
         $this->stmt->execute($this->bindings);
         return $this->stmt;
@@ -486,15 +462,15 @@ class QueryBuilder extends Connection
     public function delete($ignoreWhereWarning = false)
     {
         if (strpos($this->query, 'WHERE') === false && !$ignoreWhereWarning) {
-            error_log('You need to specify what to delete in ' . $this->table . ' table, else you\'ll delete everything');
+            getBoolEnv('APP_DEBUG', false) &&  error_log('You need to specify what to delete in ' . $this->table . ' table, else you\'ll delete everything');
             throw new \Exception('Missing where clause');
         }
         if ($ignoreWhereWarning) {
-            error_log('WARNING: Ignoring WHERE clause, all records will be deleted!');
+            getBoolEnv('APP_DEBUG', false) &&  error_log('WARNING: Ignoring WHERE clause, all records will be deleted!');
         }
         $query = 'DELETE FROM ' . $this->table;
-        error_log($this->getRequestIp() . $query . $this->query);
-        error_log(json_encode($this->bindings));
+        getBoolEnv('APP_DEBUG', false) &&  error_log($this->getRequestIp() . $query . $this->query);
+        getBoolEnv('APP_DEBUG', false) &&  error_log(json_encode($this->bindings));
         $this->stmt = $this->pdo->prepare($query . $this->query);
         $this->stmt->execute($this->bindings);
         return $this->stmt;
@@ -726,8 +702,8 @@ class QueryBuilder extends Connection
         ) {
             throw new \Exception('Delete/Update action without where clause detected, aborted unless explicitly restrain set to false.');
         }
-        error_log($this->getRequestIp() . $this->query);
-        error_log(json_encode($this->bindings));
+        getBoolEnv('APP_DEBUG', false) &&  error_log($this->getRequestIp() . $this->query);
+        getBoolEnv('APP_DEBUG', false) &&  error_log(json_encode($this->bindings));
         $this->stmt = $this->pdo->prepare($this->query);
         $this->stmt->execute($this->bindings);
     }

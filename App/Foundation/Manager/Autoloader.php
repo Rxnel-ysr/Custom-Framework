@@ -27,12 +27,12 @@ class Autoloader
     private static int $flags;
 
     /**
-     * @var array<string, array{filepath: string, depends: array<int, string>, boot: array<int, string>}> $classes Autoloader main classmap
+     * @var array<string, array{filepath: string, depends: string[], boot: string[] $classes Autoloader main classmap
      */
     private static array $classes;
 
     /**
-     * @var array<string, array{filepath: string, depends: array<int, string>, boot: array<int, string>}> $classes Autoloader cache classmap
+     * @var array<string, array{filepath: string, depends: string[], boot: array<int, string|array{0: class-string, 1: string}>}> $classes Autoloader cache classmap
      */
     private static array $cache_classes;
 

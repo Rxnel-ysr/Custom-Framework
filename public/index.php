@@ -5,7 +5,7 @@ define('START', hrtime(true));
 
 use App\Foundation\Http\{StaticFile, Request};
 
-require __DIR__ . '/../autoload.php';
+require_once __DIR__ . '/../autoload.php';
 
 if (StaticFile::serve(__DIR__ . '/../', $_SERVER['REQUEST_URI'], __DIR__ . '/../storage/cache')) {
     exit;

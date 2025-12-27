@@ -24,7 +24,7 @@ class Middleware
      */
     public function resolveAlias(string $alias): array
     {
-        [$realAlias, $args] = strpos($alias, ':') !== false ?  explode(':', $alias, 2) : [$alias, null];
+        [$realAlias, $args] = array_pad(explode(':', $alias, 2), 2, null);
         // dd($realAlias, $args);
         
         $args = explode(',', $args ?? '');

@@ -2,6 +2,9 @@
 
 namespace App\Foundation\Providers;
 
+use App\App;
+use App\Contracts\Implementation\TestImplementation;
+use App\Contracts\Interfaces\TestInterface;
 use App\Foundation\Http\Request;
 use App\Support\Facades\Route;
 use App\Support\Facades\Rx;
@@ -9,8 +12,9 @@ use App\Support\Facades\Rx;
 class AppServiceProvider
 {
 
-    public function register(): void
+    public function register(App $app): void
     {
+        $app->container->bind(TestInterface::class, TestImplementation::class);
         // Register
         Rx::register('say', function (string $message): string {
             return $message;

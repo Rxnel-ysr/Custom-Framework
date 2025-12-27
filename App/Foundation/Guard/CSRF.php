@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace App\Foundation\Guard;
 
-use App\Debug\Debugger;
-use Exception;
+use App\Foundation\Exceptions\Framework\Guard\CSRFException;
 
 class CSRF
 {
@@ -79,7 +78,7 @@ class CSRF
 
         if (!$key || !$token || !isset($_SESSION['csrf_tokens'][$key])) {
             http_response_code(403);
-            throw new Exception('CSRF validation failed');
+            throw new CSRFException('CSRF validation failed');
         }
         
         $csrfData = $_SESSION['csrf_tokens'][$key];
@@ -92,19 +91,19 @@ class CSRF
             // self::expireCookie($key);
 
             http_response_code(408);
-            throw new Exception('CSRF validation timeout, please resend form');
+            throw new CSRFException('CSRF validation timeout, please resend form');
         }
         
         if (!hash_equals($csrfData['token'], $token)) {
             http_response_code(403);
             self::obliterate();
-            throw new Exception('CSRF validation failed');
+            throw new CSRFException('CSRF validation failed');
         }
         
         // if (!$cookieToken || !hash_equals($csrfData['token'], $cookieToken)) {
         //     http_response_code(403);
         //     self::obliterate();
-        //     throw new Exception('CSRF validation failed');
+        //     throw new CSRFException('CSRF validation failed');
         // }
 
         // unset($_SESSION['csrf_tokens'][$key]);

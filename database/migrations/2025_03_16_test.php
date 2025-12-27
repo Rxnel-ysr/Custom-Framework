@@ -13,6 +13,8 @@ return new class extends Migration {
             $table->string("nama")->unique();
             $table->string("nik")->unique();
             $table->string("nisn")->unique();
+            $table->enum('status', ['hidup', 'mati']);
+            $table->enum('nyawa', ['banyak', 'sedikit']);
             $table->enum("jenis_kelamin", ['L', 'P']);
             $table->timestamps();
         });

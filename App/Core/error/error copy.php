@@ -481,8 +481,8 @@
     </style>
 
     <?php
-    $post = strpos(':', $error_message);
-    $title = strtok($error_message, ':');
+    $post = strpos(':', $error_message ?? '');
+    $title = strtok($error_message ?? '', ':');
     $host = $_SERVER['HTTP_HOST'];
 
     ?>

@@ -12,6 +12,7 @@ use App\Foundation\System\Disk;
 use App\Support\Facades\DI;
 use App\Test\testClassWithInitAndDeps;
 use App\Foundation\Manager\Resolver;
+use Experimental_V2\App\Foundation\Database\QueryBuilder;
 use Test\Service;
 
 $root = dirname(__DIR__, 1);
@@ -31,56 +32,71 @@ Command::register('help', fn() => Command::showHelp())
     ->alias('h')
     ->help('Show help message then exit.');
 
-Command::register('serve', function ($host = '127.0.0.1', $port = 8000) {
-    return shell_exec("php -S {$host}:{$port} public/index.php");
+Command::register('serve', function (Argv $argv) {
+    $port = $argv->option('port', 8000);
+    $host = $argv->option('host', 'localhost');
+    shell_exec("php -S {$host}:{$port} public/index.php");
+    return 0;
 })->alias('s')
-    ->param(['host', 'port'])
+    ->params(['host', 'port'])
     ->help('Start the local dev server, default localhost:8000');
 
 // --- Migrations ---
-Command::register('migrate', fn() => Migration::migrate())
+Command::register('migrate', function(){
+    Migration::migrate();
+    return 0;
+})
     ->alias('m')
     ->help('Run the migrations')
     ->dependency($migrationSetup);
 
-Command::register('migrate:dropAll', fn() => Migration::dropAll())
+Command::register('migrate:dropAll', function(){
+    Migration::dropAll();
+    return 0;
+} )
     ->alias('mda')
     ->help('Dropping all the migrations')
     ->dependency($migrationSetup);
 
-Command::register('migrate:fresh', fn() => Migration::dropAndReapplyAll())
+Command::register('migrate:fresh', function(){
+    Migration::dropAndReapplyAll();
+    return 0;
+} )
     ->alias('mf')
     ->help('Dropping all the migrations then reapply them')
     ->dependency($migrationSetup);
 
-Command::register('migrate:rollback', fn() => Migration::goToPrevMigrationsAndUnset())
+Command::register('migrate:rollback', function(){
+    Migration::goToPrevMigrationsAndUnset();
+    return 0;
+} )
     ->alias('mr')
     ->help('Rolling back the migrations');
 
 // --- Generators ---
-Command::register('make:controller', function (Argv $argv) {
-    $name       = $argv->shiftPositionals() ?? Command::prompt('Name of controller: ');
-    $isResource = $argv->flag('r');
-    $root = DI::get('appConfig')['root'];
+// Command::register('make:controller', function (Argv $argv) {
+//     $name       = $argv->shiftPositionals() ?? Command::prompt('Name of controller: ');
+//     $isResource = $argv->flag('r');
+//     $root = DI::get('appConfig')['root'];
 
-    $fileName =  $root . 'App/Http/Controllers/' . str_replace('.', DIRECTORY_SEPARATOR, $name) . '.php';
-    if (file_exists($fileName)) {
-        echo "[WARN] Controller already exist [$name]";
-        return 1;
-    }
+//     $fileName =  $root . 'App/Http/Controllers/' . str_replace('.', DIRECTORY_SEPARATOR, $name) . '.php';
+//     if (file_exists($fileName)) {
+//         echo "[WARN] Controller already exist [$name]";
+//         return 1;
+//     }
 
-    (new TemplateBuilder(
-        $root . ($isResource ? 'storage/templates/controller_resources.stub' : 'storage/templates/controller.stub')
-    ))->rules([
-        'controller_name' => $name
-    ])->parse()
-        ->save($fileName);
+//     (new TemplateBuilder(
+//         $root . ($isResource ? 'storage/templates/controller_resources.stub' : 'storage/templates/controller.stub')
+//     ))->rules([
+//         'controller_name' => $name
+//     ])->parse()
+//         ->save($fileName);
 
-    echo '[INFO] Created controller [' . str_replace($root, '', $fileName) . ']' . PHP_EOL;
-    return 0;
-})->param(['name'])
-    ->alias('mc')
-    ->help('Make a new controller');
+//     echo '[INFO] Created controller [' . str_replace($root, '', $fileName) . ']' . PHP_EOL;
+//     return 0;
+// })->params(['name'])
+//     ->alias('mc')
+//     ->help('Make a new controller');
 
 Command::register('make:component', function () use ($root) {})
     ->alias('mkc')
@@ -196,27 +212,25 @@ Command::register('count', function () {
 
 Command::register('testtt', function () {
     echo "Hello my name is, {$this->name}. And I am is {$this->age} years old";
-})->param(['age', 'name']);
+})->params(['age', 'name']);
 
 
 class testCommand
 {
-    public function index(Argv $argv, string $nama, int $umur, array $alok)
+    public function index(Argv $argv)
     {
         var_dump([$argv->flag('r'), $argv->flag('g'), $argv->flag('a')]);
-
-        echo "\nNama: {$nama}\nUmur: {$umur}\n";
+        $nama = $argv->option('nama');
+        echo "\nNama: {$nama}\nUmur: {$argv->option('umur')}\n";
 
         $className = test::class;
         echo "\n{$className}";
-
-        var_dump(compact('alok'));
 
         return 0;
     }
 }
 
-Command::register('anajay', [testCommand::class, 'index'])->param(['nama:string', 'umur:int', 'alok:array']);
+Command::register('anajay', [testCommand::class, 'index'])->params(['nama', 'umur', 'alok'])->strict();
 
 Command::register('invoke', function () {
     testClassWithInitAndDeps::sayHi();
@@ -284,9 +298,28 @@ Command::register('test-v2', function () {
 });
 
 
-Command::register('test-v3', function () {
-    $svc = Resolver::createInstance(Service::class, null, ['name' => 'Testing']);
-    $svc->run();
+Command::register('test-v3', function (Argv $argv) {
+    $svc1 = Resolver::make(Service::class, null, ['name' => 'Test']);
+    $svc1->run();
+
+    $svc2 = Resolver::make(Service::class, null, ['name' => 'Test']);
+    $svc2->run();
+
+    echo "\nAnd they are " . (($svc1 === $svc2) ? 'same!' : 'not same.') . PHP_EOL;
+
+
+    echo 'Name: ' . var_dump($argv->option('name')) . PHP_EOL;
+    echo 'Verbose?: ' . ($argv->flag('verbose') ? 'Yes' : 'No');
+
+    return 0;
+})->params(['name'])
+    ->flags(['verbose'])
+    ->short(['verbose' => 'v'])
+    ->help('Test your live');
+
+Command::register('test-db', function(){
+    $qb = new QueryBuilder();
+    var_dump($qb->table('blog_categories')->get()->pluck('name')->toArray());
 
     return 0;
 });

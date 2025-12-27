@@ -5,8 +5,6 @@ namespace App\Foundation\Http;
 use App\Debug\Debugger;
 use App\Foundation\Http\Request;
 use Closure;
-use RouterBase;
-use RouterInterface;
 
 class TrieNode
 {
@@ -96,7 +94,7 @@ class RouteTrie extends RouterBase implements RouterInterface
                         $node = $node->children[$segment];
                     } else {
                         // Node not found, can't update middleware
-                        return new self();
+                        return $this;
                     }
                 }
 
@@ -111,7 +109,7 @@ class RouteTrie extends RouterBase implements RouterInterface
             }
         }
 
-        return new self();
+        return $this;
     }
 
     private function splitPath(string $path): array
@@ -176,7 +174,7 @@ class RouteTrie extends RouterBase implements RouterInterface
             'middleware' => $middleware
         ];
 
-        return new Self();
+        return $this;
     }
 
     // Optimized HTTP verb methods - each uses its own trie
@@ -325,12 +323,7 @@ class RouteTrie extends RouterBase implements RouterInterface
         }
 
         if (is_callable($action)) {
-            $result = callFuncWithParams($action, $params, true, true);
-            if (is_string($result)) {
-                echo $result;
-                exit;
-            }
-            return $result;
+            return callFuncWithParams($action, $params, true, true);
         }
         
         return Debugger::showErrorPage(500, 'Invalid callback');

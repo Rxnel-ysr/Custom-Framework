@@ -3,7 +3,9 @@
 namespace App\Support\Facades;
 
 use App\Support\Facades\Facade;
+use Dep;
 
+#[Dep(Facade::class)]
 /**
  * @method static getBearerToken
  * @method static array all()

@@ -5,8 +5,6 @@ namespace App\Foundation\Http;
 use App\Debug\Debugger;
 use App\Foundation\Http\Request;
 use Closure;
-use RouterBase;
-use RouterInterface;
 
 class RadixNode
 {
@@ -25,7 +23,7 @@ class RadixNode
 class RouteRadix extends RouterBase implements RouterInterface
 {
     public string $name = 'RadixRouter';
-    
+
     // Method-based root nodes for optimal performance
     private array $roots = [];
 
@@ -56,7 +54,7 @@ class RouteRadix extends RouterBase implements RouterInterface
         foreach ($methods as $method) {
             $this->roots[$method] = new RadixNode();
         }
-        
+
         $this->dirRoot = $root ?? $_SERVER['DOCUMENT_ROOT'] ?? null;
         $this->plugins = $plugins;
     }
@@ -83,6 +81,7 @@ class RouteRadix extends RouterBase implements RouterInterface
         if (!is_null($callback)) {
             return self::group(['middleware' => $middleware], $callback);
         }
+        // dd($this->lastRoute);
 
         if ($this->lastRoute !== null) {
             $this->lastRoute['middleware'] = array_merge(
@@ -94,7 +93,7 @@ class RouteRadix extends RouterBase implements RouterInterface
             $method = $this->lastRoute['method'];
             $url = trim($this->lastRoute['url'], '/');
             $segments = $url === '' ? [] : explode('/', $url);
-            
+
             if (isset($this->roots[$method])) {
                 $result = self::searchNode($this->roots[$method], $segments);
                 if ($result !== null) {
@@ -106,7 +105,7 @@ class RouteRadix extends RouterBase implements RouterInterface
             }
         }
 
-        return new self();
+        return $this;
     }
 
     private function insertNode(RadixNode $node, array $segments, string $method, callable|array $action, array $middleware, array $paramKeys): RadixNode
@@ -194,12 +193,12 @@ class RouteRadix extends RouterBase implements RouterInterface
     public function add(string $method, string $url, callable|array $action, array $middleware = [])
     {
         $this->lastRoute = null;
-        
+
         // Apply group prefix
         $prefix = $this->currentGroup['prefix'];
         $url = $prefix === '' ? $url : trim($prefix . '/' . trim($url, '/'), '/');
         $normalizedUrl = self::normalizePath($url);
-        
+
         // Store route for debugging
         $this->routeList[$method][] = $normalizedUrl;
 
@@ -229,7 +228,7 @@ class RouteRadix extends RouterBase implements RouterInterface
             'middleware' => $middleware
         ];
 
-        return new Self();
+        return $this;
     }
 
     private function searchNode(RadixNode $node, array $segments, array $params = []): ?array
@@ -260,7 +259,7 @@ class RouteRadix extends RouterBase implements RouterInterface
                     $newSegments = array_merge([$remainingPart], $remainingSegments);
                     $result = self::searchNode($child, $newSegments, $params);
                 }
-                
+
                 if ($result !== null) {
                     return $result;
                 }
@@ -322,11 +321,11 @@ class RouteRadix extends RouterBase implements RouterInterface
 
         $prefix = trim($this->currentGroup['prefix'] . '/' . trim($attributes['prefix'] ?? '', '/'), '/');
         $middleware = array_merge(
-            $this->currentGroup['middleware'], 
+            $this->currentGroup['middleware'],
             (array)($attributes['middleware'] ?? [])
         );
-        $namespace = $this->currentGroup['namespace'] . 
-                    (isset($attributes['namespace']) ? '\\' . trim($attributes['namespace'], '\\') : '');
+        $namespace = $this->currentGroup['namespace'] .
+            (isset($attributes['namespace']) ? '\\' . trim($attributes['namespace'], '\\') : '');
 
         $this->appliedGroup[] = $this->currentGroup = compact('prefix', 'middleware', 'namespace');
 
@@ -343,7 +342,7 @@ class RouteRadix extends RouterBase implements RouterInterface
         }
 
         $route = $this->namedRoutes[$name]['url'];
-        
+
         foreach ($parameters as $key => $value) {
             $route = str_replace('{' . $key . '}', (string)$value, $route);
         }
@@ -407,12 +406,7 @@ class RouteRadix extends RouterBase implements RouterInterface
         }
 
         if (is_callable($action)) {
-            $result = callFuncWithParams($action, $params, true, true);
-            if (is_string($result)) {
-                echo $result;
-                exit;
-            }
-            return $result;
+            return callFuncWithParams($action, $params, true, true);
         }
         return Debugger::showErrorPage(500, 'Invalid callback');
     }
@@ -422,15 +416,15 @@ class RouteRadix extends RouterBase implements RouterInterface
         $method = self::getRequestMethod();
         $requestUri = trim($request->uri(), '/');
         $segments = $requestUri === '' ? [] : explode('/', $requestUri);
-        
+
         // Direct lookup in method-specific radix tree - no cache needed!
         $root = $this->roots[$method] ?? null;
         // dd($root);
-        
+
         if ($root === null) {
             return self::handleNotFound();
         }
-        
+
         $result = self::searchNode($root, $segments);
 
         if ($result !== null) {
@@ -445,7 +439,7 @@ class RouteRadix extends RouterBase implements RouterInterface
 
                 $middleware = array_merge($this->globalMiddleware, $node->middleware);
                 $destination = fn() => self::execute(
-                    $node->handlers[$method], 
+                    $node->handlers[$method],
                     array_combine($node->paramKeys, $params)
                 );
 

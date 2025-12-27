@@ -139,9 +139,9 @@ function request($name = null, $default = null): Request|string|int|array|null
     return $instance;
 }
 
-function collect(array $item)
+function collect($item)
 {
-    return new Collection(($item));
+    return new Collection($item);
 }
 
 function route($name, array $parameters = [])

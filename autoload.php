@@ -11,7 +11,9 @@ $opt = (
     ($cfg['auto-resolve']    ?? false ? AutoLoader::AUTO_RESOLVE       : 0) |
     ($cfg['auto']            ?? false ? AutoLoader::AUTO_INIT          : 0) |
     ($cfg['check_filemtime'] ?? false ? AutoLoader::CHECK_FILEMTIME    : 0) |
-    ($cfg['read_only']       ?? false ? AutoLoader::READ_ONLY          : 0)
+    ($cfg['read_only']       ?? false ? AutoLoader::READ_ONLY          : 0) |
+    ($cfg['resolution']['dep'] ?? false ? AutoLoader::DEP_RESOLUTION  : 0) |
+    ($cfg['resolution']['boot']       ?? false ? AutoLoader::BOOT_RESOLUTION : 0)
 );
 
 // $start = hrtime(true);
@@ -21,6 +23,7 @@ Autoloader::setup(
         'classmap'      => $cfg['classmap'],
         'cache_classmap' => $cfg['cache'],
         'where_to_look_class' => $cfg['where_to_look_class'],
+        'system_scan' => $cfg['system_scan'],
         'psr-4' => $cfg['psr-4'],
         'except' => $cfg['except']
     ],
@@ -28,11 +31,11 @@ Autoloader::setup(
     $opt,
 );
 
-Autoloader::registerDepAlises([
+Autoloader::registerAttributeAlises([
     'Dep' => App\Foundation\Manager\Dep::class,
     'Boot' => App\Foundation\Manager\Boot::class,
 ]);
-// $rs = (hrtime(true) - $start) / 1.0e6 . "ms\n";
-// echo $rs;
 
 Autoloader::registerAutoloader();
+// $rs = (hrtime(true) - $start) / 1.0e6 . "ms\n";
+// echo $rs;

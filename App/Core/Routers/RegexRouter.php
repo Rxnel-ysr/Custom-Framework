@@ -4,9 +4,6 @@ namespace App\Foundation\Http;
 
 use App\Debug\Debugger;
 use Closure;
-use RouterBase;
-use RouterInterface;
-use Throwable;
 
 /**
  * Regex Router
@@ -81,7 +78,7 @@ class RouteRegex extends RouterBase implements RouterInterface
             );
         } 
 
-        return new self();
+        return $this;
     }
 
     private function parseRoutePattern(string $pattern): array
@@ -189,38 +186,38 @@ class RouteRegex extends RouterBase implements RouterInterface
             'middleware' => $middleware
         ];
 
-        return new Self();
+        return $this;
     }
 
     // HTTP verb methods (now return $this for chaining)
     public function get(string $url, callable|array $action, array|string $middleware = []): self
     {
         self::add('GET', $url, $action, (array) $middleware);
-        return new self();
+        return $this;
     }
 
     public function post(string $url, callable|array $action, array|string $middleware = []): self
     {
         self::add('POST', $url, $action, (array) $middleware);
-        return new self();
+        return $this;
     }
 
     public function patch(string $url, callable|array $action, array|string $middleware = []): self
     {
         self::add('PATCH', $url, $action, (array) $middleware);
-        return new self();
+        return $this;
     }
 
     public function put(string $url, callable|array $action, array|string $middleware = []): self
     {
         self::add('PUT', $url, $action, (array) $middleware);
-        return new self();
+        return $this;
     }
 
     public function delete(string $url, callable|array $action, array|string $middleware = []): self
     {
         self::add('DELETE', $url, $action, (array) $middleware);
-        return new self();
+        return $this;
     }
 
     // Named routes
@@ -347,12 +344,7 @@ class RouteRegex extends RouterBase implements RouterInterface
         }
 
         if (is_callable($action)) {
-            $result = callFuncWithParams($action, $params, true, true);
-            if (is_string($result)) {
-                echo $result;
-                exit;
-            }
-            return $result;
+            return callFuncWithParams($action, $params, true, true);
         }
         return Debugger::showErrorPage(500, 'Invalid callback');
     }
