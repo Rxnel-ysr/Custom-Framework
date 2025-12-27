@@ -71,12 +71,12 @@ class Request
         $this->headers = getallheaders();
         $this->method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
         $this->fullUri = $_SERVER['REQUEST_URI'] ?? '';
-        $this->uri = strstr($this->fullUri, '?', true);
+        $this->uri = strstr($this->fullUri, '?', true) ?: $this->fullUri;
         $this->queryString = $_SERVER['QUERY_STRING'] ?? '';
     }
 
     /**
-     * Snapshot of current request
+     * Snapshot of current requestg
      *
      * @return (array{url: string, method: string, headers: array, request_data: array, query: array, query_string: string, post: array, files: array})
      */

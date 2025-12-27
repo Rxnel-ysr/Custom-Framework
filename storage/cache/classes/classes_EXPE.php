@@ -943,14 +943,14 @@ return array (
   ),
   'App\\Debug\\Debugger' => 
   array (
-    'filepath' => 'App/Foundation/Debug/Debug.php',
+    'filepath' => 'App/Foundation/Debug/Debugger.php',
     'depends' => 
     array (
     ),
     'boot' => 
     array (
     ),
-    'filemtime' => 1757494288,
+    'filemtime' => 1762344132,
   ),
   'App\\Foundation\\Event\\EmitterInterface' => 
   array (

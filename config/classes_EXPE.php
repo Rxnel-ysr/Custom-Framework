@@ -229,7 +229,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1766805461,
+    'filemtime' => 1766813973,
   ),
   'App\\Foundation\\Http\\TrieNode' => 
   array (
@@ -262,7 +262,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1766806911,
+    'filemtime' => 1766807554,
   ),
   'App\\Foundation\\Http\\RouterBase' => 
   array (
@@ -273,7 +273,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1766806911,
+    'filemtime' => 1766807554,
   ),
   'App\\Foundation\\Http\\RouteRegex' => 
   array (
@@ -372,7 +372,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1766768847,
+    'filemtime' => 1766814047,
   ),
   'App\\Foundation\\Database\\QueryBuilder___' => 
   array (
@@ -1173,7 +1173,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1766766299,
+    'filemtime' => 1766808109,
   ),
   'App\\Foundation\\Manager\\ClassContainerException' => 
   array (
@@ -1184,7 +1184,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1766766299,
+    'filemtime' => 1766808109,
   ),
   'App\\Foundation\\Manager\\NotFoundException' => 
   array (
@@ -1195,7 +1195,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1766766299,
+    'filemtime' => 1766808109,
   ),
   'App\\Foundation\\Manager\\CircularDependencyException' => 
   array (
@@ -1206,7 +1206,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1766766299,
+    'filemtime' => 1766808109,
   ),
   'App\\Foundation\\Manager\\UnresolvedParameter' => 
   array (
@@ -1217,7 +1217,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1766766299,
+    'filemtime' => 1766808109,
   ),
   'App\\Foundation\\Manager\\ClassManager' => 
   array (
@@ -1331,7 +1331,7 @@ return array (
   ),
   'App\\Debug\\Debugger' => 
   array (
-    'filepath' => 'App/Foundation/Debug/Debug.php',
+    'filepath' => 'App/Foundation/Debug/Debugger.php',
     'depends' => 
     array (
     ),
