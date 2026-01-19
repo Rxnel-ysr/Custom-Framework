@@ -1,6 +1,5 @@
 <?php
 return [
-    '/App/Foundation/Helpers/Utility.php',
-    '/App/Foundation/Helpers/Helpers.php',
-    '/App/Foundation/Configuration/Env.php'
+    'app_name' => env('APP_NAME', null),
+    'timezone' => env('TIMEZONE', 'UTC'),
 ];

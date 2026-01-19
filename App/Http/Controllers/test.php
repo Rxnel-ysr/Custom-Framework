@@ -2,17 +2,37 @@
 
 namespace App\Http\Controllers;
 
-use App\Foundation\Manager\ClassManager;
-use App\Foundation\Http\Request as HttpRequest;
-use App\Foundation\Http\Route;
+use App\Foundation\Database\RawStatement;
+use App\Foundation\Http\HttpClient;
+use App\Foundation\Http\Request;
+use App\Foundation\Http\Response;
 use App\Models\User;
-use App\Support\Facades\DB;
-use App\Support\Facades\Request;
-use App\Support\Facades\Response;
+use App\Support\Facades\Http;
 
 // For destruction!
 class Test extends Controller
 {
+    public function index(Request $request)
+    {
+
+        $another = Http::option([
+            'json' => 'array',
+        ])->get('https://jsonplaceholder.typicode.com/todos', [], [
+            'Authorization' => 'Bearer ' . "kafdjmafhjkmvdfjmdnbvfgjkm"
+        ]);
+        // $data = User::insert([
+        //     ['name' => '6', 'email' => 'e6', 'password' => 'p6'],
+        //     ['name' => '7', 'email' => 'e7', 'password' => 'p7'],
+        //     ['name' => '8', 'email' => 'e8', 'password' => 'p8'],
+        //     ['name' => '9', 'email' => 'e9', 'password' => 'p9'],
+        //     ['name' => '10', 'email' => 'e10', 'password' => 'p10'],
+        // ]);
+
+        return response()->json($another->json(), 200, [
+            'Content-Type' => 'application/json'
+        ]);
+    }
+
     public function test(Request $req)
     {
         // echo '<pre>';
@@ -95,16 +115,6 @@ class Test extends Controller
         //     'password'=>'none'
         // ]);
         // $users = $user->get();
-        dd(Route::routeList());
-    }
-
-    public function index()
-    {
-        $user = new User();
-        $users = $user->first();
-        // $users->getProp()
-
-        return response()->json($users);
     }
     public function show($id)
     {

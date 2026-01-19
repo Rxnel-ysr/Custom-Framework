@@ -118,13 +118,15 @@ class Utils
     }
 }
 
-function response($code = 200): Response
+function response(): Response
 {
     $instance = InstanceManager::getInstance('App\\Foundation\\Http\\Response');
-    if (!headers_sent()) {
-        $instance->status($code);
-    }
     return $instance;
+}
+
+function withHeader(): HttpHeaders
+{
+    return response()->headers;
 }
 
 function http(): HttpHeaders

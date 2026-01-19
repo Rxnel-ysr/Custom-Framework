@@ -3,14 +3,13 @@
 namespace App;
 
 use App\Foundation\CLI\Argv;
-use Experimental\App\Foundation\CLI\Command;
-use App\Foundation\Guard\RateLimiterSQL;
+use App\Support\Facades\Route;
 use App\Foundation\Http\Request;
 use App\Foundation\Http\Middleware;
+use App\Foundation\Guard\RateLimiterSQL;
 use App\Foundation\Manager\InstanceManager;
-use App\Support\Facades\Route;
-use InvalidArgumentException;
-
+use Experimental\App\Foundation\CLI\Command;
+use App\Foundation\Exceptions\Framework\Primitive\InvalidArgumentException;
 // use Experimental\App\Foundation\Http\Route;
 
 
@@ -150,7 +149,7 @@ class App
                 }
                 if ($result['reason'] === 'banned') {
                     http_response_code(403);
-                    die('You are banned until ' . date('H:i:s', $result['banned_until']));
+                    die('You are banned until ' . date('Y-m-d H:i:s', $result['banned_until']));
                 }
             }
         }
@@ -160,11 +159,6 @@ class App
         Route::group(['prefix' => $isApi ? '/api' : ''], function () use ($routeFile) {
             require $this->root . '/' . ltrim($routeFile, '/');
         });
-
-        if ($request->method() === 'OPTIONS') {
-            return response()->json(['options' => ['GET', 'HEAD', 'POST', 'PATCH', 'PUT', 'DELETE']]);
-            // exit;
-        }
 
         InstanceManager::setInstance(Request::class, $request);
         // error_log('Request done within: ' . timeExecution(fn() => Route::dispatch($requestUri)));

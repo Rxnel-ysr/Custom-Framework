@@ -7,6 +7,7 @@ use App\Foundation\Database\Connection;
 use App\Foundation\Event\Emitter;
 use App\Foundation\Event\Receiver;
 use App\Foundation\Generator\TemplateBuilder;
+use App\Foundation\Http\HttpClient;
 use App\Foundation\Manager\Autoloader;
 use App\Foundation\System\Disk;
 use App\Support\Facades\DI;
@@ -320,6 +321,30 @@ Command::register('test-v3', function (Argv $argv) {
 Command::register('test-db', function(){
     $qb = new QueryBuilder();
     var_dump($qb->table('blog_categories')->get()->pluck('name')->toArray());
+
+    return 0;
+});
+
+Command::register('test-http', function(){
+
+    try {
+        $client = new HttpClient([
+            'timeout' => 30,
+            'user_agent' => 'MyApp/1.0',
+            'verify_peer' => true,
+        ]);
+
+        $response = $client->get(
+            'http://127.0.0.1/api/test',
+            ['name' => 'John', 'email' => 'john@example.com'],
+            [
+                'Accept' => 'application/json'
+            ]
+        );
+        echo $response->getRaw();
+    } catch (Exception $e) {
+        echo "Error: " . $e->getMessage() . "\n";
+    }
 
     return 0;
 });

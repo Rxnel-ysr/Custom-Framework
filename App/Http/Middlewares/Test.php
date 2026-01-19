@@ -13,11 +13,7 @@ class Test extends Middleware
 
     public function handle(Request $request, Closure $next, string $msg): mixed
     {
-        
-        // echo "This has through test middleware<br>";
-        // echo "This was message given: {$msg}<br>";
-        throw new UnauthorizedException("Unauthorized action", "Nu uh");
-        
+        $this->header->set('X-Powered-By', 'o');
         return $next($request);
     }
 }

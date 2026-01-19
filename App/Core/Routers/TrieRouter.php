@@ -4,6 +4,7 @@ namespace App\Foundation\Http;
 
 use App\Debug\Debugger;
 use App\Foundation\Http\Request;
+use App\Foundation\Manager\InstanceManager;
 use Closure;
 
 class TrieNode
@@ -318,7 +319,7 @@ class RouteTrie extends RouterBase implements RouterInterface
     private function execute(callable|array $action, mixed $params)
     {
         if (is_array($action) && count($action) === 2) {
-            $instance = new $action[0];
+            $instance = InstanceManager::getInstance('container')->make($action[0]);
             $action = [$instance, $action[1]];
         }
 

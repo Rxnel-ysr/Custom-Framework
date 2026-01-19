@@ -38,7 +38,7 @@ function rx_yield($name)
 function rx_extends($parent)
 {
     register_shutdown_function(function () use ($parent) {
-        view($parent);
+        view($parent, [], false);
     });
 }
 

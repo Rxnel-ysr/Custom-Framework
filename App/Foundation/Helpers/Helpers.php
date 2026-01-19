@@ -5,6 +5,7 @@ use App\Foundation\Compiler\Compile;
 use App\Foundation\Exceptions\Http\NotFoundException;
 use App\Foundation\Exceptions\Http\UnauthorizedException;
 use App\Foundation\Manager\InstanceManager;
+use App\Foundation\Model;
 use App\Support\Facades\DI;
 
 // $views = ROOT . '/resources/views';
@@ -53,9 +54,9 @@ function backRoute($uri, $part): void
     }
 }
 
-function view($view, array $data = [])
+function view($view, array $data = [], $return = true)
 {
-    return Compile::compile(str_replace('.', DIRECTORY_SEPARATOR, $view), $data);
+    return Compile::compile(str_replace('.', DIRECTORY_SEPARATOR, $view), $data, $return);
 }
 
 function asset(string $path): string
@@ -372,7 +373,12 @@ function callFuncWithParams(
 
         // Dependency injection
         if ($autoResolve && $paramType instanceof ReflectionNamedType && !$paramType->isBuiltin()) {
-            $args[] = InstanceManager::getInstance('container')->make($paramType->getName());
+            $instance = InstanceManager::getInstance('container')->make($paramType->getName());
+            if ($instance instanceof Model && $isAssoc && arrKeyExists($paramName, $params)) {
+                $args[] =  $instance->findOrFail($params[$paramName]);
+            } else {
+                $args[] = $instance;
+            }
             continue;
         }
 
@@ -963,15 +969,14 @@ function retrieveEnv(string $name, string $type = 'string', $default = null)
     }
 }
 
-function abort($errorCode, $message = '', $subMessage= '')
+function abort($errorCode, $message = '', $subMessage = '')
 {
-    switch($errorCode){
+    switch ($errorCode) {
         case 404:
             throw new NotFoundException($message, $subMessage);
         case 403:
             throw new UnauthorizedException($message, $subMessage);
         default:
-        
     }
 }
 
@@ -988,4 +993,10 @@ function createInstance(object|string $class, ?callable $func = null, ?string $n
     }
     InstanceManager::setInstance($name ?? (is_object($class) ? $class::class : $class), $classI);
     return $classI;
+}
+
+
+function base_path($path)
+{
+    return dirname(__DIR__, 3) . '/' . trim($path, '/');
 }

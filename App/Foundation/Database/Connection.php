@@ -10,8 +10,8 @@ use PDO;
 
 class Connection
 {
-    protected static ?PDO $PDO = null;
-    protected static array $config;
+    private static ?PDO $PDO = null;
+    private static array $config;
 
     public static function set(array $config)
     {

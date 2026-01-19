@@ -82,7 +82,7 @@ class HttpHeaders
         return $this;
     }
 
-    public function customHeader(string $name, string $value)
+    public function set(string $name, string $value)
     {
         $this->headers[$name] = $value;
         return $this;

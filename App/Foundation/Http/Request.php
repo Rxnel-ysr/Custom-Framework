@@ -10,52 +10,62 @@ class Request
     /**
      * @var int Time when the Request was captured
      */
-    protected $timestamp;
+    protected int $timestamp;
 
     /**
      * @var array The stored request data
      */
-    protected $requestData;
+    protected array $requestData;
 
     /**
      * @var array The stored GET data
      */
-    protected $queryData;
+    protected array $queryData;
 
     /**
      * @var array The stored POST data
      */
-    protected $postData;
+    protected array $postData;
+
+    /**
+     * @var array The raw data from json
+     */
+    public array $json;
 
     /**
      * @var array The stored FILES data
      */
-    protected $filesData;
+    protected array $filesData;
 
     /**
      * @var array The stored headers
      */
-    protected $headers;
+    protected array $headers;
 
     /**
      * @var string The request method
      */
-    protected $method;
+    protected string $method;
 
     /**
      * @var string The request URI
      */
-    protected $uri;
+    protected string $uri;
 
     /**
      * @var string The request URI with query string
      */
-    protected $fullUri;
+    protected string $fullUri;
 
     /**
      * @var string The query string
      */
-    protected $queryString;
+    protected string $queryString;
+
+    /**
+     * @var string $origin
+     */
+    protected string $origin;
 
     /**
      * Request constructor.
@@ -73,6 +83,8 @@ class Request
         $this->fullUri = $_SERVER['REQUEST_URI'] ?? '';
         $this->uri = strstr($this->fullUri, '?', true) ?: $this->fullUri;
         $this->queryString = $_SERVER['QUERY_STRING'] ?? '';
+        $this->origin = $this->headers['HTTP_ORIGIN'] ?? $this->headers['referer'] ?? ((isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . $_SERVER['REMOTE_ADDR'] . ':' . $_SERVER['REMOTE_PORT']);
+        $this->json = $this->getJson();
     }
 
     /**
@@ -117,6 +129,16 @@ class Request
         return $dt->format($format);
     }
 
+    /**
+     * Get origin of request
+     *
+     * @return string
+     */
+    public function origin()
+    {
+        return $this->origin;
+    }
+
 
     /**
      * Create a new request instance.
@@ -137,7 +159,7 @@ class Request
      */
     public function input($key, $default = null): mixed
     {
-        return $this->requestData[$key] ?? $default;
+        return $this->isJson() ? ($this->json[$key] ?? $default) : ($this->requestData[$key] ?? $default);
     }
 
     /**
@@ -160,7 +182,7 @@ class Request
      *
      * @return string|null The Bearer token if found, otherwise null.
      */
-    public function getBearerToken(): ?string
+    public function bearerToken(): ?string
     {
         if (isset($this->headers['Authorization']) && preg_match('/Bearer\s+(.+)/', $this->headers['Authorization'], $matches)) {
             return $matches[1];
@@ -177,7 +199,7 @@ class Request
      */
     public function has($key): bool
     {
-        return isset($this->requestData[$key]);
+        return $this->isJson() ? isset($this->json[$key]) : isset($this->requestData[$key]);
     }
 
     /**
@@ -201,7 +223,7 @@ class Request
      */
     public function post($key, $default = null): mixed
     {
-        return $this->postData[$key] ?? $default;
+        return $this->isJson() ? $this->json[$key] ?? $default : ($this->postData[$key] ?? $default);
     }
 
     /**
@@ -302,6 +324,16 @@ class Request
     }
 
     /**
+     * Retrieve JSON request body as an array.
+     *
+     * @return array The parsed JSON or default value.
+     */
+    public function json($key, mixed $default = null): mixed
+    {
+        return $this->json[$key] ?? $default;
+    }
+
+    /**
      * Retrieve a specific header value.
      *
      * @param string $key The header key to retrieve.
@@ -345,15 +377,30 @@ class Request
     }
 
     /**
-     * Retrieve JSON request body as an array.
+     * Parse JSON request body as an array.
      *
      * @return array The parsed JSON body or an empty array if invalid.
      */
-    public function json(): array
+    private function getJson(): array
     {
         $rawInput = file_get_contents("php://input");
         $decoded = json_decode($rawInput, true);
         return is_array($decoded) ? $decoded : [];
+    }
+
+    /**
+     * Determine the request are made from raw json or primitive
+     *
+     * @return boolean
+     */
+    public function isJson(): bool
+    {
+        return $this->header('Content-Type') === 'application/json';
+    }
+
+    public function __get($name): mixed
+    {
+        return $this->input($name);
     }
 }
 

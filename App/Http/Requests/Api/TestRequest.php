@@ -13,7 +13,6 @@ class TestRequest extends BaseProblemJsonRequest
     {
         return [
             'nama' => 'required|min:4|in:Satu,Dua',
-            'nama2' => 'required|min:4|in:Satu,Dua',
         ];
     }
 

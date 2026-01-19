@@ -87,7 +87,7 @@ class RateLimiterSQL
             $count = (int)$stmt->fetchColumn();
 
             // 3. Apply thresholds
-            if ($count >= $this->limit * 2) {
+            if ($count >= $this->limit) {
                 $this->banUser($now + $this->banTime);
                 $db->commit();
                 return ['allowed' => false, 'reason' => 'banned', 'banned_until' => $now + $this->banTime];

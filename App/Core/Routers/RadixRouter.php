@@ -4,6 +4,7 @@ namespace App\Foundation\Http;
 
 use App\Debug\Debugger;
 use App\Foundation\Http\Request;
+use App\Foundation\Manager\InstanceManager;
 use Closure;
 
 class RadixNode
@@ -102,6 +103,12 @@ class RouteRadix extends RouterBase implements RouterInterface
                         $middleware
                     );
                 }
+            }
+            if($this->lastRoute['method'] !== 'OPTIONS'){
+                // dd((str_starts_with($this->lastRoute['url'], 'api')  ? substr($this->lastRoute['url'], 3) : $this->lastRoute['url']));
+                $this->add('OPTIONS', (str_starts_with($this->lastRoute['url'], 'api')  ? substr($this->lastRoute['url'], 3) : $this->lastRoute['url']), $this->lastRoute['action'], [
+                    'cors'
+                ]);
             }
         }
 
@@ -401,7 +408,7 @@ class RouteRadix extends RouterBase implements RouterInterface
     private function execute(callable|array $action, mixed $params)
     {
         if (is_array($action) && count($action) === 2) {
-            $instance = new $action[0];
+            $instance = InstanceManager::getInstance('container')->make($action[0]);
             $action = [$instance, $action[1]];
         }
 
@@ -413,7 +420,7 @@ class RouteRadix extends RouterBase implements RouterInterface
 
     public function dispatch(Request $request)
     {
-        $method = self::getRequestMethod();
+        $method = $request->method();
         $requestUri = trim($request->uri(), '/');
         $segments = $requestUri === '' ? [] : explode('/', $requestUri);
 

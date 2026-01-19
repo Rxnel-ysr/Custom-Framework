@@ -58,10 +58,11 @@ abstract class RouterBase
 
         switch (true) {
             case is_string($res):
-                echo $res;
-                return $res;
+                return response()->make($res);
             case is_array($res):
                 return response()->json($res);
+            case $res instanceof Response:
+                return $res->send();
             default:
                 return $res;
         }

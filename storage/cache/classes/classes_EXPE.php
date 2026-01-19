@@ -299,14 +299,14 @@ return array (
   ),
   'App\\Foundation\\Database\\QueryBuilder' => 
   array (
-    'filepath' => 'App/Foundation/Database/QueryBuilder.php',
+    'filepath' => 'App/Foundation/Database/QueryBuilder_rawTODO.php',
     'depends' => 
     array (
     ),
     'boot' => 
     array (
     ),
-    'filemtime' => 1757231328,
+    'filemtime' => 1768667072,
   ),
   'Experimental\\App\\Foundation\\Model' => 
   array (
@@ -1169,5 +1169,60 @@ return array (
     array (
     ),
     'filemtime' => 1766248834,
+  ),
+  'App\\Foundation\\Http\\HttpClient' => 
+  array (
+    'filepath' => 'App/Foundation/Http/HttpCLient.php',
+    'depends' => 
+    array (
+    ),
+    'boot' => 
+    array (
+    ),
+    'filemtime' => 1768505361,
+  ),
+  'App\\Support\\Facades\\Http' => 
+  array (
+    'filepath' => 'App/Foundation/Facades/Http.php',
+    'depends' => 
+    array (
+    ),
+    'boot' => 
+    array (
+    ),
+    'filemtime' => 1768507039,
+  ),
+  'App\\Foundation\\Http\\Websocket\\WebSocketFrame' => 
+  array (
+    'filepath' => 'App/Foundation/Http/Websocket/Websocket.php',
+    'depends' => 
+    array (
+    ),
+    'boot' => 
+    array (
+    ),
+    'filemtime' => 1768731002,
+  ),
+  'Experimental\\App\\Foundation\\Http\\Websocket_v4\\WebSocketFrame_v4' => 
+  array (
+    'filepath' => 'App/Foundation/Http/Websocket/Websocket_v4_ping.php',
+    'depends' => 
+    array (
+    ),
+    'boot' => 
+    array (
+    ),
+    'filemtime' => 1768731064,
+  ),
+  'Experimental\\App\\Foundation\\Http\\Websocket_beta\\WebSocketServer_beta' => 
+  array (
+    'filepath' => 'App/Foundation/Http/Websocket/Websocket_earliest.php',
+    'depends' => 
+    array (
+    ),
+    'boot' => 
+    array (
+    ),
+    'filemtime' => 1768731090,
   ),
 );

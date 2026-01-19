@@ -4,6 +4,7 @@ use App\Debug\Debugger;
 use App\Foundation\Compiler\Compile;
 use App\Foundation\Database\Connection;
 use App\Foundation\Configuration\Env;
+use App\Foundation\Http\Response;
 use App\Foundation\Manager\Container;
 use App\Foundation\Manager\InstanceManager;
 use App\Foundation\Providers\AppServiceProvider;
@@ -22,11 +23,13 @@ return (static function () {
         'database'       => require "{$__root}config/database.php",
         'router'         => require "{$__root}config/router.php",
         'compiler'       => require "{$__root}config/compiler.php",
-        'dependencies'   => require "{$__root}config/app.php",
+        'app'            => require "{$__root}config/app.php",
         'config'         => require "{$__root}config/config.php",
         'router_plugins' => require "{$__root}config/router_plugins.php",
         'root'           => $__root,
     ];
+
+    date_default_timezone_set($cfg['app']['timezone']);
 
     // Bind configuration to DI
     DI::bind('appConfig', fn() => $cfg);
@@ -59,6 +62,7 @@ return (static function () {
     // Boot and register service providers
     createInstance(Disk::class, null, 'appDisk', "{$__root}public");
     $app->setupProviders();
+    $app->container->bind(Response::class, fn() => response());
 
     // Return fully booted App instance
     return $app;

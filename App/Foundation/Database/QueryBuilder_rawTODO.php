@@ -13,7 +13,22 @@ use App\Foundation\Traits\Strings;
 use InvalidArgumentException;
 use LogicException;
 
-class QueryBuilder____ extends Connection
+class RawStatement{
+    public static function raw(string $statement)
+    {
+        return new self($statement);
+    }
+
+    public function __construct(protected string $statement)
+    {
+    }
+    public function __toString()
+    {
+        return $this->statement;
+    }
+}
+
+class QueryBuilder extends Connection
 {
     use Strings;
 
@@ -52,6 +67,16 @@ class QueryBuilder____ extends Connection
     {
         return (new self())->$name(...$arguments);
     }
+
+    private function countFromEnd(string $s, string $c): int
+    {
+        $count = 0;
+        for ($i = strlen($s) - 1; $i >= 0; --$i) {
+            if ($s[$i] === $c) $count++;
+        }
+        return $count;
+    }
+
 
     public function __call($name, $arguments)
     {
@@ -135,7 +160,12 @@ class QueryBuilder____ extends Connection
     public function ___select($columns = ['*']): self
     {
         $columns = is_array($columns) ? $columns : [$columns];
-        $columnsStr = implode(', ', $columns);
+
+        $columnsStr = implode(', ', array_map(
+            fn($col) => $col instanceof RawStatement ? $col->__toString() : $col,
+            $columns
+        ));
+
         $this->query = 'SELECT ' . $columnsStr . ' FROM ' . $this->table;
         $this->usedSelect = true;
         return $this;
@@ -588,37 +618,56 @@ class QueryBuilder____ extends Connection
     {
         $operator = strtoupper($operator);
 
+        // Check if the column itself is a RawStatement
+        $columnStr = $column instanceof RawStatement ? $column->__toString() : $column;
+
         if ($operator === 'BETWEEN' || $operator === 'NOT BETWEEN') {
             if (!is_array($value) || count($value) !== 2) {
                 throw new \InvalidArgumentException('The BETWEEN operator requires an array with exactly two values.');
             }
 
-            $this->query .= $this->whereOrAnd() . $column . ' ' . $operator . ' ? AND ?';
-            $this->bindings = array_merge($this->bindings, $value);
+            $first = $value[0] instanceof RawStatement ? $value[0]->__toString() : '?';
+            $second = $value[1] instanceof RawStatement ? $value[1]->__toString() : '?';
+
+            $this->query .= $this->whereOrAnd() . "{$columnStr} {$operator} {$first} AND {$second}";
+
+            // Only add to bindings if not RawStatement
+            foreach ($value as $val) {
+                if (!($val instanceof RawStatement)) {
+                    $this->bindings[] = $val;
+                }
+            }
+
             return $this;
         }
 
         if (is_array($value)) {
-            $placeholders = implode(', ', array_fill(0, count($value), '?'));
+            $placeholders = implode(', ', array_map(fn($item) => $item instanceof RawStatement ? $item->__toString() : '?', $value));
             $operatorUpper = strtoupper($operator);
 
             if ($operatorUpper === 'IN' || $operatorUpper === 'NOT IN') {
-                $this->query .= $this->whereOrAnd() . $column . ' ' . $operatorUpper . ' (' . $placeholders . ')';
+                $this->query .= $this->whereOrAnd() . "{$columnStr} {$operatorUpper} ({$placeholders})";
             } else {
-                $this->query .= $this->whereOrAnd() . $column . ' ' . $operator . ' (' . $placeholders . ')';
+                $this->query .= $this->whereOrAnd() . "{$columnStr} {$operator} ({$placeholders})";
             }
 
-            $this->bindings = array_merge($this->bindings, $value);
+            // Only add non-RawStatement values to bindings
+            $this->bindings = array_merge($this->bindings, array_filter($value, fn($val) => !($val instanceof RawStatement)));
             return $this;
         }
 
         if ($value === null || strtolower((string)$value) === 'null') {
             $nullOperator = ($operator === '!=' || $operator === '<>') ? ' IS NOT NULL' : ' IS NULL';
-            $this->query .= $this->whereOrAnd() . $column . $nullOperator;
+            $this->query .= $this->whereOrAnd() . $columnStr . $nullOperator;
             return $this;
         }
 
-        $this->query .= $this->whereOrAnd() . $column . ' ' . $operator . ' ?';
+        if ($value instanceof RawStatement) {
+            $this->query .= $this->whereOrAnd() . "{$columnStr} {$operator} " . $value->__toString();
+            return $this;
+        }
+
+        $this->query .= $this->whereOrAnd() . "{$columnStr} {$operator} ?";
         $this->bindings[] = $value;
         return $this;
     }
@@ -630,20 +679,28 @@ class QueryBuilder____ extends Connection
     {
         $this->query .= ' OR';
 
+        $columnStr = $column instanceof RawStatement ? $column->__toString() : $column;
+
         if (is_array($value)) {
-            $placeholders = implode(', ', array_fill(0, count($value), '?'));
-            $this->query .= ' ' . $column . ($operator === '!=' ? ' NOT IN' : ' IN') . ' (' . $placeholders . ')';
-            $this->bindings = array_merge($this->bindings, $value);
+            $placeholders = implode(', ', array_map(fn($item) => $item instanceof RawStatement ? $item->__toString() : '?', $value));
+            $this->query .= ' ' . $columnStr . ($operator === '!=' ? ' NOT IN' : ' IN') . " ({$placeholders})";
+
+            $this->bindings = array_merge($this->bindings, array_filter($value, fn($val) => !($val instanceof RawStatement)));
             return $this;
         }
 
         if ($value === null || strtolower((string)$value) === 'null') {
             $nullOperator = ($operator === '!=' ? ' IS NOT NULL' : ' IS NULL');
-            $this->query .= ' ' . $column . $nullOperator;
+            $this->query .= " {$columnStr} {$nullOperator}";
             return $this;
         }
 
-        $this->query .= ' ' . $column . ' ' . $operator . ' ?';
+        if ($value instanceof RawStatement) {
+            $this->query .= " {$columnStr} {$operator} " . $value->__toString();
+            return $this;
+        }
+
+        $this->query .= " {$columnStr} {$operator} ?";
         $this->bindings[] = $value;
         return $this;
     }
@@ -674,21 +731,42 @@ class QueryBuilder____ extends Connection
      */
     public function ___insert(array $data = []): self
     {
-        $filtered = $this->filterColumns($data);
+        
+        
+        $this->query = 'INSERT INTO ' . $this->table;
+        $hasSetColumns = false;
+        $placeholdersValues  = [];
 
-        if (empty($filtered)) {
-            throw new \InvalidArgumentException('No valid columns to insert.');
+        foreach ($data as $value){
+            $filtered = $this->filterColumns($value);
+
+            if (empty($filtered)) {
+                throw new \InvalidArgumentException('No valid columns to insert.');
+            }
+            
+            if(!$hasSetColumns){
+                $columns = implode(', ', array_keys($value));
+                $this->query .= " ({$columns}) VALUES";
+                $hasSetColumns = true;
+            }
+
+            $placeholders = [];
+            $values = [];
+
+            foreach ($filtered as $value) {
+                if ($value instanceof RawStatement) {
+                    $placeholders[] = $value->__toString();
+                } else {
+                    $placeholders[] = '?';
+                    $values[] = $value;
+                }
+            }
+
+            $placeholdersValues[] = '(' . implode(', ', $placeholders) . ')';
+            array_push($this->bindings ,...$values);
         }
 
-        $columns = implode(', ', array_keys($filtered));
-        $placeholders = implode(', ', array_fill(0, count($filtered), '?'));
-
-        $this->query = 'INSERT INTO ' . $this->table . ' (' . $columns . ') VALUES (' . $placeholders . ')';
-        $this->bindings = array_values($filtered);
-
-        // error_log($this->getRequestIp() . $this->query);
-        // error_log($this->getRequestIp() . 'Parameter: ' . json_encode($this->bindings));
-
+        $this->query .= ' ' . implode(',', $placeholdersValues);
         $this->stmt = $this->pdo->prepare($this->query);
         $this->stmt->execute($this->bindings);
 
@@ -698,7 +776,7 @@ class QueryBuilder____ extends Connection
 
     public function ___create(array $data): self
     {
-        return $this->___insert($data);
+        return $this->___insert([$data]);
     }
 
     /**
@@ -709,9 +787,6 @@ class QueryBuilder____ extends Connection
         try {
             $selectClause = $this->usedSelect ? '' : 'SELECT ' . $this->decideSelect($columns) . ' FROM ' . $this->table;
             $fullQuery = $selectClause . $this->query;
-
-            // error_log($this->getRequestIp() . $fullQuery);
-            // error_log($this->getRequestIp() . 'Parameter: ' . json_encode($this->bindings));
 
             $this->stmt = $this->pdo->prepare($fullQuery);
             $this->stmt->execute($this->bindings);
@@ -739,9 +814,6 @@ class QueryBuilder____ extends Connection
             $selectClause = $this->usedSelect ? '' : 'SELECT ' . $this->decideSelect() . ' FROM ' . $this->table;
             $fullQuery = $selectClause . $this->query . ' LIMIT 1';
 
-            // error_log($this->getRequestIp() . $fullQuery);
-            // error_log($this->getRequestIp() . 'Parameter: ' . json_encode($this->bindings));
-
             $this->stmt = $this->pdo->prepare($fullQuery);
             $this->stmt->execute($this->bindings);
             $result = $this->stmt->fetch(\PDO::FETCH_OBJ);
@@ -764,15 +836,6 @@ class QueryBuilder____ extends Connection
     }
 
     /**
-     * Find by primary key and fetch
-     */
-    public function ___fetchWherePrimary($primaryKey, bool $skipRelations = false)
-    {
-        $this->___where($this->primary, $primaryKey);
-        return $this->___first($skipRelations);
-    }
-
-    /**
      * Update data
      */
     public function ___update(array $data = [], bool $ignoreWhereWarning = false): \PDOStatement
@@ -792,18 +855,21 @@ class QueryBuilder____ extends Connection
         }
 
         $setClause = [];
-        foreach (array_keys($filtered) as $key) {
-            $setClause[] = $key . ' = ?';
+        $newBindings = [];
+
+        foreach ($filtered as $key => $value) {
+            if ($value instanceof RawStatement) {
+                $setClause[] = $key . ' = ' . $value->__toString();
+            } else {
+                $setClause[] = $key . ' = ?';
+                $newBindings[] = $value;
+            }
         }
 
         $setString = implode(', ', $setClause);
         $fullQuery = 'UPDATE ' . $this->table . ' SET ' . $setString . $this->query;
 
-        $this->bindings = array_merge(array_values($filtered), $this->bindings);
-
-        // error_log($this->getRequestIp() . $fullQuery);
-        // error_log($this->getRequestIp() . 'Parameter: ' . json_encode($this->bindings));
-        // dd($fullQuery);
+        $this->bindings = array_merge($newBindings, $this->bindings);
 
         $this->stmt = $this->pdo->prepare($fullQuery);
         $this->stmt->execute($this->bindings);
@@ -855,12 +921,20 @@ class QueryBuilder____ extends Connection
         return $this;
     }
 
+    public function ___rawExpr(string $expression): RawStatement
+    {
+        return RawStatement::raw($expression);
+    }
+
     /**
      * Join tables
      */
     public function ___join(string $table, string $ownerTableColumn, string $foreignKey, string $operator = '=', string $type = 'INNER'): self
     {
-        $this->query .= ' ' . $type . ' JOIN ' . $table . ' ON ' . $ownerTableColumn . ' ' . $operator . ' ' . $foreignKey;
+        $ownerTableColumnStr = $ownerTableColumn instanceof RawStatement ? $ownerTableColumn->__toString() : $ownerTableColumn;
+        $foreignKeyStr = $foreignKey instanceof RawStatement ? $foreignKey->__toString() : $foreignKey;
+
+        $this->query .= " {$type} JOIN {$table} ON {$ownerTableColumnStr} {$operator} {$foreignKeyStr}";
         return $this;
     }
 
@@ -874,7 +948,10 @@ class QueryBuilder____ extends Connection
             throw new \InvalidArgumentException('Direction must be ASC or DESC');
         }
 
-        $this->query .= ' ORDER BY ' . $column . ' ' . $direction;
+        // Handle RawStatement in order by
+        $columnStr = $column instanceof RawStatement ? $column->__toString() : $column;
+
+        $this->query .= " ORDER BY {$columnStr} {$direction}";
         return $this;
     }
 
@@ -883,7 +960,9 @@ class QueryBuilder____ extends Connection
      */
     public function ___groupBy(string $column): self
     {
-        $this->query .= ' GROUP BY ' . $column;
+        $columnStr = $column instanceof RawStatement ? $column->__toString() : $column;
+
+        $this->query .= " GROUP BY {$columnStr}";
         return $this;
     }
 

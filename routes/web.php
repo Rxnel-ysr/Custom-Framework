@@ -165,11 +165,6 @@ Route::get('/test-middleware', function () {
 })->middleware('test');
 
 
-Route::fallback(function () {
-   // return response(404)->json(['message' => 'Not found']);
-   // return dd(Route::dump(), Route::debugPatterns());
-   return abort(404);
-});
 
 // // Route::debugTree();
 // dependency()
@@ -191,7 +186,7 @@ Route::get('/ungger', function () {
 
    $aloks = $base->limit(5)->get()
       ->filter(fn($_) => strlen($_->name) > 3, true);
-   // abort(403, 'Action unauthorized', 'Hi, mind going back?');
+   abort(403, 'Action unauthorized', 'Hi, mind going back?');
 
    return [
       'user5' => $user5,
@@ -200,8 +195,6 @@ Route::get('/ungger', function () {
    ];
 });
 
-Route::get('/req', function (TestRequest $request) {
-   $data = $request->validated();
-
-   return 'ok, ' . $data['nama'];
-})->middleware('test');
+Route::post('/req', function (Request $req) {
+   return $req->name;
+});

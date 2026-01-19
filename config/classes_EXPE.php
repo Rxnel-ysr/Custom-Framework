@@ -31,18 +31,18 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1766773307,
+    'filemtime' => 1766835922,
   ),
-  'App\\Http\\Middlewares\\ApiHandler' => 
+  'App\\Http\\Middlewares\\CORS' => 
   array (
-    'filepath' => 'App/Http/Middlewares/ApiHandler.php',
+    'filepath' => 'App/Http/Middlewares/CORS.php',
     'depends' => 
     array (
     ),
     'boot' => 
     array (
     ),
-    'filemtime' => 1761987278,
+    'filemtime' => 1768505133,
   ),
   'App\\Http\\Middlewares\\Test' => 
   array (
@@ -53,7 +53,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1766805930,
+    'filemtime' => 1768504731,
   ),
   'App\\Http\\Controllers\\ResourcesController' => 
   array (
@@ -75,7 +75,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1760779426,
+    'filemtime' => 1768678848,
   ),
   'App\\Http\\Controllers\\RControl' => 
   array (
@@ -163,7 +163,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1766644527,
+    'filemtime' => 1768668646,
   ),
   'App\\Models\\Post' => 
   array (
@@ -229,7 +229,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1766813973,
+    'filemtime' => 1766890111,
   ),
   'App\\Foundation\\Http\\TrieNode' => 
   array (
@@ -240,7 +240,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1766600413,
+    'filemtime' => 1766898122,
   ),
   'App\\Foundation\\Http\\RouteTrie' => 
   array (
@@ -251,7 +251,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1766600413,
+    'filemtime' => 1766898122,
   ),
   'App\\Foundation\\Http\\RouterInterface' => 
   array (
@@ -262,7 +262,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1766807554,
+    'filemtime' => 1768502988,
   ),
   'App\\Foundation\\Http\\RouterBase' => 
   array (
@@ -273,7 +273,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1766807554,
+    'filemtime' => 1768502988,
   ),
   'App\\Foundation\\Http\\RouteRegex' => 
   array (
@@ -284,7 +284,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1766600396,
+    'filemtime' => 1766898108,
   ),
   'App\\Foundation\\Http\\RadixNode' => 
   array (
@@ -295,7 +295,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1766674986,
+    'filemtime' => 1768144480,
   ),
   'App\\Foundation\\Http\\RouteRadix' => 
   array (
@@ -306,7 +306,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1766674986,
+    'filemtime' => 1768144480,
   ),
   'App\\Foundation\\Http\\HttpHeaders' => 
   array (
@@ -317,7 +317,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1749443884,
+    'filemtime' => 1768632989,
   ),
   'App\\Foundation\\Http\\Response' => 
   array (
@@ -328,7 +328,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1766767613,
+    'filemtime' => 1768489820,
   ),
   'App\\Foundation\\Http\\ReqRequest' => 
   array (
@@ -352,6 +352,17 @@ return array (
     ),
     'filemtime' => 1766805318,
   ),
+  'App\\Foundation\\Http\\HttpResponse' => 
+  array (
+    'filepath' => 'App/Foundation/Http/HttpResponse.php',
+    'depends' => 
+    array (
+    ),
+    'boot' => 
+    array (
+    ),
+    'filemtime' => 1768654657,
+  ),
   'App\\Foundation\\Http\\StaticFile' => 
   array (
     'filepath' => 'App/Foundation/Http/StaticFile.php',
@@ -372,7 +383,96 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1766814047,
+    'filemtime' => 1768243390,
+  ),
+  'App\\Foundation\\Http\\Websocket\\WebSocketFrame' => 
+  array (
+    'filepath' => 'App/Foundation/Http/Websocket/Websocket.php',
+    'depends' => 
+    array (
+    ),
+    'boot' => 
+    array (
+    ),
+    'filemtime' => 1768731231,
+  ),
+  'App\\Foundation\\Http\\Websocket\\WebSocketServer' => 
+  array (
+    'filepath' => 'App/Foundation/Http/Websocket/Websocket.php',
+    'depends' => 
+    array (
+    ),
+    'boot' => 
+    array (
+    ),
+    'filemtime' => 1768731231,
+  ),
+  'Experimental\\App\\Foundation\\Http\\Websocket_v4\\WebSocketFrame_v4' => 
+  array (
+    'filepath' => 'App/Foundation/Http/Websocket/Websocket_v4_ping.php',
+    'depends' => 
+    array (
+    ),
+    'boot' => 
+    array (
+    ),
+    'filemtime' => 1768731173,
+  ),
+  'Experimental\\App\\Foundation\\Http\\Websocket_v4\\WebSocketServer' => 
+  array (
+    'filepath' => 'App/Foundation/Http/Websocket/Websocket_v4_ping.php',
+    'depends' => 
+    array (
+    ),
+    'boot' => 
+    array (
+    ),
+    'filemtime' => 1768731173,
+  ),
+  'Experimental\\App\\Foundation\\Http\\Websocket_beta\\WebSocketServer_beta' => 
+  array (
+    'filepath' => 'App/Foundation/Http/Websocket/Websocket_earliest.php',
+    'depends' => 
+    array (
+    ),
+    'boot' => 
+    array (
+    ),
+    'filemtime' => 1768731090,
+  ),
+  'Experimental\\App\\Foundation\\Http\\Websocket_alpha\\WebSocketServer_alpha' => 
+  array (
+    'filepath' => 'App/Foundation/Http/Websocket/Websocket_.php',
+    'depends' => 
+    array (
+    ),
+    'boot' => 
+    array (
+    ),
+    'filemtime' => 1768731144,
+  ),
+  'Experimental\\App\\Foundation\\Http\\Websocket_v2\\WebSocketServer_v2' => 
+  array (
+    'filepath' => 'App/Foundation/Http/Websocket/Websocket_v2.php',
+    'depends' => 
+    array (
+    ),
+    'boot' => 
+    array (
+    ),
+    'filemtime' => 1768731161,
+  ),
+  'App\\Foundation\\Http\\HttpClient' => 
+  array (
+    'filepath' => 'App/Foundation/Http/HttpClient.php',
+    'depends' => 
+    array (
+      0 => 'App\\Foundation\\Http\\HttpResponse',
+    ),
+    'boot' => 
+    array (
+    ),
+    'filemtime' => 1768652548,
   ),
   'App\\Foundation\\Database\\QueryBuilder___' => 
   array (
@@ -396,7 +496,7 @@ return array (
     ),
     'filemtime' => 1766566867,
   ),
-  'App\\Foundation\\Database\\QueryBuilder' => 
+  'App\\Foundation\\Database\\QueryBuilder____' => 
   array (
     'filepath' => 'App/Foundation/Database/QueryBuilder.php',
     'depends' => 
@@ -405,7 +505,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1766644572,
+    'filemtime' => 1768667327,
   ),
   'DEPRECATED\\Experimental\\App\\Foundation\\Database\\QueryBuilder2_' => 
   array (
@@ -460,7 +560,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1747444586,
+    'filemtime' => 1768390862,
   ),
   'App\\Foundation\\Database\\Migration' => 
   array (
@@ -506,6 +606,28 @@ return array (
     ),
     'filemtime' => 1766642021,
   ),
+  'App\\Foundation\\Database\\RawStatement' => 
+  array (
+    'filepath' => 'App/Foundation/Database/QueryBuilder_rawTODO.php',
+    'depends' => 
+    array (
+    ),
+    'boot' => 
+    array (
+    ),
+    'filemtime' => 1768674976,
+  ),
+  'App\\Foundation\\Database\\QueryBuilder' => 
+  array (
+    'filepath' => 'App/Foundation/Database/QueryBuilder_rawTODO.php',
+    'depends' => 
+    array (
+    ),
+    'boot' => 
+    array (
+    ),
+    'filemtime' => 1768674976,
+  ),
   'App\\Foundation\\Model' => 
   array (
     'filepath' => 'App/Foundation/Database/Model.php',
@@ -515,7 +637,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1766642877,
+    'filemtime' => 1768668385,
   ),
   'App\\Foundation\\Traits\\Strings' => 
   array (
@@ -561,6 +683,18 @@ return array (
     array (
     ),
     'filemtime' => 1766245437,
+  ),
+  'App\\Support\\Facades\\Http' => 
+  array (
+    'filepath' => 'App/Foundation/Facades/Http.php',
+    'depends' => 
+    array (
+      0 => 'App\\Support\\Facades\\Facade',
+    ),
+    'boot' => 
+    array (
+    ),
+    'filemtime' => 1768653098,
   ),
   'App\\Support\\Facades\\Response' => 
   array (
@@ -830,7 +964,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1761991976,
+    'filemtime' => 1766833926,
   ),
   'Setup' => 
   array (
@@ -984,7 +1118,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1766191785,
+    'filemtime' => 1768505373,
   ),
   'Unix' => 
   array (
@@ -1028,7 +1162,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1766203700,
+    'filemtime' => 1768388033,
   ),
   'App\\Foundation\\Support\\TypeChecker' => 
   array (
@@ -1039,7 +1173,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1766203700,
+    'filemtime' => 1768388033,
   ),
   'App\\Foundation\\Support\\Collection' => 
   array (
@@ -1050,7 +1184,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1766642821,
+    'filemtime' => 1768506714,
   ),
   'App\\Foundation\\Support\\Time\\Time' => 
   array (
@@ -1239,7 +1373,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1761475327,
+    'filemtime' => 1766837686,
   ),
   'App\\Foundation\\Guard\\RateLimiter' => 
   array (
@@ -1283,7 +1417,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1766657510,
+    'filemtime' => 1768504962,
   ),
   'App\\Foundation\\Http\\Middleware' => 
   array (
@@ -1294,7 +1428,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1766657510,
+    'filemtime' => 1768504962,
   ),
   'App\\Foundation\\System\\File' => 
   array (
@@ -1426,7 +1560,7 @@ return array (
     'boot' => 
     array (
     ),
-    'filemtime' => 1766806841,
+    'filemtime' => 1766888868,
   ),
   'App\\Contracts\\Interfaces\\TestInterface' => 
   array (
@@ -1514,7 +1648,7 @@ return array (
       ),
       1 => 'App\\Test\\say',
     ),
-    'filemtime' => 1761910393,
+    'filemtime' => 1768587288,
   ),
   'TestErrHandler' => 
   array (

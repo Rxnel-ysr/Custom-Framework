@@ -8,11 +8,6 @@ use App\Foundation\Traits\Macroable;
 use Dep;
 use Boot;
 
-#[Dep(Str::class)]
-#[Dep(Collection::class)]
-#[Dep(Macroable::class)]
-#[Boot([testClassWithInitAndDeps::class, 'init'])]
-#[Boot('App\\Test\\say')]
 /**
  * A test class with deps and init
  * @depends App\Foundation\Support\Str
@@ -20,7 +15,12 @@ use Boot;
  * 
  * @boot App\Test\say
  * @boot self::init
- */
+*/
+#[Dep(Str::class)]
+#[Dep(Collection::class)]
+#[Dep(Macroable::class)]
+#[Boot([testClassWithInitAndDeps::class, 'init'])]
+#[Boot('App\\Test\\say')]
 class testClassWithInitAndDeps
 {
     use Macroable;

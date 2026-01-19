@@ -40,14 +40,15 @@ class Model extends QueryBuilder implements IteratorAggregate, Countable, JsonSe
     protected $timestamps = true;
     protected $original;
     protected $dirty = null;
-    private Collection $data;
+    protected $data;
+    private Collection $collectionData;
 
     public function __construct($attributes = [])
     {
         parent::__construct();
 
-        $this->data = $attributes instanceof Collection ? $attributes : collect($attributes);
-        $this->original = $this->data->toArray();
+        $this->collectionData = $attributes instanceof Collection ? $attributes : collect($attributes);
+        $this->original = $this->data = $this->collectionData->toArray();
 
         if (!$this->table) {
             $tableName = $this->getTableName();
@@ -59,7 +60,6 @@ class Model extends QueryBuilder implements IteratorAggregate, Countable, JsonSe
             $this->fillable = array_merge($this->fillable, ['created_at','updated_at']);
         }
 
-        $this->pdo = self::getInstance();
     }
 
     protected function cast(mixed $value, CastType|string $cast): mixed
@@ -127,12 +127,14 @@ class Model extends QueryBuilder implements IteratorAggregate, Countable, JsonSe
 
         $res = call_user_func_array([$instance, '___' . $method], $args);
 
-        if ($method == 'get' || $method == 'first' || $method == 'find') {
+        if ($method == 'get' || $method == 'first' || $method == 'find' || $method == 'findOrFail') {
 
             if ($method == 'get') {
                 $newRes = [];
                 foreach ($res as $r) {
-                    $newRes[] = new static($instance->applyCast($r));
+                    $tmp = new static($instance->applyCast($r));
+                    $tmp->isFetched = true;
+                    $newRes[] = $tmp;
                 }
                 return $newRes;
             } else {
@@ -168,13 +170,15 @@ class Model extends QueryBuilder implements IteratorAggregate, Countable, JsonSe
         if (method_exists($this, '___' . $method) && !$this->isFetched) {
             $res = call_user_func_array([clone $this, '___' .$method], $args);
 
-            if ($method == 'get' || $method == 'first' || $method == 'find') {
+            if ($method == 'get' || $method == 'first' || $method == 'find' || $method == 'findOrFail') {
 
                 if ($method == 'get') {
                     $newRes = [];
                     foreach ($res as $r) {
-                        $newRes[] = new static($this->applyCast($r));
-                    }
+                        $tmp = new static($this->applyCast($r));
+                        $tmp->isFetched = true;
+                        $newRes[] = $tmp;
+                }
                     return collect($newRes);
                 } else {
                     $new = new static($this->applyCast($res));
@@ -188,92 +192,92 @@ class Model extends QueryBuilder implements IteratorAggregate, Countable, JsonSe
 
         $availableCollectionMethods = [
             // Core Methods
-            'all' => fn($args) => $this->data->all(...$args),
-            'toArray' => fn($args) => $this->data->toArray(...$args),
-            'toJson' => fn($args) => $this->data->toJson(...$args),
-            'count' => fn($args) => $this->data->count(...$args),
-            'isEmpty' => fn($args) => $this->data->isEmpty(...$args),
-            'isNotEmpty' => fn($args) => $this->data->isNotEmpty(...$args),
-            'jsonSerialize' => fn($args) => $this->data->jsonSerialize(...$args),
-            'getIterator' => fn($args) => $this->data->getIterator(...$args),
+            'all' => fn($args) => $this->collectionData->all(...$args),
+            'toArray' => fn($args) => $this->collectionData->toArray(...$args),
+            'toJson' => fn($args) => $this->collectionData->toJson(...$args),
+            'count' => fn($args) => $this->collectionData->count(...$args),
+            'isEmpty' => fn($args) => $this->collectionData->isEmpty(...$args),
+            'isNotEmpty' => fn($args) => $this->collectionData->isNotEmpty(...$args),
+            'jsonSerialize' => fn($args) => $this->collectionData->jsonSerialize(...$args),
+            'getIterator' => fn($args) => $this->collectionData->getIterator(...$args),
 
             // Filtering Methods
-            'filter' => fn($args) => new static($this->data->filter(...$args)),
-            'reject' => fn($args) => $this->data->reject(...$args),
-            'first' => fn($args) => $this->data->first(...$args),
-            'firstOrFail' => fn($args) => $this->data->firstOrFail(...$args),
-            'last' => fn($args) => $this->data->last(...$args),
-            'where' => fn($args) => $this->data->where(...$args),
-            'whereStrict' => fn($args) => $this->data->whereStrict(...$args),
-            'whereIn' => fn($args) => $this->data->whereIn(...$args),
-            'whereNotIn' => fn($args) => $this->data->whereNotIn(...$args),
-            'whereBetween' => fn($args) => $this->data->whereBetween(...$args),
-            'whereNotBetween' => fn($args) => $this->data->whereNotBetween(...$args),
-            'whereNull' => fn($args) => $this->data->whereNull(...$args),
-            'whereNotNull' => fn($args) => $this->data->whereNotNull(...$args),
-            'unique' => fn($args) => $this->data->unique(...$args),
+            'filter' => fn($args) => new static($this->collectionData->filter(...$args)),
+            'reject' => fn($args) => $this->collectionData->reject(...$args),
+            'first' => fn($args) => $this->collectionData->first(...$args),
+            'firstOrFail' => fn($args) => $this->collectionData->firstOrFail(...$args),
+            'last' => fn($args) => $this->collectionData->last(...$args),
+            'where' => fn($args) => $this->collectionData->where(...$args),
+            'whereStrict' => fn($args) => $this->collectionData->whereStrict(...$args),
+            'whereIn' => fn($args) => $this->collectionData->whereIn(...$args),
+            'whereNotIn' => fn($args) => $this->collectionData->whereNotIn(...$args),
+            'whereBetween' => fn($args) => $this->collectionData->whereBetween(...$args),
+            'whereNotBetween' => fn($args) => $this->collectionData->whereNotBetween(...$args),
+            'whereNull' => fn($args) => $this->collectionData->whereNull(...$args),
+            'whereNotNull' => fn($args) => $this->collectionData->whereNotNull(...$args),
+            'unique' => fn($args) => $this->collectionData->unique(...$args),
 
             // Transforming Methods
-            'map' => fn($args) => new static($this->data->map(...$args)),
-            'mapInto' => fn($args) => $this->data->mapInto(...$args),
-            'transform' => fn($args) => $this->data->transform(...$args),
-            'reduce' => fn($args) => $this->data->reduce(...$args),
-            'pluck' => fn($args) => $this->data->pluck(...$args),
-            'implode' => fn($args) => $this->data->implode(...$args),
-            'each' => fn($args) => $this->data->each(...$args),
-            'tap' => fn($args) => $this->data->tap(...$args),
-            'pipe' => fn($args) => $this->data->pipe(...$args),
-            'toObj' => fn($args) => $this->data->toObj(...$args),
+            'map' => fn($args) => new static($this->collectionData->map(...$args)),
+            'mapInto' => fn($args) => $this->collectionData->mapInto(...$args),
+            'transform' => fn($args) => $this->collectionData->transform(...$args),
+            'reduce' => fn($args) => $this->collectionData->reduce(...$args),
+            'pluck' => fn($args) => $this->collectionData->pluck(...$args),
+            'implode' => fn($args) => $this->collectionData->implode(...$args),
+            'each' => fn($args) => $this->collectionData->each(...$args),
+            'tap' => fn($args) => $this->collectionData->tap(...$args),
+            'pipe' => fn($args) => $this->collectionData->pipe(...$args),
+            'toObj' => fn($args) => $this->collectionData->toObj(...$args),
 
             // Sorting & Grouping Methods
-            'groupBy' => fn($args) => $this->data->groupBy(...$args),
-            'sortBy' => fn($args) => $this->data->sortBy(...$args),
-            'sortByDesc' => fn($args) => $this->data->sortByDesc(...$args),
-            'sortDesc' => fn($args) => $this->data->sortDesc(...$args),
-            'sortAsc' => fn($args) => $this->data->sortAsc(...$args),
-            'reverse' => fn($args) => $this->data->reverse(...$args),
-            'shuffle' => fn($args) => $this->data->shuffle(...$args),
+            'groupBy' => fn($args) => $this->collectionData->groupBy(...$args),
+            'sortBy' => fn($args) => $this->collectionData->sortBy(...$args),
+            'sortByDesc' => fn($args) => $this->collectionData->sortByDesc(...$args),
+            'sortDesc' => fn($args) => $this->collectionData->sortDesc(...$args),
+            'sortAsc' => fn($args) => $this->collectionData->sortAsc(...$args),
+            'reverse' => fn($args) => $this->collectionData->reverse(...$args),
+            'shuffle' => fn($args) => $this->collectionData->shuffle(...$args),
 
             // Mutation Methods
-            'push' => fn($args) => $this->data->push(...$args),
-            'prepend' => fn($args) => $this->data->prepend(...$args),
-            'pop' => fn($args) => $this->data->pop(...$args),
-            'shift' => fn($args) => $this->data->shift(...$args),
-            'merge' => fn($args) => $this->data->merge(...$args),
-            'mergeRecursive' => fn($args) => $this->data->mergeRecursive(...$args),
-            'replace' => fn($args) => $this->data->replace(...$args),
-            'chunk' => fn($args) => $this->data->chunk(...$args),
-            'flatten' => fn($args) => $this->data->flatten(...$args),
-            'flattenDeep' => fn($args) => $this->data->flattenDeep(...$args),
-            'collapse' => fn($args) => $this->data->collapse(...$args),
-            'zip' => fn($args) => $this->data->zip(...$args),
+            'push' => fn($args) => $this->collectionData->push(...$args),
+            'prepend' => fn($args) => $this->collectionData->prepend(...$args),
+            'pop' => fn($args) => $this->collectionData->pop(...$args),
+            'shift' => fn($args) => $this->collectionData->shift(...$args),
+            'merge' => fn($args) => $this->collectionData->merge(...$args),
+            'mergeRecursive' => fn($args) => $this->collectionData->mergeRecursive(...$args),
+            'replace' => fn($args) => $this->collectionData->replace(...$args),
+            'chunk' => fn($args) => $this->collectionData->chunk(...$args),
+            'flatten' => fn($args) => $this->collectionData->flatten(...$args),
+            'flattenDeep' => fn($args) => $this->collectionData->flattenDeep(...$args),
+            'collapse' => fn($args) => $this->collectionData->collapse(...$args),
+            'zip' => fn($args) => $this->collectionData->zip(...$args),
 
-            'set' => fn($args) => $this->data->set(...$args),
-            'has' => fn($args) => $this->data->has(...$args),
-            'forget' => fn($args) => $this->data->forget(...$args),
-            'only' => fn($args) => $this->data->only(...$args),
-            'except' => fn($args) => $this->data->except(...$args),
-            'keyBy' => fn($args) => $this->data->keyBy(...$args),
-            'keys' => fn($args) => $this->data->keys(...$args),
-            'values' => fn($args) => $this->data->values(...$args),
+            'set' => fn($args) => $this->collectionData->set(...$args),
+            'has' => fn($args) => $this->collectionData->has(...$args),
+            'forget' => fn($args) => $this->collectionData->forget(...$args),
+            'only' => fn($args) => $this->collectionData->only(...$args),
+            'except' => fn($args) => $this->collectionData->except(...$args),
+            'keyBy' => fn($args) => $this->collectionData->keyBy(...$args),
+            'keys' => fn($args) => $this->collectionData->keys(...$args),
+            'values' => fn($args) => $this->collectionData->values(...$args),
 
             // Aggregate Methods
-            'sum' => fn($args) => $this->data->sum(...$args),
-            'avg' => fn($args) => $this->data->avg(...$args),
-            'min' => fn($args) => $this->data->min(...$args),
-            'max' => fn($args) => $this->data->max(...$args),
-            'median' => fn($args) => $this->data->median(...$args),
-            'mode' => fn($args) => $this->data->mode(...$args),
+            'sum' => fn($args) => $this->collectionData->sum(...$args),
+            'avg' => fn($args) => $this->collectionData->avg(...$args),
+            'min' => fn($args) => $this->collectionData->min(...$args),
+            'max' => fn($args) => $this->collectionData->max(...$args),
+            'median' => fn($args) => $this->collectionData->median(...$args),
+            'mode' => fn($args) => $this->collectionData->mode(...$args),
 
             // Conditional Methods
-            'contains' => fn($args) => $this->data->contains(...$args),
-            'containsStrict' => fn($args) => $this->data->containsStrict(...$args),
-            'doesntContain' => fn($args) => $this->data->doesntContain(...$args),
-            'every' => fn($args) => $this->data->every(...$args),
+            'contains' => fn($args) => $this->collectionData->contains(...$args),
+            'containsStrict' => fn($args) => $this->collectionData->containsStrict(...$args),
+            'doesntContain' => fn($args) => $this->collectionData->doesntContain(...$args),
+            'every' => fn($args) => $this->collectionData->every(...$args),
         ];
 
         switch (true) {
-            case $this->data->isNotEmpty() && isset($availableCollectionMethods[$method]):
+            case $this->collectionData->isNotEmpty() && isset($availableCollectionMethods[$method]):
                 return $availableCollectionMethods[$method]($args);
             default:
                 return self::__callStatic($method, $args);;
@@ -282,20 +286,21 @@ class Model extends QueryBuilder implements IteratorAggregate, Countable, JsonSe
 
     public function __set($name, $value)
     {
-        if ($this->data->get($name) !== $value) {
+        if ($this->collectionData->get($name) !== $value) {
             $this->dirty[$name] = $value;
+            $this->data[$name] = $value;
         }
-        return $this->data->set($name, $value);
+        return $this->collectionData->set($name, $value);
     }
 
     public function __get($name)
     {
-        return $this->data->get($name, null);
+        return $this->collectionData->get($name, null);
     }
 
     public function all()
     {
-        return $this->data;
+        return $this->collectionData;
     }
 
     public function dirty()
@@ -310,12 +315,22 @@ class Model extends QueryBuilder implements IteratorAggregate, Countable, JsonSe
 
     public function getProp()
     {
-        return $this->data;
+        return $this->collectionData;
     }
 
     public function __invoke()
     {
-        response()->json($this->data);
+        response()->json($this->collectionData);
+    }
+
+    public function update(array $data)
+    {
+        if($this->isFetched){
+            // dd($this);
+            return (clone $this)->___where($this->primary, $this->collectionData->get($this->primary))->___update($data);
+        }
+
+        return (clone $this)->___update($data);
     }
 
     public function save()
@@ -326,7 +341,7 @@ class Model extends QueryBuilder implements IteratorAggregate, Countable, JsonSe
             if ($this->isDirty()) {
                 (clone $this)->___where(
                     $this->primary,
-                    $this->data->get($this->primary)
+                    $this->collectionData->get($this->primary)
                 )->___update(
                     $this->timestamps ? array_merge($array, ['updated_at' => $currentTime]) : $array
                 );
@@ -341,17 +356,17 @@ class Model extends QueryBuilder implements IteratorAggregate, Countable, JsonSe
 
     public function getIterator(): Traversable
     {
-        return new ArrayIterator($this->data);
+        return new ArrayIterator($this->collectionData);
     }
 
     public function count(): int
     {
-        return count($this->data);
+        return count($this->collectionData);
     }
 
     public function jsonSerialize(): mixed
     {
-        return $this->data->toArrayWithout($this->hidden);
+        return $this->collectionData->toArrayWithout($this->hidden);
     }
 
     public function __toString(): string
@@ -366,7 +381,7 @@ class Model extends QueryBuilder implements IteratorAggregate, Countable, JsonSe
 
     public function toJson()
     {
-        $data = $this->data->toArrayWithout($this->hidden);
+        $data = $this->collectionData->toArrayWithout($this->hidden);
         return json_encode($data);
     }
 

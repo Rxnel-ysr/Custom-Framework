@@ -886,7 +886,7 @@ class Type
         $properties = $reflection->getProperties();
 
         foreach ($properties as $property) {
-            $property->setAccessible(true);
+            // $property->setAccessible(true);
             $name = $property->getName();
             $value = $property->getValue($object);
 

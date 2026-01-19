@@ -18,7 +18,8 @@ return (static function () {
         ])
         ->withMiddleware(function (Middleware $middleware) {
             $middleware->aliases([
-                'test' => \App\Http\Middlewares\Test::class
+                'cors' => \App\Http\Middlewares\CORS::class,
+                'test' => \App\Http\Middlewares\Test::class,
             ]);
         })
         ->withServices([
@@ -27,6 +28,5 @@ return (static function () {
         ->withProviders([
             AppServiceProvider::class
         ])
-        ->withConfig($config['config'])
-        ->withDependencies($config['dependencies']);
+        ->withConfig($config['config']);
 })();

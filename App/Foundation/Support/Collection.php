@@ -1282,7 +1282,11 @@ class Collection implements JsonSerializable, Countable, IteratorAggregate, Arra
     public function __get($name)
     {
         return ($this->items instanceof stdClass ? $this->items->{$name}  : $this->items[$name]);
-        
+    }
+
+    public function __toString()
+    {
+        return ($this->valueType == 'object' || $this->valueType == 'array') ? json_encode($this->items) : $this->item;
     }
 }
 /**

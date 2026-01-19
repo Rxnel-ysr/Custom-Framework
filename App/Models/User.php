@@ -13,8 +13,11 @@ class User extends Model
     protected $fillable = [
         'name',
         'email',
-        'password'
+        'password',
+        'updated_at'
     ];
+
+    public $timestamps = false;
 
     public function hello()
     {
