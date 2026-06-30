@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Foundation\Exceptions\Http;
+namespace App\Foundation\Exceptions\Framework\Http;
 
 use App\Foundation\Exceptions\Framework\HighLevelException;
 use Throwable;
@@ -20,6 +20,15 @@ abstract class BaseHttpException extends HighLevelException
     ) {
         $this->subMessage = $subMessage;
         parent::__construct($message, $code, $previous);
+    }
+
+    public static function make(
+        string $message = "",
+        string $subMessage = "",
+        int $code = 0,
+        Throwable|null $previous = null): static
+    {
+        return new static($message, $subMessage, $code, $previous);
     }
 
     public function getSubMessage(): string

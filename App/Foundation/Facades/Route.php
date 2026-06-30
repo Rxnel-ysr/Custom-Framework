@@ -30,6 +30,7 @@ use Dep;
  * @method static mixed dispatch(Request $request)
  * @method static array routeList()
  * @method static array getNamedRoutes()
+ * @method static mixed parameter(string $parameter)
  */
 #[Dep(Facade::class)]
 class Route extends Facade
@@ -41,7 +42,7 @@ class Route extends Facade
         $nonce = base64_encode(random_bytes(16));
 
         if (!empty($_ENV['CSP'])) {
-            header("Content-Security-Policy: default-src 'self'; media-src 'self'; script-src 'self' 'nonce-$nonce'; style-src 'self' 'nonce-$nonce' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com;");
+            withHeader()->set('Content-Security-Policy', "default-src 'self'; media-src 'self'; script-src 'self' 'nonce-$nonce'; style-src 'self' 'nonce-$nonce' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com;");
         }
 
         DI::bind('nonce', fn() => $nonce);

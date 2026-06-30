@@ -2,7 +2,7 @@
 
 namespace App;
 
-use App\Foundation\CLI\Argv;
+use App\Foundation\Exceptions\Framework\BaseException;
 use App\Support\Facades\Route;
 use App\Foundation\Http\Request;
 use App\Foundation\Http\Middleware;
@@ -10,8 +10,8 @@ use App\Foundation\Guard\RateLimiterSQL;
 use App\Foundation\Manager\InstanceManager;
 use Experimental\App\Foundation\CLI\Command;
 use App\Foundation\Exceptions\Framework\Primitive\InvalidArgumentException;
-// use Experimental\App\Foundation\Http\Route;
-
+use App\Foundation\Manager\ClassContainer;
+use Closure;
 
 class App
 {
@@ -28,9 +28,34 @@ class App
         $this->root = DIRECTORY_SEPARATOR . trim($root, DIRECTORY_SEPARATOR);
     }
 
-    public static function configure($root)
+    public static function configure($root): App
     {
-        return new self($root);
+        return createInstance(App::class, null, App::class, $root);
+    }
+
+    /**
+     * Create or retrieve class instance using app container
+     * 
+     * @template TClass
+     * @param class-string<TClass> $class
+     * @return TClass
+     */
+    public function make(string $class)
+    {
+        return $this->services['container']->make($class);
+    }
+
+    /**
+     * Bind a abstract to a implementation
+     *
+     * @param string $abstract
+     * @param string|callable|null|null $concrete
+     * @param boolean $shared
+     * @return void
+     */
+    public function bind(string $abstract, string|callable|null $concrete = null, bool $shared = false)
+    {
+        $this->services['container']->bind($abstract, $concrete, $shared);
     }
 
     public function __get($name)
@@ -52,6 +77,18 @@ class App
         return $key !== null
             ? ($this->configs[$key] ?? null)
             : $this->configs;
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @param Closure(BaseException $exception) $closure
+     * @return App
+     */
+    public function withExceptions(Closure $closure)
+    {
+        $closure(createInstance(BaseException::class));
+        return $this;
     }
 
     public function withDependencies(array $dependencies): self
@@ -88,13 +125,13 @@ class App
 
     public function withProviders(array $providers)
     {
-        $this->providers = array_map(fn($item) => createInstance($item),$providers);
+        $this->providers = array_map(fn($item) => createInstance($item), $providers);
         return $this;
     }
 
-    public function withServices(array $services)
+    public function withServices(array $services = [])
     {
-        foreach($services as $name => $service){
+        foreach ($services as $name => $service) {
             $this->services[$name] = createInstance($service, null, $name);
         }
         return $this;
@@ -102,15 +139,19 @@ class App
 
     public function setupProviders()
     {
-        foreach($this->providers as $provider){
+        foreach ($this->providers as $provider) {
             $provider->register($this);
             $provider->boot($this);
         }
     }
 
-    public function withMiddleware(callable $callable)
+    /**
+     * @param Closure(Middleware $middleware) $callable
+     * @return App
+     */
+    public function withMiddleware(Closure $callable)
     {
-        createInstance(Middleware::class, $callable, '_appMiddleware');
+        createInstance(Middleware::class, $callable, '_appMiddleware')->setup();
         return $this;
     }
 
@@ -125,11 +166,12 @@ class App
         load([$this->root . '/App/Http/Controllers']);
 
         $requestUri = $request->uri();
+        $isApi = false;
+        $apiPrefix = '/' . trim($this->router['api_prefix'], '/') . '/';
+        $isApi = str_starts_with($requestUri, $apiPrefix);
+        
         if (!str_starts_with($requestUri, '/__')) {
             $rateLimiterConfig = require $this->configs['rate_limiter'];
-            $apiPrefix = '/' . trim($this->router['api_prefix'], '/') . '/';
-
-            $isApi = str_starts_with($requestUri, $apiPrefix);
             $requestUri = $isApi ? str_replace($apiPrefix, '/', $requestUri) : $requestUri;
             $scope = $isApi ? 'api' : 'web';
 
@@ -156,7 +198,7 @@ class App
 
         $routeFile = $isApi ? $this->router['api'] : $this->router['web'];
 
-        Route::group(['prefix' => $isApi ? '/api' : ''], function () use ($routeFile) {
+        Route::group(['prefix' => $isApi ? $apiPrefix : ''], function () use ($routeFile) {
             require $this->root . '/' . ltrim($routeFile, '/');
         });
 
@@ -175,6 +217,15 @@ class App
             require_once $this->root . DIRECTORY_SEPARATOR . $dependency;
         }
         return Command::standBy($GLOBALS['argv']);
+    }
+
+    /**
+     * @return App
+     */
+    public function create()
+    {
+        $this->services['container'] = createInstance(ClassContainer::class, null, 'container');
+        return $this;
     }
 }
 /**

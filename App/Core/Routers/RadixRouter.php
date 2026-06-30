@@ -104,12 +104,6 @@ class RouteRadix extends RouterBase implements RouterInterface
                     );
                 }
             }
-            if($this->lastRoute['method'] !== 'OPTIONS'){
-                // dd((str_starts_with($this->lastRoute['url'], 'api')  ? substr($this->lastRoute['url'], 3) : $this->lastRoute['url']));
-                $this->add('OPTIONS', (str_starts_with($this->lastRoute['url'], 'api')  ? substr($this->lastRoute['url'], 3) : $this->lastRoute['url']), $this->lastRoute['action'], [
-                    'cors'
-                ]);
-            }
         }
 
         return $this;

@@ -7,9 +7,9 @@
 </head>
 <body>
     <!-- Content -->
-    @yield('content')
+    @yield('content');
     
     <!-- This is scripts pushed by stacks -->
-    @stacks('scripts')
+    @stacks('scripts');
 </body>
 </html>

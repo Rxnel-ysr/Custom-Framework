@@ -14,9 +14,11 @@ class InstanceManager
     /**
      * Retrieve a singleton instance of the given class.
      *
-     * @param string $key The class name or key identifier.
+     * @template T
+     * 
+     * @param class-string<T> $key The class name or key identifier.
      * @param mixed ...$args Optional parameters for the constructor.
-     * @return object The singleton instance of the requested class.
+     * @return T The singleton instance of the requested class.
      * @throws Exception If the class does not exist.
      */
     public static function getInstance(string $key, ...$args): object

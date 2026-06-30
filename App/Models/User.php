@@ -2,22 +2,27 @@
 
 namespace App\Models;
 
-use App\Foundation\Model;
+use App\Foundation\Database\Model;
+use App\Foundation\Database\Traits\HasUuid;
+use App\Foundation\Guard\Traits\HasApiToken;
 
 class User extends Model
 {
+    use HasApiToken;
+
     protected $hidden = [
-        'password'
+        'password',
+        'updated_at',
+        'created_at',
     ];
 
     protected $fillable = [
         'name',
         'email',
         'password',
-        'updated_at'
     ];
 
-    public $timestamps = false;
+    public $timestamps = true;
 
     public function hello()
     {

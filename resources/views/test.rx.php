@@ -1,40 +1,33 @@
-@extends('parentTest')
+@extends('parentTest');
 
-@section('content')
-@php
-http_response_code(201);
-$data = ['yusron', 'ronel', 'rexarion'];
-
-@endphp
+@section('content'):
 <h1>{{ $message ?? '' }}</h1>
-@say('Alok')
+@say('HIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIi');
 
 <ul>
-    @foreach($data as $i)
+    @foreach([] as $i):
     <li>{{ $i }}</li>
     @endforeach
-    <form action="" method="get">
-        <input type="text" name="name">
-        <button>Send</button>
-    </form>
     {{-- Haiz this is a comment --}}
 </ul>
+<form action="" method="get">
+    <input type="text" name="name" value="{{ request()->query('name') }}">
+    <button>Send</button>
+</form>
 
-@reactive('Lists', ['lists' => [], 'temp'=>'ok'])
+@reactive('Lists', ['lists' => [], 'temp'=>'ok']);
 
 {{ $name??'' }}
 
-
-
 @endsection
 
-@push('scripts')
+@push('scripts'):
 <script nonce="{{ $_nonce }}">
     console.log('Are this gonna work?');
 </script>
 @endpush
 
-@push('scripts')
+@push('scripts'):
 <script nonce="{{ $_nonce }}">
     console.log('Thiss too??');
 </script>

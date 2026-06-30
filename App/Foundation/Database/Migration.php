@@ -324,6 +324,12 @@ class Blueprint extends Connection
         return $this;
     }
 
+    public function uuid(string $column = 'id')
+    {
+        $this->addColumn($column, $this->db_type == 'mysql' ? 'CHAR(36)' : 'CHAR(36) PRIMARY KEY')->modifyLastColumn($this->db_type == 'mysql' ? 'PRIMARY KEY' : '');
+        return $this;
+    }
+
     public function string(string $column, int $length = 255)
     {
         $this->addColumn($column, 'VARCHAR(' . $length . ') NOT NULL');

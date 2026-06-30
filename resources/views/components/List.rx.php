@@ -14,7 +14,7 @@
     @reactive('Oka', ['home' => true]);
 
 
-    <input type="text" rx:oninput="update" rx:delay="1000" rx:attribute="temp" name="temp" value="{{$temp}}" />
+    <input type="text" rx:oninput="update" rx:delay="1" rx:attribute="temp" name="temp" value="{{$temp}}" />
 
     <button rx:action="add" rx:params='@jparam($temp);' id="btn">Add</button>
 </div>

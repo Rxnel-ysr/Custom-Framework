@@ -5,15 +5,14 @@ use App\Foundation\Compiler\Compile;
 use App\Foundation\Database\Connection;
 use App\Foundation\Configuration\Env;
 use App\Foundation\Http\Response;
-use App\Foundation\Manager\Container;
 use App\Foundation\Manager\InstanceManager;
-use App\Foundation\Providers\AppServiceProvider;
+use App\Foundation\Support\Time;
 use App\Foundation\System\Disk;
 use App\Support\Facades\DI;
 
 return (static function () {
     $__root = dirname(__DIR__, 3) . "/";
-    $isWeb = PHP_SAPI !== 'cli';
+    $isWeb = php_sapi_name() !== 'cli';
 
     // Load environment
     Env::load($__root . '.env');
@@ -63,6 +62,7 @@ return (static function () {
     createInstance(Disk::class, null, 'appDisk', "{$__root}public");
     $app->setupProviders();
     $app->container->bind(Response::class, fn() => response());
+    Time::setTimeZone($cfg['app']['timezone']);
 
     // Return fully booted App instance
     return $app;

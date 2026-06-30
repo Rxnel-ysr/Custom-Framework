@@ -22,10 +22,10 @@ class TrieNode
 class RouteTrie extends RouterBase implements RouterInterface
 {
     public string $name = 'TrieRouter';
-    
+
     // Method-based root nodes for optimal performance
     private array $roots = [];
-    
+
     private string $dirRoot;
     private array $globalMiddleware = [];
     private array $routeMiddleware = [];
@@ -52,7 +52,7 @@ class RouteTrie extends RouterBase implements RouterInterface
         foreach ($methods as $method) {
             $this->roots[$method] = new TrieNode();
         }
-        
+
         $this->dirRoot = $root ?? $_SERVER['DOCUMENT_ROOT'] ?? null;
         $this->plugins = $plugins;
     }
@@ -60,13 +60,13 @@ class RouteTrie extends RouterBase implements RouterInterface
     public function getRequestMethod(): string
     {
         // Optimized method detection
-        return $_POST['_HTTP_METHOD'] 
-            ?? $_SERVER['HTTP_X_HTTP_METHOD_OVERRIDE'] 
-            ?? $_SERVER['REQUEST_METHOD'] 
+        return $_POST['_HTTP_METHOD']
+            ?? $_SERVER['HTTP_X_HTTP_METHOD_OVERRIDE']
+            ?? $_SERVER['REQUEST_METHOD']
             ?? 'GET';
     }
 
-    public function middleware(string|array $middleware, ?callable $callback = null): null|self
+    public function middleware(string|array $middleware, ?callable $callback = null)
     {
         if (!is_array($middleware)) {
             $middleware = [$middleware];
@@ -83,7 +83,7 @@ class RouteTrie extends RouterBase implements RouterInterface
 
             // Find and update the node with the new middleware
             $segments = self::splitPath($url);
-            
+
             if (isset($this->roots[$method])) {
                 $node = $this->roots[$method];
                 foreach ($segments as $segment) {
@@ -123,11 +123,11 @@ class RouteTrie extends RouterBase implements RouterInterface
     public function add(string $method, string $url, callable|array $action, array $middleware = [])
     {
         $this->lastRoute = null;
-        
+
         // Apply group prefix efficiently
         $prefix = $this->currentGroup['prefix'];
-        $url = $prefix === '' ? $url : trim($prefix . '/' . trim($url, '/'), '/');
-        
+        $url = trim($prefix === '' ? $url : $prefix . '/' . trim($url, '/'), '/');
+
         // Store route for debugging
         $this->routeList[$method][] = '/' . $url;
 
@@ -147,7 +147,7 @@ class RouteTrie extends RouterBase implements RouterInterface
         if (!isset($this->roots[$method])) {
             $this->roots[$method] = new TrieNode();
         }
-        
+
         $node = $this->roots[$method];
 
         foreach ($segments as $segment) {
@@ -232,8 +232,8 @@ class RouteTrie extends RouterBase implements RouterInterface
         // Efficient attribute merging
         $prefix = trim($this->currentGroup['prefix'] . '/' . trim($attributes['prefix'] ?? '', '/'), '/');
         $middleware = array_merge($this->currentGroup['middleware'], (array)($attributes['middleware'] ?? []));
-        $namespace = $this->currentGroup['namespace'] . 
-                    (isset($attributes['namespace']) ? '\\' . trim($attributes['namespace'], '\\') : '');
+        $namespace = $this->currentGroup['namespace'] .
+            (isset($attributes['namespace']) ? '\\' . trim($attributes['namespace'], '\\') : '');
 
         $this->currentGroup = compact('prefix', 'middleware', 'namespace');
 
@@ -326,7 +326,7 @@ class RouteTrie extends RouterBase implements RouterInterface
         if (is_callable($action)) {
             return callFuncWithParams($action, $params, true, true);
         }
-        
+
         return Debugger::showErrorPage(500, 'Invalid callback');
     }
 
@@ -334,7 +334,7 @@ class RouteTrie extends RouterBase implements RouterInterface
     {
         $method = self::getRequestMethod();
         $requestUri = trim($request->uri(), '/');
-        
+
         // Use method-specific trie root
         if (!isset($this->roots[$method])) {
             return self::handleNotFound();
@@ -389,7 +389,7 @@ class RouteTrie extends RouterBase implements RouterInterface
         if ($method !== null) {
             $node = $this->roots[$method] ?? $this->roots['GET'];
         }
-        
+
         $node = $node ?? $this->roots['GET'];
         $indentStr = str_repeat(' ', $indent * 2);
 

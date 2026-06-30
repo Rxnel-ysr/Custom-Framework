@@ -1,6 +1,6 @@
 <?php
 
-$host = "example.com";
+$host = "127.0.0.1";
 $port = 80;
 
 $socket = fsockopen($host, $port, $errno, $errstr, 5);
@@ -9,7 +9,7 @@ if (!$socket) {
 }
 
 $request =
-    "GET / HTTP/1.1\r\n" .
+    "GET /api/test HTTP/1.1\r\n" .
     "Host: $host\r\n" .
     "User-Agent: RawPHP/1.0\r\n" .
     "Accept: */*\r\n" .

@@ -8,20 +8,20 @@ require_once 'Connection.php';
 
 use App\Debug\Debugger;
 use App\Foundation\Database\Connection;
-use App\Foundation\Exceptions\Http\NotFoundException;
+use App\Foundation\Exceptions\Framework\Database\ModelNotFoundException;
+use App\Foundation\Exceptions\Framework\Primitive\InvalidArgumentException;
+use App\Foundation\Exceptions\Framework\Primitive\LogicException;
 use App\Foundation\Traits\Strings;
-use InvalidArgumentException;
-use LogicException;
 
-class RawStatement{
+class RawStatement
+{
     public static function raw(string $statement)
     {
         return new self($statement);
     }
 
-    public function __construct(protected string $statement)
-    {
-    }
+    public function __construct(protected string $statement) {}
+
     public function __toString()
     {
         return $this->statement;
@@ -157,7 +157,7 @@ class QueryBuilder extends Connection
     /**
      * Select columns to retrieve.
      */
-    public function ___select($columns = ['*']): self
+    public function ___select(string|array $columns = ['*']): self
     {
         $columns = is_array($columns) ? $columns : [$columns];
 
@@ -720,7 +720,7 @@ class QueryBuilder extends Connection
     {
         if(! $model = $this->___where($this->primary, $primaryKey)->___first()){
             $cls = static::class;
-            throw new NotFoundException("No query result from [{$cls}]: {$primaryKey}");
+            throw new ModelNotFoundException("No query result from [{$cls}]: {$primaryKey}");
         }
 
         return $model;
@@ -731,8 +731,6 @@ class QueryBuilder extends Connection
      */
     public function ___insert(array $data = []): self
     {
-        
-        
         $this->query = 'INSERT INTO ' . $this->table;
         $hasSetColumns = false;
         $placeholdersValues  = [];

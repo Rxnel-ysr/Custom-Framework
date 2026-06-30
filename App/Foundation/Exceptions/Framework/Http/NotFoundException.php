@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Foundation\Exceptions\Http;
+namespace App\Foundation\Exceptions\Framework\Http;
 
 /**
  * Http Exception of Not found exception

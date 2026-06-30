@@ -2,18 +2,26 @@
 
 namespace App\Foundation\Http;
 
-use Exception;
+use App\Foundation\Exceptions\Framework\LowLevelException;
 
-class MiddlewareException extends Exception {}
+// use App\Foundation\Exceptions\Framework\Primitive\BadMethodCallException;
+// use Bad;
+
+class MiddlewareException extends LowLevelException {}
 
 class Middleware
 {
     private array $aliases = [];
-    protected HttpHeaders $header;
+    protected static HttpHeaders $header;
 
-    public function __construct()
+    public static function setup()
     {
-        $this->header = withHeader();
+        self::$header = withHeader();
+    }
+    
+    public function __call($name, $arguments)
+    {
+        return method_exists(self::$header, $name) ? self::$header->$name(...$arguments) : throw new MiddlewareException("Call to undefined method ". self::class . '::'. $name);
     }
 
     public function aliases($aliases = []): self

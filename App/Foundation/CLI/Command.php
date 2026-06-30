@@ -2,253 +2,206 @@
 
 declare(strict_types=1);
 
-namespace App\Foundation\CLI;
+namespace Experimental\App\Foundation\CLI;
 
-use App\Foundation\Traits\Macroable;
+use App\Foundation\CLI\Argv;
+use App\Foundation\Exceptions\Framework\HighLevelException;
 use Throwable;
 use Closure;
 
+class CommandException extends HighLevelException {}
+
 class Command
 {
-    use Macroable;
-
-    protected static Argv $argv;
-    private static array $command = [];
-    private static array $aliases = [];
+    public static array $commands = [];
+    protected static array $aliases = [];
 
     /**
      * Register new command
      *
      * @param string $trigger
-     * @param string|callable(Argv $args) $command
+     * @param array|string|callable|Closure(Argv $argv) $handler
      * @return CommandBuilder
      */
-    public static function register(string $trigger, string|callable $command): CommandBuilder
+    public static function register(string $trigger, array|string|callable|Closure $handler): CommandBuilder
     {
-        $entry = [
+        self::$commands[$trigger][] = [
             'dependencies' => [],
-            'command'      => $command,
+            'command'      => $handler,
             'params'       => [],
+            'flags'        => [],
+            'short'        => [],
             'help'         => '',
         ];
 
-        self::$command[$trigger][] = $entry;
-        $order = count(self::$command[$trigger]) - 1;
-
+        $order = count(self::$commands[$trigger]) - 1;
         return new CommandBuilder($trigger, $order);
     }
 
     public static function update(string $trigger, int $order, array $updates): void
     {
-        self::$command[$trigger][$order] = array_merge(
-            self::$command[$trigger][$order],
+        self::$commands[$trigger][$order] = array_merge(
+            self::$commands[$trigger][$order],
             $updates
         );
     }
 
     public static function addAlias(string $alias, string $trigger, int $order): void
     {
-        self::$aliases[$alias] = &self::$command[$trigger][$order];
+        self::$aliases[$alias] = &self::$commands[$trigger][$order];
     }
 
-
     /**
-     * Execute a registered command.
-     *
-     * @param string $trigger The command trigger to execute.
-     * @return mixed The result of the command execution.
+     * StandBy - entry point
      */
-    public static function execute(?string $trigger)
+    public static function standBy(array $argv): mixed
     {
+        $trigger = $argv[1] ?? null;
+        if ($trigger === null) {
+            return self::showHelp();
+        }
+
+        $command = self::$aliases[$trigger] ?? self::$commands[$trigger][0] ?? null;
+        if ($command === null) {
+            echo "Unknown command: {$trigger}\n";
+            return self::showHelp(false);
+        }
+
+        // var_dump($command['strict']);
+        // exit;
+        // Build Argv according to command’s schema
         try {
-            if (is_null($trigger)) {
-                return self::showHelp();
-            }
-            $command = self::$aliases[$trigger] ?? self::$command[$trigger][0] ?? null;
-            if (is_null($command)) {
-                echo "Command not found: {$trigger}\n\nAvailable commands:\n";
-                return self::showHelp(false);
-            }
-            /** @var array{dependencies:array<string,array|Closure|object>, command:string|Closure} $command */
+            $cli = new Argv(
+                array_slice($argv, 2),
+                self::mergeOptionAndShort($command['params'], $command['short']),
+                self::mergeFlagAndShort($command['flags'], $command['short']),
+                $command['strict'] ?? false,
+                $command['onunknown'] ?? null
+            );
 
-            foreach ($command['dependencies'] as $alias => $dependency) {
-                if (is_string($dependency) && strpos($dependency, '.php') === false) {
-                    if (!is_numeric($alias)) {
-                        class_alias($dependency, $alias);
-                    }
-                } elseif (is_array($dependency)) {
-                    $instance = is_object($dependency[0]) ? $dependency[0] : new $dependency[0];
-                    $instance->$dependency[1];
-                } else if (is_callable($dependency)) {
-                    call_user_func($dependency);
-                } else {
-                    require_once $dependency;
+            return self::execute($command, $cli);
+        } catch (Throwable $e) {
+            throw new CommandException("Error running command: " . $e->getMessage(), 0, $e);
+        }
+    }
+
+    private static function mergeOptionAndShort(array $options, array $shorts): array|null
+    {
+        $mapped = [];
+        foreach ($options as $opt) {
+            $mapped[] = isset($shorts[$opt]) ? [$opt, $shorts[$opt]] : $opt;
+        }
+        return empty($mapped) ? null : $mapped;
+    }
+
+    private static function mergeFlagAndShort(array $flags, array $shorts): array|null
+    {
+        $mapped = [];
+        foreach ($flags as $f) {
+            $mapped[] = isset($shorts[$f]) ? [$f, $shorts[$f]] : $f;
+        }
+        return empty($mapped) ? null : $mapped;
+    }
+
+    private static function execute(array $command, Argv $argv): mixed
+    {
+        // try {
+            foreach ($command['dependencies'] as $dep) {
+                if (is_callable($dep)) {
+                    $dep();
+                } elseif (is_string($dep) && str_ends_with($dep, '.php')) {
+                    require_once $dep;
+                } elseif (is_string($dep)) {
+                    class_exists($dep) ?: class_alias($dep, basename(str_replace('\\', '/', $dep)));
                 }
             }
 
-            // if (is_callable($command['command'])) {
-            //     $params = [];
-            //     foreach ($command['params'] as $no => $param) {
-            //         $params[$param] = self::parameter($no + 2);
-            //     }
+            if (is_array($command['command']) && count($command['command']) === 2) {
+                $instance = new $command['command'][0];
+                $command['command'] = [$instance, $command['command'][1]];
+            }
 
-            //     $bag = new ParamBag($params);
-            //     $callable = $command['command']->bindTo($bag, ParamBag::class);
-
-            //     $callable();
-            // }
             if (is_callable($command['command'])) {
-                $params = [];
-                $unusedPositionals = [];
-                
-                foreach ($command['params'] as $param) {
-                    $opt = self::$argv->option($param, null);
-                    if ($opt !== null) {
-                        $params[$param] = $opt;
-                    } else {
-                        $unusedPositionals[] = $param;
-                    }
-                }
+                return ($command['command'])($argv);
+            }
 
-                // fill unused params with remaining positionals
-                foreach ($unusedPositionals as $param) {
-                    $pos = self::$argv->getNextPositional();
-                    if ($pos !== null) {
-                        $params[$param] = $pos;
-                    }
-                }
-
-                $bag = new ParamBag($params);
-                $callable = $command['command']->bindTo($bag, ParamBag::class);
-                return $callable(self::$argv);
-            } elseif (is_string($command['command'])) {
+            if (is_string($command['command'])) {
                 return shell_exec($command['command']);
             }
-        } catch (Throwable $e) {
-            echo "Error running command: {$e->getMessage()}";
-            return 1;
-        }
+
+            return null;
+        // } catch (Throwable $e) {
+        //     echo "Error: {$e->getMessage()}\n";
+        //     return 1;
+        // }
     }
 
-
-    /**
-     * Standby and execute a default or help command.
-     *
-     * @return mixed
-     */
-    public static function standBy(Argv $argv)
+    public static function showHelp(bool $withIntro = true): void
     {
-        self::$argv = $argv;
-        return self::execute($argv->shiftPositionals());
-    }
+        if ($withIntro) echo "CLI Command Framework\n\n";
 
-    /**
-     * Display help information for all registered commands.
-     *
-     * @return void
-     */
-    public static function showHelp(bool $withIntro = true)
-    {
-        if ($withIntro) {
-            echo "Built-in command handler for this custom framework\n\nCommands:\n";
-        }
-
-        if (empty(self::$command) && empty(self::$aliases)) {
-            echo "No commands registered yet.\n";
-            return 0;
-        }
-
-        // Get max width for formatting
-        $allCommands = array_keys(self::$command);
-        $allAliases = array_keys(self::$aliases);
-        $maxLength = max(array_map('strlen', array_merge($allCommands, $allAliases))) + 2;
-
-        $displayed = [];
-
-        // Show all commands (handling multiple per trigger)
-        foreach (self::$command as $trigger => $commands) {
-            foreach ($commands as $index => $command) {
-                $label = $index === 0 ? $trigger : "{$trigger} ({$index})"; // Differentiate multiple commands
-                printf("  %-{$maxLength}s - %s\n", $label, $command['help'] ?: 'No description');
+        foreach (self::$commands as $trigger => $entries) {
+            foreach ($entries as $cmd) {
+                printf("  %-15s %s\n", $trigger, $cmd['help'] ?: 'No description');
             }
-            $displayed[$trigger] = true;
         }
 
-        // Show aliases if any
         if (!empty(self::$aliases)) {
             echo "\nAliases:\n";
-            foreach (self::$aliases as $alias => $command) {
-                $original = null;
-
-                // Search for the original command (accounting for multiple)
-                foreach (self::$command as $trigger => $commands) {
-                    foreach ($commands as $index => $cmd) {
-                        if ($cmd === $command) {
-                            $original = $index === 0 ? $trigger : "{$trigger} ({$index})";
-                            break 2;
-                        }
-                    }
-                }
-
-                printf("  %-{$maxLength}s → %s\n", $alias, $original ?: 'Unknown');
+            foreach (self::$aliases as $alias => $ref) {
+                echo "  {$alias} → command\n";
             }
         }
-
-        return 0;
-    }
-
-    /**
-     * Prompt
-     *
-     * @param string $prompt A prompt to display.
-     * @param mixed $default The default value to return if the parameter is not provided.
-     * @param string|null $type The expected type of the parameter (bool, int, float, string, array, json).
-     * @return mixed The value of the CLI parameter, converted to the expected type, or the default value.
-     */
-    public static function prompt(string $prompt, mixed $default = '', ?string $type = null): mixed
-    {
-        $value = readline($prompt) ?: $default;
-
-        return match ($type) {
-            'bool'  => filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? (bool)$default,
-            'int'   => filter_var($value, FILTER_VALIDATE_INT) ?? (int)$default,
-            'float' => filter_var($value, FILTER_VALIDATE_FLOAT) ?? (float)$default,
-            'array' => is_string($value) ? explode(',', $value) : (is_array($value) ? $value : [$value]),
-            'json'  => json_decode($value, true) ?? (json_last_error() === JSON_ERROR_NONE ? json_decode($default, true) : $default),
-            default => $value,
-        };
-    }
-}
-
-class ParamBag
-{
-    private array $params = [];
-    public function __construct(array $params)
-    {
-        $this->params = $params;
-    }
-    public function __get(string $key)
-    {
-        return $this->params[$key] ?? null;
-    }
-    public function __set(string $key, $val)
-    {
-        $this->params[$key] = $val;
     }
 }
 
 /**
- * Fluent builder for command configuration.
+ * Builder for command metadata
  */
 class CommandBuilder
 {
-    private string $trigger;
-    private int $order;
+    public function __construct(private string $trigger, private int $order) {}
 
-    public function __construct(string $trigger, int $order)
+    public function help(string $text): self
     {
-        $this->trigger = $trigger;
-        $this->order   = $order;
+        Command::update($this->trigger, $this->order, ['help' => $text]);
+        return $this;
+    }
+
+    public function params(array $options): self
+    {
+        Command::update($this->trigger, $this->order, ['params' => $options]);
+        return $this;
+    }
+
+    public function strict(): self
+    {
+        Command::update($this->trigger, $this->order, ['strict' => true]);
+        return $this;
+    }
+
+    public function flags(array $flags): self
+    {
+        Command::update($this->trigger, $this->order, ['flags' => $flags]);
+        return $this;
+    }
+
+    public function short(array $shortMap): self
+    {
+        Command::update($this->trigger, $this->order, ['short' => $shortMap]);
+        return $this;
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @param callable(param, type) $onunknown
+     * @return self
+     */
+    public function onUnknown(callable $onunknown): self
+    {
+        Command::update($this->trigger, $this->order, ['onunknown' => $onunknown]);
+        return $this;
     }
 
     public function alias(string $alias): self
@@ -257,23 +210,11 @@ class CommandBuilder
         return $this;
     }
 
-    public function help(string $text): self
+    public function dependency(string|array|callable $dep): self
     {
-        Command::update($this->trigger, $this->order, ['help' => $text]);
-        return $this;
-    }
-
-    public function param(array $params): self
-    {
-        Command::update($this->trigger, $this->order, ['params' => $params]);
-        return $this;
-    }
-
-    public function dependency(string|callable|array $dep): self
-    {
-        $cmd = Command::$command[$this->trigger][$this->order] ?? [];
+        $cmd = Command::$commands[$this->trigger][$this->order];
         $deps = $cmd['dependencies'] ?? [];
-        $deps = is_array($dep) ? [...$deps, ...$dep] : [...$deps, $dep];
+        $deps = array_merge($deps, is_array($dep) ? $dep : [$dep]);
         Command::update($this->trigger, $this->order, ['dependencies' => $deps]);
         return $this;
     }

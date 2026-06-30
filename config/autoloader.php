@@ -109,7 +109,7 @@ return [
     |
     */
 
-    'classmap' => $root . '/config/classes_EXPE.php',
+    'classmap' => $root . '/config/classes.php',
 
     /*
     |--------------------------------------------------------------------------
@@ -121,7 +121,7 @@ return [
     |
     */
 
-    'cache' => $root . '/storage/cache/classes/classes_EXPE.php',
+    'cache' => $root . '/storage/cache/classes/classes.php',
 
     /*
     |--------------------------------------------------------------------------

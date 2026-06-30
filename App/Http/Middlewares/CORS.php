@@ -19,6 +19,8 @@ class CORS extends Middleware
             return $this->handlePreflight($request);
         }
 
+        echo "cors has run<br>";
+
         return $next($request);
     }
 
@@ -44,7 +46,6 @@ class CORS extends Middleware
         $origin = $request->origin();
         $allowedOrigins = $this->getAllowedOrigins();
         $allowCredentials = filter_var(env('ALLOW_CREDENTIALS', false), FILTER_VALIDATE_BOOL);
-        // dd($origin)
         if ($this->shouldAllowAnyOrigin()) {
             if ($allowCredentials) {
                 if ($origin && $this->isOriginValid($origin)) {

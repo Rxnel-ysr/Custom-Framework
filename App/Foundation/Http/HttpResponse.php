@@ -56,7 +56,7 @@ class HttpResponse
         }
 
         // Check if content is binary based on Content-Type
-        $contentType = $this->getHeader('Content-Type') ?? '';
+        $contentType = $this->getHeader('content-type') ?? '';
         $this->isBinary = $this->isBinaryContentType($contentType) ||
             $this->isLikelyBinaryData($this->body);
 
@@ -70,7 +70,7 @@ class HttpResponse
         }
 
         // Handle Content-Encoding for compressed responses
-        $contentEncoding = $this->getHeader('Content-Encoding') ?? '';
+        $contentEncoding = $this->getHeader('content-encoding') ?? '';
         if (!$this->isBinary && $contentEncoding) {
             $this->body = $this->decodeContent($this->body, $contentEncoding);
         }
@@ -91,7 +91,7 @@ class HttpResponse
         ];
 
         foreach ($binaryTypes as $type) {
-            if (strpos($contentType, $type) === 0) {
+            if (strpos($contentType, $type) !== false) {
                 return true;
             }
         }
@@ -154,17 +154,51 @@ class HttpResponse
 
     private function decodeContent(string $body, string $encoding): string
     {
-        $encoding = strtolower($encoding);
+        if ($body === '' || $encoding === '') {
+            return $body;
+        }
 
-        switch ($encoding) { // I gonna add more encoding here
-            case 'gzip':
-                return gzdecode($body);
-            case 'deflate':
-                return gzinflate($body);
+        $encodings = array_map('trim', explode(',', strtolower($encoding)));
+
+        // decoding must happen in reverse order
+        foreach (array_reverse($encodings) as $enc) {
+            switch ($enc) {
+                case 'gzip':
+                    $decoded = gzdecode($body);
+                    break;
+
+                case 'deflate':
+                    // some servers send raw deflate, some zlib-wrapped
+                    $decoded = @gzinflate($body) ?: @gzuncompress($body);
+                    break;
+
+                case 'br':
+                    if (function_exists('brotli_uncompress')) {
+                        $decoded = @\brotli_uncompress($body);
+                        break;
+                    }
+                    throw new \RuntimeException('Brotli not supported (ext-brotli missing)');
+                    break;
+
+                case 'identity':
+                    $decoded = $body;
+                    break;
+
+                default:
+                    // unknown encoding → do NOT corrupt data
+                    return $body;
+            }
+
+            if ($decoded === false || $decoded === null) {
+                return $body; // fail-safe
+            }
+
+            $body = $decoded;
         }
 
         return $body;
     }
+
 
     public function getStatusCode(): int
     {

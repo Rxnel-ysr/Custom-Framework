@@ -2,10 +2,11 @@
 
 declare(strict_types=1);
 
-namespace App\Foundation;
+namespace App\Foundation\Database;
 
 require_once 'QueryBuilder.php';
 
+use App\Foundation\Database\Cast;
 use App\Foundation\Traits\Strings;
 use App\Foundation\Database\QueryBuilder;
 use App\Foundation\Enums\Database\CastType;
@@ -22,8 +23,6 @@ use Traversable;
 /**
  * Base Model that represent a table in database
  * 
- * @method static    where(string $column, mixed $value, string $operator)
- *
  * @template TModel of Model
  */
 class Model extends QueryBuilder implements IteratorAggregate, Countable, JsonSerializable, Stringable
@@ -56,17 +55,15 @@ class Model extends QueryBuilder implements IteratorAggregate, Countable, JsonSe
             $this->setModelTable($tableName, $primary)->___table($tableName, $primary);
         }
 
-        if($this->timestamps){
-            $this->fillable = array_merge($this->fillable, ['created_at','updated_at']);
+        if ($this->timestamps) {
+            $this->fillable = array_merge($this->fillable, ['created_at', 'updated_at']);
         }
-
     }
 
     protected function cast(mixed $value, CastType|string $cast): mixed
     {
         if (is_string($cast)) {
-            $castType = CastType::parse($cast);
-            $param = CastType::extractParam($cast);
+            [$castType, $param] = CastType::parse($cast);
             return $castType->apply($value, $param);
         }
 
@@ -75,7 +72,7 @@ class Model extends QueryBuilder implements IteratorAggregate, Countable, JsonSe
 
     protected function applyCast(object|array|null $stdClass): object|array|null
     {
-        if(is_null($stdClass)){
+        if (is_null($stdClass)) {
             return null;
         }
         if (is_array($stdClass)) {
@@ -84,26 +81,12 @@ class Model extends QueryBuilder implements IteratorAggregate, Countable, JsonSe
 
         $objectVars = get_object_vars($stdClass);
         foreach (array_intersect_key($this->casts, $objectVars) as $col => $cast) {
-            $castEnum = CastType::parse($cast);
-            $param =  CastType::extractParam($cast);
-            // dd($cast, $castEnum, $param);
+            [$castEnum, $param] = CastType::parse($cast);
 
             $stdClass->{$col} = $castEnum->apply($stdClass->{$col}, $param);
         }
 
         return $stdClass;
-    }
-
-    /**
-     * Helper method to process casts array with enum support
-     */
-    private function processCastDefinition(mixed $cast): CastType
-    {
-        if ($cast instanceof CastType) {
-            return $cast;
-        }
-
-        return Cast::parse((string)$cast);
     }
 
     public function setModelTable($table, $primaryColumn)
@@ -116,6 +99,11 @@ class Model extends QueryBuilder implements IteratorAggregate, Countable, JsonSe
     public function setFetched()
     {
         $this->isFetched = true;
+    }
+
+    public function query()
+    {
+        return new $this;
     }
 
     /**
@@ -168,7 +156,7 @@ class Model extends QueryBuilder implements IteratorAggregate, Countable, JsonSe
     public function __call($method, $args)
     {
         if (method_exists($this, '___' . $method) && !$this->isFetched) {
-            $res = call_user_func_array([clone $this, '___' .$method], $args);
+            $res = call_user_func_array([clone $this, '___' . $method], $args);
 
             if ($method == 'get' || $method == 'first' || $method == 'find' || $method == 'findOrFail') {
 
@@ -178,7 +166,7 @@ class Model extends QueryBuilder implements IteratorAggregate, Countable, JsonSe
                         $tmp = new static($this->applyCast($r));
                         $tmp->isFetched = true;
                         $newRes[] = $tmp;
-                }
+                    }
                     return collect($newRes);
                 } else {
                     $new = new static($this->applyCast($res));
@@ -318,6 +306,11 @@ class Model extends QueryBuilder implements IteratorAggregate, Countable, JsonSe
         return $this->collectionData;
     }
 
+    public function getPrimary()
+    {
+        return $this->primary;
+    }
+
     public function __invoke()
     {
         response()->json($this->collectionData);
@@ -325,18 +318,17 @@ class Model extends QueryBuilder implements IteratorAggregate, Countable, JsonSe
 
     public function update(array $data)
     {
-        if($this->isFetched){
-            // dd($this);
-            return (clone $this)->___where($this->primary, $this->collectionData->get($this->primary))->___update($data);
+        if ($this->isFetched) {
+            return (clone $this)->where($this->primary, $this->collectionData->get($this->primary))->update($data);
         }
 
-        return (clone $this)->___update($data);
+        return (clone $this)->update($data);
     }
 
     public function save()
     {
         $currentTime = date('Y-m-d H:i:s');
-        $array = $this->dirty();
+        $array = $this->isFetched ? $this->dirty() : $this->all()->toArray();
         if ($this->isFetched) {
             if ($this->isDirty()) {
                 (clone $this)->___where(
@@ -351,6 +343,8 @@ class Model extends QueryBuilder implements IteratorAggregate, Countable, JsonSe
                 $this->timestamps ? array_merge($array, ['updated_at' => $currentTime, 'created_at' => $currentTime]) : $array
             );
         }
+
+        return $this;
     }
 
 
@@ -381,8 +375,7 @@ class Model extends QueryBuilder implements IteratorAggregate, Countable, JsonSe
 
     public function toJson()
     {
-        $data = $this->collectionData->toArrayWithout($this->hidden);
-        return json_encode($data);
+        return json_encode($this->collectionData->toArrayWithout($this->hidden));
     }
 
     /**

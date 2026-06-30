@@ -64,7 +64,7 @@ class Compile
         '/@endphp\b/' => "?>",
 
         // Includes and components
-        '/@include\s*\((.*?)\):/s' => '<?php view($1); ?>',
+        '/@include\s*\((.*?)\);/s' => '<?php view($1); ?>',
         '/@extends\s*\((.*?)\);/s' => '<?php rx_extends($1); ?>',
 
         // Sections and stacks
@@ -115,7 +115,7 @@ class Compile
 
 
         $hasArgs =  $reflection->getNumberOfParameters() > 0;
-        $directive = $hasArgs ?  "/@{$name}\s*\((.+)" . ($noClosing ? '\);/s' : '\):/s') : '/@' . $name . '\b/';
+        $directive = $hasArgs ?  "/@{$name}\s*\((.+)" . ($noClosing ? '\);/' : '\):/') : '/@' . $name . '\b/';
         self::$user_directive[$name] = [$directive, $hasArgs];
         self::$user_callbacks[$name] = [$func, ! in_array($type, ['void', 'never'])];
     }
@@ -162,6 +162,8 @@ class Compile
                     ? "<?= {$callback} ?>"
                     : "<?php {$callback}; ?>";
             }
+
+            // dd($user_directive);
 
             $compiled = preg_replace(
                 array_keys([...self::$directive, ...$user_directive]),

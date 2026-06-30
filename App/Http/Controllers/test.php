@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Contracts\Interfaces\TestInterface;
 use App\Foundation\Database\RawStatement;
 use App\Foundation\Http\HttpClient;
 use App\Foundation\Http\Request;
@@ -12,25 +13,23 @@ use App\Support\Facades\Http;
 // For destruction!
 class Test extends Controller
 {
+    public function __construct(private TestInterface $test)
+    {
+    }
     public function index(Request $request)
     {
 
-        $another = Http::option([
-            'json' => 'array',
-        ])->get('https://jsonplaceholder.typicode.com/todos', [], [
-            'Authorization' => 'Bearer ' . "kafdjmafhjkmvdfjmdnbvfgjkm"
+        abort(404);
+        
+        $another = Http::post('https://learning.mischool.id/api/login', [], [], [
+            'email' => 'teacher@gmail.com',
+            'password' => '123456789101234567'
         ]);
-        // $data = User::insert([
-        //     ['name' => '6', 'email' => 'e6', 'password' => 'p6'],
-        //     ['name' => '7', 'email' => 'e7', 'password' => 'p7'],
-        //     ['name' => '8', 'email' => 'e8', 'password' => 'p8'],
-        //     ['name' => '9', 'email' => 'e9', 'password' => 'p9'],
-        //     ['name' => '10', 'email' => 'e10', 'password' => 'p10'],
-        // ]);
 
-        return response()->json($another->json(), 200, [
-            'Content-Type' => 'application/json'
-        ]);
+        return $another->getBody();
+        // return response()->json($another->json(), 200, [
+        //     'Content-Type' => 'application/json'
+        // ]);
     }
 
     public function test(Request $req)

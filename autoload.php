@@ -2,18 +2,18 @@
 
 use App\Foundation\Manager\Autoloader;
 
-require_once 'App/Foundation/Manager/Autoloader_EXPE.php';
+require_once 'App/Foundation/Manager/Autoloader.php';
 
 $cfg = require 'config/autoloader.php';
 
 $opt = (
-    ($cfg['debug']           ?? false ? AutoLoader::DEBUG              : 0) |
-    ($cfg['auto-resolve']    ?? false ? AutoLoader::AUTO_RESOLVE       : 0) |
-    ($cfg['auto']            ?? false ? AutoLoader::AUTO_INIT          : 0) |
-    ($cfg['check_filemtime'] ?? false ? AutoLoader::CHECK_FILEMTIME    : 0) |
-    ($cfg['read_only']       ?? false ? AutoLoader::READ_ONLY          : 0) |
-    ($cfg['resolution']['dep'] ?? false ? AutoLoader::DEP_RESOLUTION  : 0) |
-    ($cfg['resolution']['boot']       ?? false ? AutoLoader::BOOT_RESOLUTION : 0)
+    ($cfg['debug']           ?? false ? Autoloader::DEBUG              : 0) |
+    ($cfg['auto-resolve']    ?? false ? Autoloader::AUTO_RESOLVE       : 0) |
+    ($cfg['auto']            ?? false ? Autoloader::AUTO_INIT          : 0) |
+    ($cfg['check_filemtime'] ?? false ? Autoloader::CHECK_FILEMTIME    : 0) |
+    ($cfg['read_only']       ?? false ? Autoloader::READ_ONLY          : 0) |
+    ($cfg['resolution']['dep'] ?? false ? Autoloader::DEP_RESOLUTION  : 0) |
+    ($cfg['resolution']['boot']       ?? false ? Autoloader::BOOT_RESOLUTION : 0)
 );
 
 // $start = hrtime(true);

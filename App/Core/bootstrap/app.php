@@ -1,12 +1,12 @@
 <?php
 
 use App\App;
-use App\Foundation\Http\Middleware;
-use App\Foundation\Manager\ClassContainer;
+use App\Foundation\Exceptions\Framework\Database\ModelNotFoundException;
+use App\Foundation\Http\Request;
 use App\Foundation\Providers\AppServiceProvider;
 use App\Support\Facades\DI;
 
-return (static function () {
+return (static function (): App {
     $config = DI::get('appConfig');
 
     return App::configure($config['root'])
@@ -16,17 +16,21 @@ return (static function () {
             'api_prefix' => $config['router']['api_prefix'],
             'plugins'   => $config['router_plugins'],
         ])
-        ->withMiddleware(function (Middleware $middleware) {
+        ->withMiddleware(static function ($middleware) {
             $middleware->aliases([
                 'cors' => \App\Http\Middlewares\CORS::class,
                 'test' => \App\Http\Middlewares\Test::class,
+                'bearer' => \App\Http\Middlewares\Bearer::class,
             ]);
         })
-        ->withServices([
-            'container' => ClassContainer::class
-        ])
+        ->withExceptions(static function ($exception) {
+            $exception->render(function(ModelNotFoundException $e, Request $request){
+                return response()->json($request->all());
+            });
+        })
         ->withProviders([
             AppServiceProvider::class
         ])
-        ->withConfig($config['config']);
+        ->withConfig($config['config'])
+        ->create();
 })();

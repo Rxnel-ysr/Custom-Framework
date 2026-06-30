@@ -43,7 +43,7 @@
 </head>
 
 <body>
-    <div class="container text-center">
+    <div class="text-center container">
         <h1>Download</h1>
         <div class="d-flex flex-wrap justify-content-center">
             <a href="{{ $laragon }}" class="btn btn-primary download-btn">Download Laragon Ver. 6</a>
@@ -52,7 +52,7 @@
     </div>
 
     <!-- Bootstrap JS -->
-    <script src="{{ asset('js/main.js') }}"></script>
+    <!-- <script src="{{ asset('js/main.js') }}"></script> -->
 </body>
 
 </html>

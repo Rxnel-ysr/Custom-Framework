@@ -52,11 +52,6 @@ class CSRF
             'expires' => time() + $unixTime
         ];
 
-        // if (!isset($_COOKIE['CSRF-TOKEN-' . $form_key])) {
-        //     // self::setSecureCookie('CSRF-TOKEN-' . $form_key, $token, $unixTime);
-        //     // error_log('Created cookie: CSRF-TOKEN-' . $form_key);
-        // }
-
         return ['key' => $form_key, 'token' => $token];
     }
 
@@ -73,8 +68,6 @@ class CSRF
         
         $key = $_POST['csrf_key'] ?? null;
         $token = $_POST['csrf_'] ?? null;
-        // $cookieToken = $_COOKIE['CSRF-TOKEN-' . $key] ?? null;
-        // error_log('Validating request');
 
         if (!$key || !$token || !isset($_SESSION['csrf_tokens'][$key])) {
             http_response_code(403);
@@ -84,11 +77,7 @@ class CSRF
         $csrfData = $_SESSION['csrf_tokens'][$key];
 
         if (time() > $csrfData['expires']) {
-            // Just to make sure
             self::obliterate();
-
-            // unset($_SESSION['csrf_tokens'][$key]);
-            // self::expireCookie($key);
 
             http_response_code(408);
             throw new CSRFException('CSRF validation timeout, please resend form');
@@ -100,13 +89,6 @@ class CSRF
             throw new CSRFException('CSRF validation failed');
         }
         
-        // if (!$cookieToken || !hash_equals($csrfData['token'], $cookieToken)) {
-        //     http_response_code(403);
-        //     self::obliterate();
-        //     throw new CSRFException('CSRF validation failed');
-        // }
-
-        // unset($_SESSION['csrf_tokens'][$key]);
         self::obliterate();
         return true;
     }
@@ -126,8 +108,6 @@ class CSRF
     {
         foreach ($_SESSION['csrf_tokens'] as $key => $_) {
             unset($_SESSION['csrf_tokens'][$key]);
-            // self::expireCookie('CSRF-TOKEN-' . $key);
-            // error_log('Deleted used CSRF token and cookie: ' . $key);
         }
     }
 

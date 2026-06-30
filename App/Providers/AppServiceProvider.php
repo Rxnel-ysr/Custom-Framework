@@ -1,20 +1,20 @@
 <?php
-
 namespace App\Foundation\Providers;
 
 use App\App;
 use App\Contracts\Implementation\TestImplementation;
 use App\Contracts\Interfaces\TestInterface;
 use App\Foundation\Http\Request;
+use App\Foundation\Manager\Provider;
 use App\Support\Facades\Route;
 use App\Support\Facades\Rx;
 
-class AppServiceProvider
+class AppServiceProvider implements Provider
 {
 
     public function register(App $app): void
     {
-        $app->container->bind(TestInterface::class, TestImplementation::class);
+        $app->bind(TestInterface::class, TestImplementation::class);
         // Register
         Rx::register('say', function (string $message): string {
             return $message;
@@ -61,7 +61,7 @@ class AppServiceProvider
         });
     }
 
-    public function boot(): void
+    public function boot($app): void
     {
         // Boot 
     }

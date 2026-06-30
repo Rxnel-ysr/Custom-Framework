@@ -3,7 +3,7 @@
 namespace App\Foundation\Database;
 
 use App\Foundation\Enums\Database\CastType;
-use InvalidArgumentException;
+use App\Foundation\Exceptions\Framework\Primitive\InvalidArgumentException;
 
 class Cast
 {

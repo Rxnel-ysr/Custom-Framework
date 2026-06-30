@@ -118,7 +118,7 @@ class Debugger
                 self::showErrorPage(
                     500,
                     get_class($e) . ': ' . $e->getMessage(),
-                    'File: ' . $e->getFile() . ' (Line: ' . $e->getLine() . ')',
+                    '<a style="color: white;" href="vscode://file/' . $e->getFile() . ':' . $e->getLine() . '" >File: ' . $e->getFile() . '(' . $e->getLine() . ')</a>',
                     '',
                     $trace
                     // getBoolEnv('AUTO_LOAD_USER_PATH_DEFINED_CLASS')

@@ -120,8 +120,7 @@ class Utils
 
 function response(): Response
 {
-    $instance = InstanceManager::getInstance('App\\Foundation\\Http\\Response');
-    return $instance;
+    return InstanceManager::getInstance(Response::class);
 }
 
 function withHeader(): HttpHeaders
@@ -136,7 +135,7 @@ function http(): HttpHeaders
 
 function request($name = null, $default = null): Request|string|int|array|null
 {
-    $instance = InstanceManager::getInstance('App\\Foundation\\Http\\Request');
+    $instance = InstanceManager::getInstance(Request::class);
     if ($name) return $instance->input($name, $default);
     return $instance;
 }

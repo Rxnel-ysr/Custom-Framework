@@ -1,2 +1,5 @@
 # No hard feeling, but at least I need fake composer json to make namespace auto resolver to work
 composer.json
+config/classes_EXPE.php
+storage/request.sqlite
+/storage

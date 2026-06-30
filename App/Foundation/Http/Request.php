@@ -2,6 +2,9 @@
 
 namespace App\Foundation\Http;
 
+use App\Foundation\Guard\Traits\ApiToken;
+use App\Foundation\Database\Model;
+use App\Support\Facades\Route;
 use DateTime;
 use DateTimeZone;
 
@@ -67,6 +70,9 @@ class Request
      */
     protected string $origin;
 
+    protected ?Model $user = null;
+    protected ?ApiToken $apiToken = null;
+
     /**
      * Request constructor.
      * Captures all request data at the time of instantiation.
@@ -78,7 +84,7 @@ class Request
         $this->queryData = $_GET;
         $this->postData = $_POST;
         $this->filesData = $_FILES;
-        $this->headers = getallheaders();
+        $this->headers = array_change_key_case(getallheaders());
         $this->method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
         $this->fullUri = $_SERVER['REQUEST_URI'] ?? '';
         $this->uri = strstr($this->fullUri, '?', true) ?: $this->fullUri;
@@ -88,7 +94,51 @@ class Request
     }
 
     /**
-     * Snapshot of current requestg
+     * Get the route parameter
+     *
+     * @param string $parameter
+     * @return mixed
+     */
+    public function parameter(string $parameter): mixed
+    {
+        return Route::parameter($parameter);
+    }
+
+    public function wantsJson()
+    {
+        return $this->header('Accept') === 'application/json';
+    }
+
+    public function hasHeader(string $key): bool
+    {
+        return isset($this->headers[$key]);
+    }
+
+    public function user()
+    {
+        if ($this->user) {
+            return $this->user;
+        }
+        if ($token = $this->bearer()) {
+            return $this->user = $token->owner();
+        }
+        return null;
+    }
+
+    public function bearer()
+    {
+        if ($this->apiToken) {
+            return $this->apiToken;
+        }
+
+        if ($token = $this->bearerToken()) {
+            return $this->apiToken = ApiToken::verifyToken($token);
+        }
+        return null;
+    }
+
+    /**
+     * Snapshot of current request
      *
      * @return (array{url: string, method: string, headers: array, request_data: array, query: array, query_string: string, post: array, files: array})
      */
@@ -169,10 +219,15 @@ class Request
      */
     public function all()
     {
-        return array_filter($this->requestData, fn($key) => $key !== 'csrf_key', ARRAY_FILTER_USE_KEY);
+        return array_filter($this->isJson() ? $this->json : $this->requestData, fn($key) => $key !== 'csrf_key', ARRAY_FILTER_USE_KEY);
     }
 
     public function except(array $keys)
+    {
+        return array_filter($this->all(), fn($key) => !in_array($key, $keys), ARRAY_FILTER_USE_KEY);
+    }
+
+    public function only(array $keys)
     {
         return array_filter($this->all(), fn($key) => in_array($key, $keys), ARRAY_FILTER_USE_KEY);
     }
@@ -328,8 +383,11 @@ class Request
      *
      * @return array The parsed JSON or default value.
      */
-    public function json($key, mixed $default = null): mixed
+    public function json($key = null, mixed $default = null): mixed
     {
+        if (is_null($key)) {
+            return $this->json;
+        }
         return $this->json[$key] ?? $default;
     }
 
@@ -344,6 +402,11 @@ class Request
         return $this->headers[$key] ?? null;
     }
 
+    public function getHeaders(): array
+    {
+        return $this->headers;
+    }
+
     /**
      * Validate request data against a set of rules.
      *
@@ -356,7 +419,7 @@ class Request
 
         foreach ($rules as $key => $rule) {
             $value = $this->input($key);
-            foreach (explode('|', $rule) as $r) {
+            foreach (is_string($rule) ? explode('|', $rule) : $rule as $r) {
                 if ($r === 'required' && empty($value)) {
                     $errors[$key][] = "The $key field is required.";
                 }
@@ -395,7 +458,7 @@ class Request
      */
     public function isJson(): bool
     {
-        return $this->header('Content-Type') === 'application/json';
+        return $this->header('content-type') === 'application/json';
     }
 
     public function __get($name): mixed

@@ -8,12 +8,16 @@ use App\Foundation\Http\Request;
 use Closure;
 use Exception;
 
-class Test extends Middleware
+class Bearer extends Middleware
 {
 
     public function handle(Request $request, Closure $next, string $msg): mixed
     {
-        $this->set('X-Powered-By', 'Ronel');
+        if (!$request->bearer()) {
+            return response()->json([
+                'message' => 'invalid bearer'
+            ]);
+        }
         return $next($request);
     }
 }

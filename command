@@ -5,7 +5,7 @@ declare(strict_types=1);
 
 use App\Foundation\CLI\Argv;
 
-if (PHP_SAPI !== 'cli') {
+if (php_sapi_name() !== 'cli') {
     return die('Must run on CLI');
 }
 require_once 'autoload.php';

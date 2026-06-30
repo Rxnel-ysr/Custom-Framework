@@ -444,7 +444,6 @@ class HttpClient
     protected function readResponse($socket, bool $expectBinary = false): string
     {
         $response = '';
-        $headers = '';
         $body = '';
         $inBody = false;
         $contentLength = null;

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Foundation\Support\Time;
+namespace App\Foundation\Support;
 
 use DateTime;
 use DateTimeZone;
@@ -8,6 +8,7 @@ use JsonSerializable;
 
 class Time implements JsonSerializable
 {
+    protected static DateTimeZone $defaultTimeZone;
     protected string $format;
     protected ?string $formatWhenString = null;
     private DateTime|false $time;
@@ -16,19 +17,26 @@ class Time implements JsonSerializable
     public const MYSQL_DATETIME_FORMAT = self::DEFAULT_FORMAT;
 
     public function __construct(
-        string|DateTime $time,
+        string|DateTime|null $time = null,
         string $format = self::DEFAULT_FORMAT,
         ?DateTimeZone $tz = null,
         ?string $formatWhenString = null
     ) {
-        if ($time instanceof DateTime) {
-            $result = $time;
+        if (is_null($time)) {
+            $result = (new DateTime(
+                'now',
+                $this->timeZone = $tz ?? self::$defaultTimeZone ?? new DateTimeZone(date_default_timezone_get())
+            ));
         } else {
-            $result = DateTime::createFromFormat(
-                $format,
-                $time,
-                $this->timeZone = $tz ?? new DateTimeZone(date_default_timezone_get())
-            );
+            if ($time instanceof DateTime) {
+                $result = $time;
+            } else {
+                $result = DateTime::createFromFormat(
+                    $format,
+                    $time,
+                    $this->timeZone = $tz ?? self::$defaultTimeZone ?? new DateTimeZone(date_default_timezone_get())
+                );
+            }
         }
 
         if ($result === false) {
@@ -56,7 +64,8 @@ class Time implements JsonSerializable
         return $this->time->format($this->formatWhenString ?? $this->format);
     }
 
-    public function format($format){
+    public function format($format)
+    {
         return $this->time->format($format);
     }
 
@@ -64,5 +73,15 @@ class Time implements JsonSerializable
     {
         $this->formatWhenString = $format;
         return $this;
+    }
+
+    public static function setTimeZone(string $timeZone): void
+    {
+        self::$defaultTimeZone = new DateTimeZone($timeZone);
+    }
+
+    public static function now(): self
+    {
+        return new self();
     }
 }

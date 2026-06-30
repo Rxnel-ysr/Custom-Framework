@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Foundation\Exceptions\Http\Json;
+namespace App\Foundation\Exceptions\Framework\Http\Json;
 
-use App\Foundation\Exceptions\Http\BaseHttpException;
-use Closure;
+use App\Foundation\Exceptions\Framework\Http\BaseHttpException;
+use App\Foundation\Http\Response;
 use Throwable;
 
 /**
@@ -32,9 +32,9 @@ abstract class JsonBaseHttpException extends BaseHttpException
     /**
      * Handle exception as Json Response
      *
-     * @return null
+     * @return Response
      */
-    final public function handle(): null
+    public function handle(): Response
     {
         return response()->json(
             $this->format ?? [
@@ -47,4 +47,8 @@ abstract class JsonBaseHttpException extends BaseHttpException
         );
     }
 
+    public static function httpCode(): int
+    {
+        return 500;
+    }
 }

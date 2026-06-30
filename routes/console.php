@@ -6,8 +6,8 @@ use App\Foundation\Database\Migration;
 use App\Foundation\Database\Connection;
 use App\Foundation\Event\Emitter;
 use App\Foundation\Event\Receiver;
-use App\Foundation\Generator\TemplateBuilder;
 use App\Foundation\Http\HttpClient;
+use App\Foundation\Http\Websocket\WebSocketServer;
 use App\Foundation\Manager\Autoloader;
 use App\Foundation\System\Disk;
 use App\Support\Facades\DI;
@@ -17,7 +17,7 @@ use Experimental_V2\App\Foundation\Database\QueryBuilder;
 use Test\Service;
 
 $root = dirname(__DIR__, 1);
-require_once $root . '/App/Foundation/CLI/Command_EXPE.php';
+require_once $root . '/App/Foundation/CLI/Command.php';
 
 
 $migrationSetup = [
@@ -35,7 +35,7 @@ Command::register('help', fn() => Command::showHelp())
 
 Command::register('serve', function (Argv $argv) {
     $port = $argv->option('port', 8000);
-    $host = $argv->option('host', 'localhost');
+    $host = $argv->option('host', '127.0.0.1');
     shell_exec("php -S {$host}:{$port} public/index.php");
     return 0;
 })->alias('s')
@@ -116,7 +116,7 @@ Command::register('dump-autoload', function (Argv $a) {
 
 
 Command::register('clean-views', function () {
-    $views_disk = new Disk(dirname(__DIR__, 1) . '/storage/cache/views');
+    $views_disk = new Disk(base_path('/storage/cache/views'));
     $views_disk->cleanDir(['.gitignore']);
     return 0;
 })->alias('cv')
@@ -146,9 +146,9 @@ Command::register('test', function () use ($root) {
     $​ = new ⁠('Ronel');
     $​->​();
 
-    $nonexistclass = new Anjay();
-    $nonexistclass->addInstanceMethod('test', fn() => print PHP_EOL . 'it does work');
-    $nonexistclass->test();
+    // $nonexistclass = new Anjay();
+    // $nonexistclass->addInstanceMethod('test', fn() => print PHP_EOL . 'it does work');
+    // $nonexistclass->test();
     return 0;
 })->alias('t')
     ->help('Testing field of a command');
@@ -239,8 +239,107 @@ Command::register('invoke', function () {
 });
 
 
-Command::register('test-v1', function () {
+Command::register('request', function ($argv) {
+    $a = app(HttpClient::class);
 
+    echo $a->get('https://learning.mischool.id/login')->getRaw();
+
+    return 0;
+});
+
+Command::register('start:ws', function() {
+        try {
+            $server = new WebSocketServer('0.0.0.0', 8000);
+
+            // Configure server
+            $server->setPingInterval(30);
+            $server->setMaxMessageSize(5242880); //1048576); // 1MB
+
+            // Register event handlers
+            $server->on('server_start', function ($data) {
+                echo "Server started on {$data['host']}:{$data['port']}\n";
+            });
+
+            $server->on('connection', function ($data) {
+                echo "Client connected: {$data['clientId']}\n";
+                echo "  IP: {$data['clientData']['ip']}\n";
+                echo "  User Agent: {$data['clientData']['user_agent']}\n";
+
+                $this->broadcastText(json_encode([
+                    'type' => 'message',
+                    'from' => 'server',
+                    'message' => $data['clientId'] . ' Joined.',
+                    'timestamp' => time()
+                ]), '');
+            });
+
+            $server->on('message', function ($data) {
+                echo "Message from {$data['clientId']} (opcode: {$data['opcode']}): " .
+                    (is_string($data['data']) ? $data['data'] : json_encode($data['data'])) . "\n";
+            });
+
+            $server->on('disconnect', function ($data) {
+                echo "Client disconnected: {$data['clientId']}\n";
+            });
+
+            $server->on('client_custom_event', function ($data) {
+                echo "Custom event from {$data['clientId']}: " . json_encode($data['data']) . "\n";
+            });
+
+            $server->on('error', function ($data) {
+                echo "Error with client {$data['clientId']}: {$data['error']}\n";
+            });
+
+            $server->on('ping', function ($data) {
+                echo "Ping from {$data['clientId']}\n";
+            });
+
+            $server->on('pong', function ($data) {
+                echo "Pong from {$data['clientId']} (latency: {$data['latency']}s)\n";
+            });
+
+            $server->on('close_received', function ($data) {
+                echo "Close received from {$data['clientId']} (code: {$data['code']}, reason: {$data['reason']})\n";
+            });
+
+            $server->on('data', function ($client, $frame, $_) {
+                try {
+                    $received = json_decode($frame->payload, true, 512, JSON_THROW_ON_ERROR);
+
+                    $this->emit('message', [
+                        'clientId' => $client,
+                        'data' => $received,
+                        'clientData' => $this->clientData[$client],
+                        'opcode' => $frame->opcode->toString(),
+                        'raw' => $frame->payload,
+                        'timestamp' => time()
+                    ]);
+                } catch (Throwable $th) {
+                    $this->broadcastText(json_encode([
+                        'type' => 'message',
+                        'from' => $client,
+                        'message' => $frame->payload,
+                        'timestamp' => time()
+                    ]), $client);
+                }
+            });
+
+            // Handle Ctrl+C
+            if (function_exists('pcntl_signal')) {
+
+                declare(ticks=1);
+                pcntl_signal(SIGINT, function () use ($server) {
+                    echo "\nShutting down...\n";
+                    $server->stop();
+                    exit(0);
+                });
+            }
+
+            $server->start();
+        } catch (Exception $e) {
+            echo "Error: " . $e->getMessage() . "\n";
+            exit(1);
+        }
 
     return 0;
 });

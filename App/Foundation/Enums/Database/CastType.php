@@ -47,28 +47,23 @@ enum CastType: string
         return explode($separator, (string)$value);
     }
 
-    public static function parse(string $definition): self
+    /**
+     * Undocumented function
+     *
+     * @param string $definition
+     * @return array{0: self, 1: ?string}
+     */
+    public static function parse(string $definition): array
     {
 
         $position = strpos($definition, ':');
 
-        $baseType = $position !== false
-            ? substr($definition, 0, $position)
-            : $definition;
+        [$baseType, $param] = $position !== false
+            ? [substr($definition, 0, $position), substr($definition, $position + 1)]
+            : [$definition, null];
 
-        return static::from($baseType);
+        return [static::from($baseType), $param];
     }
-
-    public static function extractParam(string $definition): ?string
-    {
-        $position = strpos($definition, ':');
-        if ($position === false) {
-            return null;
-        }
-
-        return substr($definition, $position + 1);
-    }
-
 }
 
 

@@ -1,5 +1,6 @@
 <?php
 
+use App\App;
 use App\Debug\Debugger;
 use App\Foundation\Compiler\Compile;
 use App\Foundation\Exceptions\Http\NotFoundException;
@@ -7,6 +8,7 @@ use App\Foundation\Exceptions\Http\UnauthorizedException;
 use App\Foundation\Manager\InstanceManager;
 use App\Foundation\Model;
 use App\Support\Facades\DI;
+use App\Support\Facades\Route;
 
 // $views = ROOT . '/resources/views';
 
@@ -373,12 +375,10 @@ function callFuncWithParams(
 
         // Dependency injection
         if ($autoResolve && $paramType instanceof ReflectionNamedType && !$paramType->isBuiltin()) {
-            $instance = InstanceManager::getInstance('container')->make($paramType->getName());
-            if ($instance instanceof Model && $isAssoc && arrKeyExists($paramName, $params)) {
-                $args[] =  $instance->findOrFail($params[$paramName]);
-            } else {
-                $args[] = $instance;
-            }
+            $name = $paramType->getName();
+            $instance = (isset($params[$index]) && $params[$index] instanceof  $name) ? $params[$index]: InstanceManager::getInstance('container')->make($name);
+            $res = $instance instanceof Model && $isAssoc && arrKeyExists($paramName, $params) ? $instance->findOrFail($params[$paramName]) : $instance;
+            $args[] = Route::setParameter($paramName, $res);
             continue;
         }
 
@@ -399,7 +399,7 @@ function callFuncWithParams(
             validateParameterType($value, $paramType, $paramName);
         }
 
-        $args[] = $value;
+        Route::setParameter($paramName, $args[] = $value);
     }
 
     return $reflection instanceof ReflectionFunction
@@ -427,6 +427,32 @@ function requireTrack(string $file): array
     return array_slice($after, count($before));
 }
 
+/**
+ * Get application container or resolve a service.
+ *
+ * @template T
+ * @param class-string<T>|null $class
+ * @return App|T
+ */
+function app(?string $class = null)
+{
+    $app = InstanceManager::getInstance(App::class);
+
+    if (!$app instanceof App) {
+        throw new RuntimeException('Application container not initialized.');
+    }
+
+    return $class === null
+        ? $app
+        : $app->make($class);
+}
+
+function req($path) 
+{
+    $a = require $path;
+    return $a;
+}
+
 
 function config(string $config)
 {
@@ -438,7 +464,7 @@ function config(string $config)
         throw new Exception("Config file '{$file}.php' not found.");
     }
 
-    $cfg = require $configFile;
+    $cfg = req($configFile);
 
     foreach ($path as $part) {
         if (is_array($cfg) && arrKeyExists($part, $cfg)) {
@@ -860,55 +886,6 @@ function print_rpred(...$something)
     die(1);
 }
 
-
-function safe_bulk_match(array $patterns, string $subject, float $timeout = 0.05): array
-{
-    $results = [];
-
-    foreach ($patterns as $pattern) {
-        $cmd = escapeshellcmd(PHP_BINARY) . ' -r ' . escapeshellarg('
-            $r = preg_match("' . addslashes($pattern) . '", ' . var_export($subject, true) . ');
-            echo $r === false ? "error" : ($r === 1 ? "true" : "false");
-        ');
-
-        $proc = proc_open($cmd, [
-            1 => ['pipe', 'w'],
-            2 => ['pipe', 'w'],
-        ], $pipes);
-
-        $start = microtime(true);
-        $output = '';
-        $error = '';
-        $status = 'timeout';
-
-        if (is_resource($proc)) {
-            stream_set_blocking($pipes[1], false);
-            stream_set_blocking($pipes[2], false);
-
-            while (microtime(true) - $start < $timeout) {
-                $output .= stream_get_contents($pipes[1]);
-                $error  .= stream_get_contents($pipes[2]);
-
-                $status_arr = proc_get_status($proc);
-                if (!$status_arr['running']) {
-                    $status = trim($output) === 'true';
-                    break;
-                }
-
-                usleep(1000);
-            }
-
-            proc_terminate($proc);
-            fclose($pipes[1]);
-            fclose($pipes[2]);
-        }
-
-        $results[$pattern] = $status;
-    }
-
-    return $results;
-}
-
 function isValidClass($class)
 {
     return class_exists($class) || interface_exists($class) || trait_exists($class);
@@ -928,7 +905,7 @@ function getArrEnv(string $name, $separator = ',')
  * Retrieves an environment variable with type validation
  *
  * @param string $name Name of the environment variable
- * @param string $type Expected type ('string', 'int', 'float', 'bool', 'array')
+ * @param 'string'|'int'|'float'|'bool'|'array' $type Expected type ('string', 'int', 'float', 'bool', 'array')
  * @param mixed $default Default value if variable doesn't exist
  * @return mixed The filtered environment variable or default value
  * @throws InvalidArgumentException If type validation fails
@@ -998,5 +975,24 @@ function createInstance(object|string $class, ?callable $func = null, ?string $n
 
 function base_path($path)
 {
-    return dirname(__DIR__, 3) . '/' . trim($path, '/');
+    return dirname(__DIR__, 3) . '/' . ltrim($path, " \n\r\t\v\0/\\");
+}
+
+function uuidv4(): string
+{
+    $b = random_bytes(16);
+
+    $b[6] = chr((ord($b[6]) & 0x0f) | 0x40);
+    $b[8] = chr((ord($b[8]) & 0x3f) | 0x80);
+
+    $hex = bin2hex($b);
+
+    return sprintf(
+        '%s-%s-%s-%s-%s',
+        substr($hex, 0, 8),
+        substr($hex, 8, 4),
+        substr($hex, 12, 4),
+        substr($hex, 16, 4),
+        substr($hex, 20, 12)
+    );
 }
