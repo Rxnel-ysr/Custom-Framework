@@ -22,7 +22,7 @@ class RateLimiter
         $this->timeFrame = $timeFrame;
         $this->banTime = $banTime;
         $this->type = $type;
-        $this->storagePath = $storage_path . "/cache/rate-limiter/{$this->type}_rate_limit_{$this->ip}.log";
+        $this->storagePath = $storage_path . "/cache/rate_limiter/{$this->type}_rate_limit_{$this->ip}.log";
     }
 
     public function check()
@@ -46,13 +46,13 @@ class RateLimiter
 
     private function isBanned()
     {
-        $banFile = $this->storage_path_dir . "cache/rate-limiter/{$this->type}_ban_{$this->ip}.log";
+        $banFile = $this->storage_path_dir . "cache/rate_limiter/{$this->type}_ban_{$this->ip}.log";
         return file_exists($banFile) && file_get_contents($banFile) > time();
     }
 
     private function banUser()
     {
-        file_put_contents($this->storage_path_dir . "/cache/rate-limiter/{$this->type}_ban_{$this->ip}.log", time() + $this->banTime);
+        file_put_contents($this->storage_path_dir . "/cache/rate_limiter/{$this->type}_ban_{$this->ip}.log", time() + $this->banTime);
     }
 
     private function loadRequests()

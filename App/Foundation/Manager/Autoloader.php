@@ -533,7 +533,7 @@ class Autoloader
         if (self::DEBUG & self::$flags) error_log($msg);
     }
 
-    private static function loadAll(): void
+    public static function loadAll(): void
     {
         foreach (self::$classes as $class => $spec) {
             self::loadClass($class, false, $spec);

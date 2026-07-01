@@ -2,9 +2,9 @@
 
 use App\Foundation\Manager\Autoloader;
 
-require_once 'App/Foundation/Manager/Autoloader.php';
+require_once __DIR__ . '/App/Foundation/Manager/Autoloader.php';
 
-$cfg = require 'config/autoloader.php';
+$cfg = require __DIR__ . '/config/autoloader.php';
 
 $opt = (
     ($cfg['debug']           ?? false ? Autoloader::DEBUG              : 0) |
@@ -16,7 +16,6 @@ $opt = (
     ($cfg['resolution']['boot']       ?? false ? Autoloader::BOOT_RESOLUTION : 0)
 );
 
-// $start = hrtime(true);
 Autoloader::setup(
     __DIR__,
     [
@@ -37,5 +36,3 @@ Autoloader::registerAttributeAlises([
 ]);
 
 Autoloader::registerAutoloader();
-// $rs = (hrtime(true) - $start) / 1.0e6 . "ms\n";
-// echo $rs;

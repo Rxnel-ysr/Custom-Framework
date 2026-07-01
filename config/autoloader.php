@@ -1,8 +1,5 @@
 <?php
 
-use App\Foundation\Generator\TemplateBuilder;
-use App\Foundation\Manager\Resolver;
-
 $root = dirname(__DIR__, 1);
 
 return [
@@ -109,7 +106,7 @@ return [
     |
     */
 
-    'classmap' => $root . '/config/classes.php',
+    'classmap' => $root . '/storage/classes.php',
 
     /*
     |--------------------------------------------------------------------------
@@ -152,33 +149,5 @@ return [
     ],
 
 
-    'additional_methods' => [
-        function ($class) use ($root) {
-            $hasNamespace = strpos($class, '\\') !== false;
-
-            if ($hasNamespace) {
-                $normalized = str_replace('\\', '/', $class);
-                $namespace = str_replace('/', '\\', dirname($normalized));
-                $classname = basename($normalized);
-
-
-                $classBuilder = new TemplateBuilder(
-                    "{$root}/storage/templates/classWithNamespace_placeholder.stub"
-                )->rules([
-                    'namespace' => $namespace,
-                    'classname' => $classname
-                ])->parse();
-            } else {
-                $classBuilder = new TemplateBuilder(
-                    "{$root}/storage/templates/class_placeholder.stub"
-                )->rules([
-                    'classname' => $class
-                ])->parse();
-            }
-
-            eval($classBuilder->getResult());
-
-            return true;
-        }
-    ]
+    'additional_methods' => []
 ];
