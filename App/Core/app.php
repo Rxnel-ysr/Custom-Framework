@@ -158,6 +158,7 @@ class App
 
     public function handle(Request $request)
     {
+        Route::handleCORS($request);
         // ob_start();
         foreach ($this->dependencies as $dependency) {
             require_once $this->root . DIRECTORY_SEPARATOR . $dependency;

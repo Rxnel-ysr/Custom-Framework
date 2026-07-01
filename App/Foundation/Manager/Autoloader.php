@@ -14,12 +14,14 @@ use RecursiveIteratorIterator;
 use ReflectionClass;
 use RuntimeException;
 
-#[Attribute(Attribute::TARGET_CLASS | Attribute::IS_REPEATABLE)] class Dep
+#[Attribute(Attribute::TARGET_CLASS | Attribute::IS_REPEATABLE)]
+class Dep
 {
     public function __construct(public string $name) {}
 }
 
-#[Attribute(Attribute::TARGET_CLASS | Attribute::IS_REPEATABLE)] class Boot
+#[Attribute(Attribute::TARGET_CLASS | Attribute::IS_REPEATABLE)]
+class Boot
 {
     public function __construct(public array|string $name) {}
 }
@@ -277,23 +279,6 @@ class Autoloader
         }
     }
 
-    public static function resolveAlias(string $original)
-    {
-        if (isset(self::$depAliases[$original])) {
-            return self::$depAliases[$original];
-        }
-
-        if ($original !== Dep::class && $original !== Boot::class) {
-            throw new AutoloaderRuntimeException(sprintf(
-                'The given %s was not known dep attributes',
-                $original
-            ));
-        }
-
-        return $original;
-    }
-
-
     public static function registerAutoloader(): bool
     {
         if (self::$is_initialized) {
@@ -442,14 +427,18 @@ class Autoloader
 
         $reflectClass = new ReflectionClass($classname);
 
-        foreach ($reflectClass->getAttributes(self::resolveAlias(Dep::class)) as $dep) {
-            $dep = $dep->newInstance();
-            $result['depends'][] = $dep->name;
+        foreach ($reflectClass->getAttributes() as $dep) {
+            if (is_a($dep->getName(), Dep::class, true)) {
+                $dep = $dep->newInstance();
+                $result['depends'][] = $dep->name;
+            }
         }
 
-        foreach ($reflectClass->getAttributes(self::resolveAlias(Boot::class)) as $boot) {
-            $boot = $boot->newInstance();
-            $result['boot'][] = $boot->name;
+        foreach ($reflectClass->getAttributes() as $boot) {
+            if(is_a($boot->getName(), Boot::class, true)){
+                $boot = $boot->newInstance();
+                $result['boot'][] = $boot->name;
+            }
         }
 
         return $result;

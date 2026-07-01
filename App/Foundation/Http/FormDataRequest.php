@@ -1,7 +1,9 @@
 <?php
 
 namespace App\Foundation\Http;
+use Dep;
 
+#[Dep('App\\Foundation\\Http\\Request')]
 abstract class FormDataRequest extends Request
 {
     /**

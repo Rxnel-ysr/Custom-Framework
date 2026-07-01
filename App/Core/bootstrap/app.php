@@ -18,7 +18,6 @@ return (static function (): App {
         ])
         ->withMiddleware(static function ($middleware) {
             $middleware->aliases([
-                'cors' => \App\Http\Middlewares\CORS::class,
                 'test' => \App\Http\Middlewares\Test::class,
                 'bearer' => \App\Http\Middlewares\Bearer::class,
             ]);

@@ -31,6 +31,7 @@ use Dep;
  * @method static array routeList()
  * @method static array getNamedRoutes()
  * @method static mixed parameter(string $parameter)
+ * @method static void handleCORS(Request $request)
  */
 #[Dep(Facade::class)]
 class Route extends Facade
@@ -38,6 +39,7 @@ class Route extends Facade
     protected static function getFacadeAccessor(): string|object
     {
         $router = config('router');
+        ini_set('default_mimetype', '');
 
         $nonce = base64_encode(random_bytes(16));
 

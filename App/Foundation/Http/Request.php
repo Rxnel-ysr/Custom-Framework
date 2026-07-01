@@ -67,9 +67,9 @@ class Request
     protected string $queryString;
 
     /**
-     * @var string $origin
+     * @var ?string $origin
      */
-    protected string $origin;
+    protected ?string $origin;
 
     protected ?Model $user = null;
     protected ?ApiToken $apiToken = null;
@@ -115,7 +115,7 @@ class Request
         $this->fullUri = $_SERVER['REQUEST_URI'] ?? '';
         $this->uri = strstr($this->fullUri, '?', true) ?: $this->fullUri;
         $this->queryString = $_SERVER['QUERY_STRING'] ?? '';
-        $this->origin = $this->headers['HTTP_ORIGIN'] ?? $this->headers['referer'] ?? ((isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . $_SERVER['REMOTE_ADDR'] . ':' . $_SERVER['REMOTE_PORT']);
+        $this->origin = $this->headers['HTTP_ORIGIN'] ?? $this->headers['origin'] ?? null;
         $this->json = $this->getJson();
     }
 

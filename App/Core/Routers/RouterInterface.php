@@ -4,10 +4,10 @@ namespace App\Foundation\Http;
 
 use App\Debug\Debugger;
 use App\Foundation\Exceptions\Framework\BaseException;
-use App\Foundation\Exceptions\Framework\Exception;
 use App\Foundation\Exceptions\Framework\Http\BaseHttpException;
 use App\Foundation\Exceptions\Framework\Http\Json\JsonBaseHttpException;
 use App\Foundation\Exceptions\Framework\LowLevelException;
+use App\Foundation\Exceptions\Framework\Primitive\LogicException;
 use App\Foundation\Http\Request;
 use App\Foundation\Manager\InstanceManager;
 use Closure;
@@ -65,9 +65,14 @@ abstract class RouterBase
 
         $response = response();
 
-        !($res instanceof Response) ? (is_array($res)
-            ? $response->json($res)
-            : $response->make((string)$res)) : $res;
+        if(!$res instanceof Response){
+            if(is_array($res)){
+                $response->json($res);
+            } else {
+                $response->headers->set('Content-Type', 'text/html');
+                $response->make((string)$res);
+            }
+        }
 
         return $response->send();
     }
@@ -126,7 +131,8 @@ abstract class RouterBase
     /**
      * Set parameter value of this route
      *
-     * @param array $parameters
+     * @param string $parameter
+     * @param mixed $value
      * @return string[]
      */
     public function setParameter(string $parameter, mixed $value)
@@ -165,5 +171,149 @@ abstract class RouterBase
 
             default => throw $e,
         };
+    }
+
+    /**
+     * CORS HANDLER
+     */
+
+    /**
+     * Handle preflight OPTIONS request
+     */
+    public static function handleCORS(Request $request)
+    {
+        $response = response();
+
+        self::addCorsHeaders($request, $response);
+
+        $response->headers->set('Access-Control-Max-Age', '86400');
+        
+        if($request->method() == 'OPTIONS'){
+            $response->make('', 204)->send();
+            exit;
+        }
+    }
+
+    /**
+     * Add CORS headers to response
+     */
+    protected static function addCorsHeaders(Request $request, Response $response): Response
+    {
+        $origin = $request->origin();
+        $allowedOrigins = self::getAllowedOrigins();
+        $allowCredentials = filter_var(env('ALLOW_CREDENTIALS', false), FILTER_VALIDATE_BOOL);
+        if ($allowCredentials && self::shouldAllowAnyOrigin()) {
+            throw new LogicException(
+                'Access-Control-Allow-Origin "*" cannot be used with credentials.'
+            );
+        }
+        
+        if (self::shouldAllowAnyOrigin()) {
+            $response->headers->set('Access-Control-Allow-Origin', '*');
+        } elseif ($origin && self::isOriginAllowed($origin, $allowedOrigins)) {
+            $response->headers->append('Vary', 'Origin');
+            $response->headers->set('Access-Control-Allow-Origin',  $origin);
+            if ($allowCredentials) {
+                $response->headers->set('Access-Control-Allow-Credentials', 'true');
+            }
+        }
+
+        $response->headers->set('Access-Control-Allow-Methods', self::getAllowedMethods());
+        $response->headers->set('Access-Control-Allow-Headers', self::getAllowedHeaders());
+
+        return $response;
+    }
+
+    /**
+     * Get allowed origins from configuration
+     */
+    protected static function getAllowedOrigins(): array
+    {
+        $origins = env('ALLOWED_ORIGINS', '');
+
+        if (empty($origins)) {
+            return [];
+        }
+
+        return array_map('trim', explode(',', $origins));
+    }
+
+    /**
+     * Check if origin is allowed
+     */
+    protected static function isOriginAllowed(string $origin, array $allowedOrigins): bool
+    {
+        // Allow exact match
+        if (in_array($origin, $allowedOrigins, true)) {
+            return true;
+        }
+
+        // Allow wildcard subdomains (e.g., *.example.com)
+        foreach ($allowedOrigins as $allowedOrigin) {
+            if (strpos($allowedOrigin, '*') !== false) {
+                $pattern = self::convertWildcardToRegex($allowedOrigin);
+                if (preg_match($pattern, $origin)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Convert wildcard pattern to regex
+     */
+    protected static function convertWildcardToRegex(string $pattern): string
+    {
+        $pattern = preg_quote($pattern, '/');
+        $pattern = str_replace('\*', '.*', $pattern);
+        return '/^' . $pattern . '$/i';
+    }
+
+    /**
+     * Validate origin format
+     */
+    protected static function isOriginValid(string $origin): bool
+    {
+        // Basic origin validation
+        if (filter_var($origin, FILTER_VALIDATE_URL)) {
+            $parsed = parse_url($origin);
+            return isset($parsed['scheme']) && in_array($parsed['scheme'], ['http', 'https']);
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if we should allow any origin
+     */
+    protected static function shouldAllowAnyOrigin(): bool
+    {
+        return filter_var(env('ALLOW_CORS_FROM_ANYWHERE', false), FILTER_VALIDATE_BOOL);
+    }
+
+    /**
+     * Get allowed methods
+     */
+    protected static function getAllowedMethods(): string
+    {
+        return env('ALLOWED_METHODS', 'GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD');
+    }
+
+    /**
+     * Get allowed headers
+     */
+    protected static function getAllowedHeaders(): string
+    {
+        return env('ALLOWED_HEADERS', 'Content-Type, Authorization, X-Requested-With, X-CSRF-TOKEN');
+    }
+
+    /**
+     * Get exposed headers
+     */
+    protected static function getExposedHeaders(): string
+    {
+        return env('EXPOSED_HEADERS', 'Content-Length, X-Total-Count');
     }
 }
