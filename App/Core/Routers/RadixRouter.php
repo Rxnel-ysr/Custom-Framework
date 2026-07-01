@@ -73,7 +73,7 @@ class RouteRadix extends RouterBase implements RouterInterface
         return $path === '' ? '/' : '/' . $path;
     }
 
-    public function middleware(string|array $middleware, ?callable $callback = null): null|self
+    public function middleware(string|array $middleware, ?callable $callback = null)
     {
         if (!is_array($middleware)) {
             $middleware = [$middleware];
@@ -299,11 +299,6 @@ class RouteRadix extends RouterBase implements RouterInterface
     public function head(string $url, callable|array $action, array|string $middleware = []): self
     {
         return self::add('HEAD', $url, $action, (array) $middleware);
-    }
-
-    public function options(string $url, callable|array $action, array|string $middleware = []): self
-    {
-        return self::add('OPTIONS', $url, $action, (array) $middleware);
     }
 
     // Named routes

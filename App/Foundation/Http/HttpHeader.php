@@ -88,6 +88,18 @@ class HttpHeaders
         return $this;
     }
 
+    public function append(string $name, string $value)
+    {
+        $prev = $this->headers[$name] ?? null;
+        if(!$prev){
+            $this->headers[$name] = $value;
+        } else{
+            $this->headers[$name] = "{$prev}, {$value}";
+        }
+
+        return $this;
+    }
+
     public function merge(array $headers)
     {
         $this->headers = array_merge($this->headers, $headers);

@@ -221,6 +221,12 @@ class RouteRegex extends RouterBase implements RouterInterface
         return $this;
     }
 
+    public function head(string $url, callable|array $action, array|string $middleware = []): self
+    {
+        self::add('HEAD', $url, $action, (array) $middleware);
+        return $this;
+    }
+
     // Named routes
     public function name(string $name): self
     {

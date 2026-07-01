@@ -209,11 +209,6 @@ class RouteTrie extends RouterBase implements RouterInterface
         return self::add('HEAD', $url, $action, (array) $middleware);
     }
 
-    public function options(string $url, callable|array $action, array|string $middleware = []): self
-    {
-        return self::add('OPTIONS', $url, $action, (array) $middleware);
-    }
-
     // Named routes
     public function name(string $name): self
     {
