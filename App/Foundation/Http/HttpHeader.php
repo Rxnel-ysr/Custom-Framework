@@ -6,6 +6,11 @@ class HttpHeaders
 {
     protected $headers = [];
 
+    public function has(string $header)
+    {
+        return isset($this->headers[$header]);
+    }
+
     public function contentType(string $type)
     {
         $this->headers['Content-Type'] = $type;
@@ -45,7 +50,7 @@ class HttpHeaders
         $this->headers['Content-Length'] = $bytes;
         return $this;
     }
-    
+
     public function contentRange(int $fileSize, ?int $startBytes = null, ?int $endBytes = null)
     {
         $this->headers['Content-Range'] = 'bytes ' . ($startBytes && $endBytes ? $startBytes . '-' . $endBytes : '*') . '/' . $fileSize;
@@ -91,9 +96,9 @@ class HttpHeaders
     public function append(string $name, string $value)
     {
         $prev = $this->headers[$name] ?? null;
-        if(!$prev){
+        if (!$prev) {
             $this->headers[$name] = $value;
-        } else{
+        } else {
             $this->headers[$name] = "{$prev}, {$value}";
         }
 

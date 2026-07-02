@@ -6,9 +6,9 @@ use App\Support\Facades\Facade;
 use Dep;
 
 /**
- * @method static \Experimental\App\Foundation\Database\QueryBuilder table($name)
- * @mixin \Experimental\App\Foundation\Database\QueryBuilder
- * @extends Facade<\Experimental\App\Foundation\Database\QueryBuilder>
+ * @method static \App\Foundation\Database\QueryBuilder table(string $name)
+ * @mixin \App\Foundation\Database\QueryBuilder
+ * @extends Facade<\App\Foundation\Database\QueryBuilder>
  * 
  * @depends App\Support\Facades\Facade
 */
@@ -17,6 +17,7 @@ class DB extends Facade
 {
     protected static function getFacadeAccessor(): string|object
     {
-        return \Experimental_V2\App\Foundation\Database\QueryBuilder::class;
+        return \App\Foundation\Database\QueryBuilder::class;
     }
+    
 }

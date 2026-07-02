@@ -69,7 +69,9 @@ abstract class RouterBase
             if(is_array($res)){
                 $response->json($res);
             } else {
-                $response->headers->set('Content-Type', 'text/html');
+                if(!$response->headers->has('Content-Type')){
+                    $response->headers->set('Content-Type', 'text/html');
+                }
                 $response->make((string)$res);
             }
         }
@@ -202,15 +204,8 @@ abstract class RouterBase
         $origin = $request->origin();
         $allowedOrigins = self::getAllowedOrigins();
         $allowCredentials = filter_var(env('ALLOW_CREDENTIALS', false), FILTER_VALIDATE_BOOL);
-        if ($allowCredentials && self::shouldAllowAnyOrigin()) {
-            throw new LogicException(
-                'Access-Control-Allow-Origin "*" cannot be used with credentials.'
-            );
-        }
         
-        if (self::shouldAllowAnyOrigin()) {
-            $response->headers->set('Access-Control-Allow-Origin', '*');
-        } elseif ($origin && self::isOriginAllowed($origin, $allowedOrigins)) {
+        if ($origin && self::isOriginAllowed($origin, $allowedOrigins)) {
             $response->headers->append('Vary', 'Origin');
             $response->headers->set('Access-Control-Allow-Origin',  $origin);
             if ($allowCredentials) {
@@ -283,14 +278,6 @@ abstract class RouterBase
         }
 
         return false;
-    }
-
-    /**
-     * Check if we should allow any origin
-     */
-    protected static function shouldAllowAnyOrigin(): bool
-    {
-        return filter_var(env('ALLOW_CORS_FROM_ANYWHERE', false), FILTER_VALIDATE_BOOL);
     }
 
     /**

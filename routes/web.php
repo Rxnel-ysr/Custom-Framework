@@ -9,11 +9,11 @@ Route::get('/', function () {
 });
 
 Route::get('/robot.txt', function (Response $response) {
-   
+   $response->headers->contentType('text/plain');
+   return "<h1>Hello</h1>";
 });
 
-Route::get('/test', function(Request $request){
+Route::get('/test', function (Request $request) {
 
-   return $request->getHeaders();
+   return "Hello";
 });
-

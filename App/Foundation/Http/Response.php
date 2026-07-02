@@ -60,14 +60,17 @@ class Response
         return $this;
     }
 
-    public function xml($data)
+    public function xml(string $data = <<<XML
+    <xml>
+    </xml>
+    XML)
     {
         $this->headers->contentType('application/xml');
-        $xml = new SimpleXMLElement('<response />');
-        array_walk_recursive($data, function ($value, $key) use ($xml) {
-            $xml->addChild($key, $value);
-        });
-        $this->content = $xml->asXML();
+        // $xml = new SimpleXMLElement('<response />');
+        // array_walk_recursive($data, function ($value, $key) use ($xml) {
+        //     $xml->addChild($key, $value);
+        // });
+        $this->content = $data;
         return $this;
     }
 
