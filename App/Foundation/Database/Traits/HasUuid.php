@@ -2,6 +2,8 @@
 
 namespace App\Foundation\Database\Traits;
 
+use App\Foundation\Database\Model;
+
 trait HasUuid
 {
 
@@ -26,6 +28,7 @@ trait HasUuid
 
     public function save()
     {
+        /** @var Model $this */
         $currentTime = date('Y-m-d H:i:s');
         $array = $this->isFetched ? $this->dirty() : $this->all()->toArray();
         if ($this->isFetched) {

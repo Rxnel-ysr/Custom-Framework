@@ -8,8 +8,6 @@ use App\Foundation\Manager\Autoloader;
 use App\Foundation\System\Disk;
 
 $root = dirname(__DIR__, 1);
-require_once $root . '/App/Foundation/CLI/Command.php';
-
 
 $migrationSetup = [
     fn() => Connection::set(require "$root/config/database.php"),

@@ -29,17 +29,17 @@ class Model extends QueryBuilder implements IteratorAggregate, Countable, JsonSe
 {
     use Strings;
 
-    protected $table;
-    protected $fillable = [];
-    protected $guarded = [];
-    protected $primary = 'id';
-    protected $casts = [];
-    protected $hidden = [];
-    protected $isFetched;
-    protected $timestamps = true;
-    protected $original;
-    protected $dirty = null;
-    protected $data;
+    protected string $table;
+    protected array $fillable = [];
+    protected array $guarded = [];
+    protected string $primary = 'id';
+    protected array $casts = [];
+    protected array $hidden = [];
+    protected bool $isFetched;
+    protected bool $timestamps = true;
+    protected array $original;
+    protected ?array $dirty = null;
+    protected array $data;
     private Collection $collectionData;
 
     public function __construct($attributes = [])

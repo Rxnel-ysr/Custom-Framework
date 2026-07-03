@@ -16,7 +16,6 @@ class Response
     private bool $isLimitedDownload = false;
     private ?string $downloadFileName = null;
     private int $downloadMinutes = 0;
-    
 
     public function __construct()
     {
@@ -66,10 +65,6 @@ class Response
     XML)
     {
         $this->headers->contentType('application/xml');
-        // $xml = new SimpleXMLElement('<response />');
-        // array_walk_recursive($data, function ($value, $key) use ($xml) {
-        //     $xml->addChild($key, $value);
-        // });
         $this->content = $data;
         return $this;
     }
@@ -142,9 +137,11 @@ class Response
         return $this;
     }
 
-    public function make(string $content = '', int $status = 200, array $headers = [])
+    public function make(string $content = '', ?int $status = null, array $headers = [])
     {
-        $this->status($status);
+        if($status){
+            $this->status($status);
+        }
         $this->headers->merge($headers);
         $this->content = $content;
         return $this;

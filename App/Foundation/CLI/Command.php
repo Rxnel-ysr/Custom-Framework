@@ -6,6 +6,7 @@ namespace Experimental\App\Foundation\CLI;
 
 use App\Foundation\CLI\Argv;
 use App\Foundation\Exceptions\Framework\HighLevelException;
+use App\Foundation\Manager\InstanceManager;
 use Throwable;
 use Closure;
 
@@ -58,17 +59,19 @@ class Command
     {
         $trigger = $argv[1] ?? null;
         if ($trigger === null) {
-            return self::showHelp();
+            self::showHelp();
+
+            return 0;
         }
 
         $command = self::$aliases[$trigger] ?? self::$commands[$trigger][0] ?? null;
         if ($command === null) {
             echo "Unknown command: {$trigger}\n";
-            return self::showHelp(false);
+            self::showHelp(false);
+
+            return 1;
         }
 
-        // var_dump($command['strict']);
-        // exit;
         // Build Argv according to command’s schema
         try {
             $cli = new Argv(
@@ -103,7 +106,7 @@ class Command
         return empty($mapped) ? null : $mapped;
     }
 
-    private static function execute(array $command, Argv $argv): mixed
+    private static function execute(array $command, Argv $argv): null|string|int
     {
         // try {
             foreach ($command['dependencies'] as $dep) {
@@ -117,7 +120,7 @@ class Command
             }
 
             if (is_array($command['command']) && count($command['command']) === 2) {
-                $instance = new $command['command'][0];
+                $instance = InstanceManager::getInstance('app')->make($command['command'][0]);
                 $command['command'] = [$instance, $command['command'][1]];
             }
 
@@ -129,7 +132,7 @@ class Command
                 return shell_exec($command['command']);
             }
 
-            return null;
+            return 1;
         // } catch (Throwable $e) {
         //     echo "Error: {$e->getMessage()}\n";
         //     return 1;

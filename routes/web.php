@@ -17,3 +17,9 @@ Route::get('/test', function (Request $request) {
 
    return "Hello";
 });
+
+Route::fallback(function () {
+
+   response()->status(404)->headers->contentType('text/plain');
+   return "not found";
+});

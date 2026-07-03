@@ -332,7 +332,7 @@ class RouteTrie extends RouterBase implements RouterInterface
 
         // Use method-specific trie root
         if (!isset($this->roots[$method])) {
-            return self::handleNotFound();
+            return self::handleNotFound($request);
         }
 
         $segments = self::splitPath($requestUri);
@@ -347,7 +347,7 @@ class RouteTrie extends RouterBase implements RouterInterface
                 $node = $node->children['{}'];
                 $params[] = $segment;
             } else {
-                return self::handleNotFound();
+                return self::handleNotFound($request);
             }
         }
 
@@ -367,13 +367,13 @@ class RouteTrie extends RouterBase implements RouterInterface
             return self::pipeline($request, $middleware, $destination);
         }
 
-        return self::handleNotFound();
+        return self::handleNotFound($request);
     }
 
-    private function handleNotFound()
+    private function handleNotFound(Request $request)
     {
         if (isset($this->fallback)) {
-            return self::execute($this->fallback, []);
+            return self::pipeline($request,[], fn () => self::execute($this->fallback, []));
         }
         return Debugger::showErrorPage(404, 'Not found');
     }

@@ -418,7 +418,7 @@ class RouteRadix extends RouterBase implements RouterInterface
         // dd($root);
 
         if ($root === null) {
-            return self::handleNotFound();
+            return self::handleNotFound($request);
         }
 
         $result = self::searchNode($root, $segments);
@@ -443,13 +443,13 @@ class RouteRadix extends RouterBase implements RouterInterface
             }
         }
 
-        return self::handleNotFound();
+        return self::handleNotFound($request);
     }
 
-    private function handleNotFound()
+    private function handleNotFound(Request $request)
     {
         if (isset($this->fallback)) {
-            return self::execute($this->fallback, []);
+            return self::pipeline($request, [], fn() => self::execute($this->fallback, []));
         }
         return Debugger::showErrorPage(404, 'Not found');
     }

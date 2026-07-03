@@ -77,7 +77,7 @@ class RouteRegex extends RouterBase implements RouterInterface
                 $this->lastRoute['middleware'] ?? [],
                 $middleware
             );
-        } 
+        }
 
         return $this;
     }
@@ -236,7 +236,7 @@ class RouteRegex extends RouterBase implements RouterInterface
     }
 
     // Route groups
-    public function group(array $attributes, callable $callback): void
+    public function group(array $attributes, callable $callback): self
     {
         // Push current group attributes to stack
         $this->groupStack[] = $this->currentGroup;
@@ -253,6 +253,8 @@ class RouteRegex extends RouterBase implements RouterInterface
 
         // Restore previous group attributes
         $this->currentGroup = array_pop($this->groupStack);
+
+        return $this;
     }
 
     // Reverse routing
@@ -422,66 +424,13 @@ class RouteRegex extends RouterBase implements RouterInterface
             }
         }
 
-        // die;
+        return self::handleNotFound($request);
+    }
 
-        // $routes = $this->routes[$method];
-        // $patterns = array_column($routes, 'pattern');
-
-        // $matchResults = safe_bulk_match($patterns, $requestUri, 0.05); // 30ms per regex
-        // $matchedIndex = null;
-        // $tempInt = 0;
-        // // var_dump($matchResults);
-        // // die;
-
-        // foreach ($matchResults as $i => $result) {
-        //     if ($result === true) {
-        //         $matchedIndex = $i;
-        //         break;
-        //     }
-        //     $tempInt++;
-        // }
-        // // echo $matchedIndex;
-        // // die;
-
-        // if ($matchedIndex === null) {
-        //     return Debugger::showErrorPage(404, 'Not found');
-        // }
-
-        // $route = $routes[$tempInt];
-        // preg_match($route['pattern'], $requestUri, $matches);
-        // $params = array_filter($matches, 'is_string', ARRAY_FILTER_USE_KEY);
-
-        // $orderedParams = [];
-        // foreach ($route['paramKeys'] as $key) {
-        //     if (isset($params[$key])) {
-        //         $orderedParams[$key] = $params[$key];
-        //     }
-        // }
-
-        // foreach ($this->plugins as $fn) {
-        //     $fn();
-        // }
-
-        // $middleware = array_merge($this->globalMiddleware, $route['middleware'] ?? []);
-
-        // foreach ($middleware as $m) {
-        //     if (is_callable($m)) {
-        //         $response = call_user_func($m);
-        //         if ($response !== true) return $response;
-        //     } elseif (is_string($m)) {
-        //         $middlewareInstance = new $m();
-        //         $response = $middlewareInstance->handle();
-        //         if ($response !== true) return $response;
-        //     }
-        // }
-
-        // return self::execute($route['action'], $orderedParams);
-
-
-        // die;
-
+    private function handleNotFound(Request $request)
+    {
         if (isset($this->fallback)) {
-            return self::execute($this->fallback, []);
+            return self::pipeline($request, [], fn() => self::execute($this->fallback, []));
         }
         return Debugger::showErrorPage(404, 'Not found');
     }

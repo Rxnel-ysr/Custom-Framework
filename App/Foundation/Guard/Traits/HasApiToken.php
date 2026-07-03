@@ -9,6 +9,7 @@ trait HasApiToken
 {
     public function createToken()
     {
+        /** @var Model $this */
         if ($this?->isFetched) {
             $token = ApiToken::from([
                 'parent_id' => $this->{$this->getPrimary()},
