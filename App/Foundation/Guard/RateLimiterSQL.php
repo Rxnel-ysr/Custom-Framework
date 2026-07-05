@@ -140,7 +140,7 @@ class RateLimiterSQL
 
         // BEGIN IMMEDIATE acquires the write lock up front instead of
         // deferring and risking an upgrade conflict mid-transaction.
-        $db->exec('BEGIN IMMEDIATE');
+        $db->beginTransaction();
 
         try {
             // 1. Check if banned

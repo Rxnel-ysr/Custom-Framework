@@ -13,7 +13,7 @@ class BaseException extends Exception
     /**
      * @var list<class-string, Closure>
      */
-    final protected $renderer = [];
+    protected $renderer = [];
 
     final public function render(Closure $handler): static
     {

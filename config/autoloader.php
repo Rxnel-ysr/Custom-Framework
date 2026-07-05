@@ -19,7 +19,7 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Auto-Resolve Classes
+    | Auto Resolve Classes
     |--------------------------------------------------------------------------
     |
     | If set to true, the autoloader will attempt to automatically resolve
@@ -28,7 +28,7 @@ return [
     |
     */
 
-    'auto-resolve' => true,
+    'auto_resolve' => true,
 
     'system_scan' => [
         'ignore' => [
@@ -144,6 +144,9 @@ return [
 
     'files' => [
         'App/Core/Routers/RouterInterface.php',
+        'App/Foundation/Http/Request.php',
+        'App/Foundation/Http/Response.php',
+        'App/Foundation/Http/HttpHeader.php',
         'App/Foundation/Helpers/Utility.php',
         'App/Foundation/Helpers/Helpers.php'
     ],

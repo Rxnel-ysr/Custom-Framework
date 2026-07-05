@@ -258,12 +258,11 @@ class Autoloader
         }
 
         if ($rootScan) {
-            // var_dump($ignoredDirsRoot);
             yield from self::scanForClasses(self::$root, $check_filemtime, $skip_dep_check, $ignoredDirsRoot);
         }
     }
 
-    public static function registerAttributeAlises(array $aliases)
+    public static function registerAttributeAliases(array $aliases)
     {
         self::$depAliases = $aliases;
         foreach (self::$depAliases as $alias => $designated) {
@@ -288,19 +287,14 @@ class Autoloader
             $res = spl_autoload_register([self::class, 'method_x'], true);
             if (self::$cold) {
                 self::$cold = false;
-                // echo 'Cold start!' . PHP_EOL;
                 foreach (self::$classes as $class => $spec) {
-                    // echo "Cold start aa {$class}\n";
                     $deps = self::getSetup($class);
-                    // echo 'Cold start ab' . PHP_EOL;
                     $spec['boot'] = $deps['boot'];
                     $spec['depends'] = $deps['depends'];
-                    // echo 'Cold start ac' . PHP_EOL;
                     self::$classes[$class] = $spec;
                 }
                 self::updateClassesMapping(self::$classes);
                 self::updateCacheClassesMapping(self::$classes);
-                // echo 'Cold start end' . PHP_EOL;
             }
             return $res;
         }

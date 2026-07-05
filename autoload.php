@@ -8,7 +8,7 @@ $cfg = require __DIR__ . '/config/autoloader.php';
 
 $opt = (
     ($cfg['debug']           ?? false ? Autoloader::DEBUG              : 0) |
-    ($cfg['auto-resolve']    ?? false ? Autoloader::AUTO_RESOLVE       : 0) |
+    ($cfg['auto_resolve']    ?? false ? Autoloader::AUTO_RESOLVE       : 0) |
     ($cfg['auto']            ?? false ? Autoloader::AUTO_INIT          : 0) |
     ($cfg['check_filemtime'] ?? false ? Autoloader::CHECK_FILEMTIME    : 0) |
     ($cfg['read_only']       ?? false ? Autoloader::READ_ONLY          : 0) |
@@ -30,7 +30,7 @@ Autoloader::setup(
     $opt,
 );
 
-Autoloader::registerAttributeAlises([
+Autoloader::registerAttributeAliases([
     'Dep' => App\Foundation\Manager\Dep::class,
     'Boot' => App\Foundation\Manager\Boot::class,
 ]);
