@@ -376,14 +376,14 @@ function callFuncWithParams(
         // Dependency injection
         if ($autoResolve && $paramType instanceof ReflectionNamedType && !$paramType->isBuiltin()) {
             $name = $paramType->getName();
-            $instance = (isset($params[$index]) && $params[$index] instanceof  $name) ? $params[$index]: InstanceManager::getInstance('container')->make($name);
-            $res = $instance instanceof Model && $isAssoc && arrKeyExists($paramName, $params) ? $instance->findOrFail($params[$paramName]) : $instance;
+            $instance = (isset($params[$index]) && $params[$index] instanceof  $name) ? $params[$index] : InstanceManager::getInstance('container')->make($name);
+            $res = $instance instanceof Model && $isAssoc && arr_key_exists($paramName, $params) ? $instance->findOrFail($params[$paramName]) : $instance;
             $args[] = Route::setParameter($paramName, $res);
             continue;
         }
 
         // Parameter value resolution
-        if ($isAssoc && arrKeyExists($paramName, $params)) {
+        if ($isAssoc && arr_key_exists($paramName, $params)) {
             $value = $params[$paramName];
         } elseif (!$isAssoc && array_key_exists($index, $params)) {
             $value = $params[$index];
@@ -410,7 +410,7 @@ function callFuncWithParams(
         );
 }
 
-function arrKeyExists(string $key, array &$array): bool
+function arr_key_exists(string $key, array &$array): bool
 {
     return isset($array[$key]) || array_key_exists($key, $array);
 }
@@ -447,7 +447,7 @@ function app(?string $class = null)
         : $app->make($class);
 }
 
-function req($path) 
+function req(string $path): mixed
 {
     $a = require $path;
     return $a;
@@ -459,7 +459,7 @@ function config(string $config)
     $path = explode('.', $config);
     $file = array_shift($path);
 
-    $configFile = DI::get('appConfig')['root'] . "config/{$file}.php";
+    $configFile = base_path("/config/{$file}.php");
     if (!file_exists($configFile)) {
         throw new Exception("Config file '{$file}.php' not found.");
     }
@@ -467,7 +467,7 @@ function config(string $config)
     $cfg = req($configFile);
 
     foreach ($path as $part) {
-        if (is_array($cfg) && arrKeyExists($part, $cfg)) {
+        if (is_array($cfg) && arr_key_exists($part, $cfg)) {
             $cfg = $cfg[$part];
         } else {
             throw new Exception("Config key '{$part}' not found in '{$file}.php'.");
@@ -973,9 +973,9 @@ function createInstance(object|string $class, ?callable $func = null, ?string $n
 }
 
 
-function base_path($path)
+function base_path($path = '')
 {
-    return dirname(__DIR__, 3) . '/' . ltrim($path, " \n\r\t\v\0/\\");
+    return $path == '' ? dirname(__DIR__, 3) : dirname(__DIR__, 3) . '/' . ltrim($path, " \n\r\t\v\0/\\");
 }
 
 function uuidv4(): string

@@ -13,6 +13,7 @@ class Compile
     private static string $ext;
     private static string $cache_dir;
     private static string $views_dir;
+    private static array $expose = [];
     private static array $directive = [
         // Comments
         '/\{\{--\s*(.*?)\s*--\}\}/s' => '<?= \'<!-- $1 -->\' ?>',
@@ -95,6 +96,11 @@ class Compile
         self::$cache_dir = $cache_dir;
     }
 
+    public static function expose(array $variables)
+    {
+        self::$expose = array_merge(self::$expose, $variables);
+    }
+
     public static function getExt()
     {
         return self::$ext;
@@ -129,7 +135,7 @@ class Compile
      * @return ($return is false ? void : string )
      * @throws CompilerException if file was not exist
      */
-    public static function compile(string $path, array $_extractedData, bool $return = false)
+    public static function compile(string $path, array $data, bool $return = false)
     {
         // echo $path;
         $viewPath = self::$views_dir . DIRECTORY_SEPARATOR . $path . self::$ext;
@@ -173,6 +179,8 @@ class Compile
 
             file_put_contents($_currentFile, $compiled);
         }
+
+        $_extractedData = array_merge($data, self::$expose);
 
         // Isolated scope with output control, well, cant be 100% but I'l treat it as feature hahaha...
         $render = function () use ($_currentFile, $_extractedData, $_nonce) {

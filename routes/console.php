@@ -1,6 +1,7 @@
 <?php
 
 use App\Foundation\CLI\Argv;
+use App\Foundation\Configuration\Config;
 use Experimental\App\Foundation\CLI\Command;
 use App\Foundation\Database\Migration;
 use App\Foundation\Database\Connection;
@@ -34,7 +35,7 @@ Command::register('serve', function (Argv $argv) {
     ->help('Start the local dev server, default localhost:8000');
 
 // --- Migrations ---
-Command::register('migrate', function(){
+Command::register('migrate', function () {
     Migration::migrate();
     return 0;
 })
@@ -42,30 +43,33 @@ Command::register('migrate', function(){
     ->help('Run the migrations')
     ->dependency($migrationSetup);
 
-Command::register('migrate:dropAll', function(){
+Command::register('migrate:dropAll', function () {
     Migration::dropAll();
     return 0;
-} )
+})
     ->alias('mda')
     ->help('Dropping all the migrations')
     ->dependency($migrationSetup);
 
-Command::register('migrate:fresh', function(){
+Command::register('migrate:fresh', function () {
     Migration::dropAndReapplyAll();
     return 0;
-} )
+})
     ->alias('mf')
     ->help('Dropping all the migrations then reapply them')
     ->dependency($migrationSetup);
 
-Command::register('migrate:rollback', function(){
+Command::register('migrate:rollback', function () {
     Migration::goToPrevMigrationsAndUnset();
     return 0;
-} )
+})
     ->alias('mr')
     ->help('Rolling back the migrations');
 
-Command::register('make:component', function (){echo 'Not yet implemented.';return 1;})
+Command::register('make:component', function () {
+    echo 'Not yet implemented.';
+    return 1;
+})
     ->alias('mkc')
     ->help('Make a new Reactive Component');
 
@@ -79,6 +83,33 @@ Command::register('dump-autoload', function (Argv $a) {
     return 0;
 })->alias('dal')
     ->help('Dump current mapping and update it');
+
+Command::register('cache:config', function ($argv) {
+    $cache = require base_path('/config/cache.php');
+    $cache['config'] = true;
+    file_put_contents(base_path('/config/cache.php'), <<<PHP
+    <?php
+    PHP . "\nreturn " . var_export($cache, true) . ";\n");
+
+    $cfg = new Config(base_path('/storage/cache/config.php'), [
+        'database'       => require base_path("config/database.php"),
+        'router'         => require base_path("config/router.php"),
+        'compiler'       => require base_path("config/compiler.php"),
+        'app'            => require base_path("config/app.php"),
+        'rate_limiter'   => require base_path("config/rate_limiter.php"),
+    ]);
+
+    $cfg->cached();
+    return 0;
+});
+
+Command::register('uncache:config', function ($argv) {
+    $cache = require base_path('/config/cache.php');
+    $cache['config'] = false;
+    return file_put_contents(base_path('/config/cache.php'), <<<PHP
+    <?php
+    PHP . "\nreturn " . var_export($cache, true) . ";\n");
+});
 
 
 Command::register('clean-views', function () {

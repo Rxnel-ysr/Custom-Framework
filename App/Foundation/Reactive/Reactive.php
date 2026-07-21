@@ -3,10 +3,7 @@
 namespace App\Foundation\Reactive;
 
 use App\Foundation\Compiler\Compile;
-use App\Foundation\Http\Request;
-use App\Foundation\Http\Route;
 use App\Support\Facades\DI;
-use App\Support\Facades\Rx;
 use Exception;
 
 class ReactiveHandler
@@ -84,11 +81,7 @@ class Reactive
         </script>
         HTML;
 
-        ob_start();
-        Compile::compile($this->view, ['id' => $this->id, 'currentStates' => $this->states, ...$this->states]);
-        $content = ob_get_clean();
-
-        return $content . ($reactiveLoader ? $injector : '');
+        return Compile::compile($this->view, ['id' => $this->id, 'currentStates' => $this->states, ...$this->states], true)  . ($reactiveLoader ? $injector : '');
     }
 
     public function getStates(): array

@@ -2,6 +2,7 @@
 
 namespace App\Support\Facades;
 
+use App\Foundation\Exceptions\Framework\Primitive\InvalidArgumentException;
 use App\Support\Facades\Facade;
 use Dep;
 
@@ -38,12 +39,13 @@ class Route extends Facade
 {
     protected static function getFacadeAccessor(): string|object
     {
-        $router = config('router');
+        $router = DI::get('appConfig')['router'];
         ini_set('default_mimetype', '');
 
-        $nonce = base64_encode(random_bytes(16));
+        $nonce = ''; 
 
-        if (!empty($_ENV['CSP'])) {
+        if (env('CSP')) {
+            $nonce = base64_encode(random_bytes(16));
             withHeader()->set('Content-Security-Policy', "default-src 'self'; media-src 'self'; script-src 'self' 'nonce-$nonce'; style-src 'self' 'nonce-$nonce' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com;");
         }
 

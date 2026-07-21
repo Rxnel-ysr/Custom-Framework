@@ -20,16 +20,17 @@ return (static function (): App {
             $middleware->aliases([
                 'test' => \App\Http\Middlewares\Test::class,
                 'bearer' => \App\Http\Middlewares\Bearer::class,
+                'csrf' => \App\Http\Middlewares\CSRF::class,
             ]);
         })
         ->withExceptions(static function ($exception) {
-            $exception->render(function(ModelNotFoundException $e, Request $request){
+            $exception->render(function (ModelNotFoundException $e, Request $request) {
                 return response()->json($request->all());
             });
         })
         ->withProviders([
             AppServiceProvider::class
         ])
-        ->withConfig($config['config'])
+        ->withConfig($config)
         ->create();
 })();

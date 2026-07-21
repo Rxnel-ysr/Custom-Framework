@@ -2,6 +2,7 @@
 
 namespace App;
 
+use App\Foundation\Configuration\Config;
 use App\Foundation\Exceptions\Framework\BaseException;
 use App\Support\Facades\Route;
 use App\Foundation\Http\Request;
@@ -18,7 +19,7 @@ class App
     private array $dependencies = [];
     private array $dependency_names = [];
     private array $providers = [];
-    public array $configs = [];
+    public array|Config $configs = [];
     private array $router = [];
     public string $root;
     protected $services = [];
@@ -103,7 +104,7 @@ class App
         return $this;
     }
 
-    public function withConfig(array $configs): self
+    public function withConfig(array|Config $configs): self
     {
         $this->configs = $configs;
         return $this;
@@ -172,7 +173,7 @@ class App
         $isApi = str_starts_with($requestUri, $apiPrefix);
         
         if (!str_starts_with($requestUri, '/__')) {
-            $rateLimiterConfig = require $this->configs['rate_limiter'];
+            $rateLimiterConfig = $this->configs['rate_limiter'];
             $requestUri = $isApi ? str_replace($apiPrefix, '/', $requestUri) : $requestUri;
             $scope = $isApi ? 'api' : 'web';
 
@@ -199,7 +200,7 @@ class App
 
         $routeFile = $isApi ? $this->router['api'] : $this->router['web'];
 
-        Route::group(['prefix' => $isApi ? $apiPrefix : ''], function () use ($routeFile) {
+        Route::group(['prefix' => $isApi ? $apiPrefix : '', 'middleware' => [$isApi ? '' : 'csrf']], function () use ($routeFile) {
             require $this->root . '/' . ltrim($routeFile, '/');
         });
 
