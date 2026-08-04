@@ -10,6 +10,7 @@ use App\Foundation\Database\Cast;
 use App\Foundation\Traits\Strings;
 use App\Foundation\Database\QueryBuilder;
 use App\Foundation\Enums\Database\CastType;
+use App\Foundation\Guard\Traits\ApiToken;
 use App\Foundation\Support\Collection;
 use ArrayIterator;
 use Countable;
@@ -17,8 +18,29 @@ use ErrorException;
 use Exception;
 use IteratorAggregate;
 use JsonSerializable;
+use Override;
 use Stringable;
 use Traversable;
+
+class ModelTable
+{
+    /**
+     * @var array<class-string, string>
+     */
+    private static array $classes;
+    public static function set(string $classname, string $table): void
+    {
+        self::$classes[$classname] = $table;
+    }
+    public static function get(string $classname): string|null
+    {
+        return self::$classes[$classname] ?? null;
+    }
+    public static function isset(string $classname): bool
+    {
+        return isset(self::$classes[$classname]);
+    }
+}
 
 /**
  * Base Model that represent a table in database
@@ -106,6 +128,11 @@ class Model extends QueryBuilder implements IteratorAggregate, Countable, JsonSe
         return new $this;
     }
 
+    public function delete()
+    {
+        return (new static())->___where($this->getPrimary(), $this->{$this->getPrimary()})->___delete();
+    }
+
     /**
      * Handle static method calls
      */
@@ -115,6 +142,7 @@ class Model extends QueryBuilder implements IteratorAggregate, Countable, JsonSe
 
         $res = call_user_func_array([$instance, '___' . $method], $args);
 
+        
         if ($method == 'get' || $method == 'first' || $method == 'find' || $method == 'findOrFail') {
 
             if ($method == 'get') {
@@ -135,6 +163,34 @@ class Model extends QueryBuilder implements IteratorAggregate, Countable, JsonSe
         return $res;
     }
 
+    public function ___paginate(int $limit, int $page, bool $skipRelations = false)
+    {
+        $data = $page < 1  ? [] : parent::___paginate($limit, $page, $skipRelations);
+        $request = request();
+        $page = (int)$request->query('page', 1);
+        $count = (new self())->raw("SELECT COUNT(*) FROM " . $this->table)->execute()->fetchColumn();
+
+        $res = [
+            'page' => $page,
+            'data' => array_map(static fn($i) => new self($i), $data),
+            'total' => $count,
+            'per_page' => $limit,
+            'last_page' => ceil($count / $limit),
+            'next' => null,
+            'prev' => null
+        ];
+
+        if ($page < $res['last_page'] && $page > 0) {
+            $res['next'] = $request->addQuery(['page' => $page + 1])->url();
+        }
+
+        if ($page > 1) {
+            $res['prev'] = $request->addQuery(['page' => $page - 1])->url();
+        }
+
+        return $res;
+    }
+
     /**
      * Get the table name for the model
      */
@@ -144,9 +200,13 @@ class Model extends QueryBuilder implements IteratorAggregate, Countable, JsonSe
             return $this->table;
         }
 
+        if (ModelTable::isset(static::class)) {
+            return $this->table = ModelTable::get(static::class);
+        }
+
         $sanitized = strtolower(basename(str_replace('\\', '/', static::class)));
         $tableName = self::isPlural($sanitized) ? $sanitized : self::pluralize($sanitized);
-
+        ModelTable::set(static::class, $tableName);
         return $this->table = $tableName;
     }
 
@@ -278,12 +338,12 @@ class Model extends QueryBuilder implements IteratorAggregate, Countable, JsonSe
             $this->dirty[$name] = $value;
             $this->data[$name] = $value;
         }
-        return $this->collectionData->set($name, $value);
+        return  $this->isFetched ? $this->collectionData->$name = $value : $this->collectionData[$name] = $value;
     }
 
     public function __get($name)
     {
-        return $this->collectionData->get($name, null);
+        return $this->isFetched ? $this->collectionData->{$name} : $this->collectionData[$name];
     }
 
     public function all()

@@ -82,7 +82,7 @@ class Command
                 $command['onunknown'] ?? null
             );
 
-            return self::execute($command, $cli);
+            return self::execute($command, $cli) ?: 0;
         } catch (Throwable $e) {
             throw new CommandException("Error running command: " . $e->getMessage(), 0, $e);
         }

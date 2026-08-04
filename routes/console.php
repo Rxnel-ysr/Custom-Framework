@@ -5,6 +5,7 @@ use App\Foundation\Configuration\Config;
 use Experimental\App\Foundation\CLI\Command;
 use App\Foundation\Database\Migration;
 use App\Foundation\Database\Connection;
+use App\Foundation\Generator\TemplateBuilder;
 use App\Foundation\Manager\Autoloader;
 use App\Foundation\System\Disk;
 
@@ -64,7 +65,8 @@ Command::register('migrate:rollback', function () {
     return 0;
 })
     ->alias('mr')
-    ->help('Rolling back the migrations');
+    ->help('Rolling back the migrations')
+    ->dependency($migrationSetup);
 
 Command::register('make:component', function () {
     echo 'Not yet implemented.';
@@ -106,9 +108,10 @@ Command::register('cache:config', function ($argv) {
 Command::register('uncache:config', function ($argv) {
     $cache = require base_path('/config/cache.php');
     $cache['config'] = false;
-    return file_put_contents(base_path('/config/cache.php'), <<<PHP
+    file_put_contents(base_path('/config/cache.php'), <<<PHP
     <?php
     PHP . "\nreturn " . var_export($cache, true) . ";\n");
+    return 0;
 });
 
 
@@ -118,3 +121,91 @@ Command::register('clean-views', function () {
     return 0;
 })->alias('cv')
     ->help('Clean all cached compiled views');
+
+Command::register('make:controller', function ($argv) {
+    $controlTemplate = new TemplateBuilder(
+        $argv->flag('r') ?
+            base_path('/storage/templates/controller_resources.stub') :
+            base_path('/storage/templates/controller.stub'),
+    );
+
+    $controlName = $argv->get(0, true);
+    $destination = base_path("/App/Http/Controllers/{$controlName}.php");
+    if(file_exists($destination)){
+        echo "Controller [App/Http/Controllers/{$controlName}.php] already exists.";
+        return 1;
+    }
+
+    $controlTemplate->rules([
+        'controller_name' => $controlName
+    ])->parse();
+
+    $controlTemplate->save($destination);
+
+    echo "New controller created [App/Http/Controllers/{$controlName}.php]";
+    return 0;
+});
+
+Command::register('make:controller', function ($argv) {
+    $controlTemplate = new TemplateBuilder(
+        $argv->flag('r') ?
+            base_path('/storage/templates/controller_resources.stub') :
+            base_path('/storage/templates/controller.stub'),
+    );
+
+    $controlName = $argv->get(0, true);
+    $destination = base_path("/App/Http/Controllers/{$controlName}.php");
+    if (file_exists($destination)) {
+        echo "Controller [App/Http/Controllers/{$controlName}.php] already exists.";
+        return 1;
+    }
+
+    $controlTemplate->rules([
+        'controller_name' => $controlName
+    ])->parse();
+
+    $controlTemplate->save($destination);
+
+    echo "New controller created [App/Http/Controllers/{$controlName}.php]";
+    return 0;
+});
+
+Command::register('make:request', function ($argv) {
+    $controlTemplate = new TemplateBuilder(base_path('/storage/templates/request.stub'));
+
+    $requestName = $argv->get(0, true);
+    $destination = base_path("/App/Http/Requests/{$requestName}.php");
+    if (file_exists($destination)) {
+        echo "Controller [App/Http/Requests/{$requestName}.php] already exists.";
+        return 1;
+    }
+
+    $controlTemplate->rules([
+        'classname' => $requestName
+    ])->parse();
+
+    $controlTemplate->save($destination);
+
+    echo "New controller created [App/Http/Requests/{$requestName}.php]";
+    return 0;
+});
+
+Command::register('make:model', function ($argv) {
+    $controlTemplate = new TemplateBuilder(base_path('/storage/templates/model.stub'));
+
+    $classname = $argv->get(0, true);
+    $destination = base_path("/App/Models/{$classname}.php");
+    if (file_exists($destination)) {
+        echo "Controller [App/Models/{$classname}.php] already exists.";
+        return 1;
+    }
+
+    $controlTemplate->rules([
+        'classname' => $classname
+    ])->parse();
+
+    $controlTemplate->save($destination);
+
+    echo "New controller created [App/Models/{$classname}.php]";
+    return 0;
+});

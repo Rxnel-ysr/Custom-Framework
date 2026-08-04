@@ -443,7 +443,7 @@ class QueryBuilder extends Connection
             ->___table($relation->pivot_table)
             ->___select(array_unique($pivotSelect))
             ->___where($relation->pivot_local_key, $mainItem->{$relation->local_key})
-            ->___get(null,true);
+            ->___get(null, true);
 
         if (empty($pivotData)) {
             $this->relationCache[$cacheKey] = [];
@@ -457,7 +457,7 @@ class QueryBuilder extends Connection
             ->___table($relation->table)
             ->___select($relation->columns)
             ->___where($relation->foreign_key, $relatedIds, 'in')
-            ->___get(null,true);
+            ->___get(null, true);
 
         // Create a map of related_id => related_item
         $relatedMap = [];
@@ -532,7 +532,7 @@ class QueryBuilder extends Connection
             ->___table($relation->pivot_table)
             ->___select(array_unique($pivotSelect))
             ->___where($relation->pivot_local_key, $mainItem->{$relation->local_key})
-            ->___get(null,true);
+            ->___get(null, true);
 
         if (empty($pivotData)) {
             $result = (object) [
@@ -550,7 +550,7 @@ class QueryBuilder extends Connection
             ->___table($relation->table)
             ->___select($relation->columns)
             ->___where($relation->foreign_key, $relatedIds, 'in')
-            ->___get(null,true);
+            ->___get(null, true);
 
         $result = (object) [
             'related' => $relatedData,
@@ -598,7 +598,7 @@ class QueryBuilder extends Connection
                         }
                     } else {
                         $result = $this->loadDirectRelation($item, $relation);
-                        
+
                         $item->$relationKey = $relation->model ? new ($relation->model)($result) : $result;
                     }
                 }
@@ -644,7 +644,7 @@ class QueryBuilder extends Connection
 
         $result = $relation->mode === 'one'
             ? $builder->___first(true)
-            : $builder->___get(null,true);
+            : $builder->___get(null, true);
 
         $this->relationCache[$cacheKey] = $result;
         return $result;
@@ -767,7 +767,7 @@ class QueryBuilder extends Connection
      */
     protected function ___findOrFail($primaryKey)
     {
-        if(! $model = $this->___where($this->primary, $primaryKey)->___first()){
+        if (! $model = $this->___where($this->primary, $primaryKey)->___first()) {
             $cls = static::class;
             throw new ModelNotFoundException("No query result from [{$cls}]: {$primaryKey}");
         }
@@ -784,14 +784,14 @@ class QueryBuilder extends Connection
         $hasSetColumns = false;
         $placeholdersValues  = [];
 
-        foreach ($data as $value){
+        foreach ($data as $value) {
             $filtered = $this->filterColumns($value);
 
             if (empty($filtered)) {
                 throw new \InvalidArgumentException('No valid columns to insert.');
             }
-            
-            if(!$hasSetColumns){
+
+            if (!$hasSetColumns) {
                 $columns = implode(', ', array_keys($value));
                 $this->query .= " ({$columns}) VALUES";
                 $hasSetColumns = true;
@@ -810,7 +810,7 @@ class QueryBuilder extends Connection
             }
 
             $placeholdersValues[] = '(' . implode(', ', $placeholders) . ')';
-            array_push($this->bindings ,...$values);
+            array_push($this->bindings, ...$values);
         }
 
         $this->query .= ' ' . implode(',', $placeholdersValues);
@@ -848,7 +848,33 @@ class QueryBuilder extends Connection
             return $this->processRelations($results);
         } catch (\PDOException $e) {
             Debugger::dumpErr($e);
-            return null;
+            return [];
+        }
+    }
+
+    public function ___paginate(int $limit, int $page, bool $skipRelations = false)
+    {
+        try {
+
+            $selectClause = $this->usedSelect ? '' : 'SELECT * FROM ' . $this->table;
+            $offset = ($page - 1) * $limit;
+            $fullQuery = $selectClause . $this->query . " LIMIT $limit OFFSET $offset";
+
+
+            $this->stmt = $this->pdo->prepare($fullQuery);
+            $this->stmt->execute($this->bindings);
+            $results = $this->stmt->fetchAll(\PDO::FETCH_OBJ) ?: [];
+
+            $this->resetQuery();
+
+            if (empty($results) || empty($this->relations) || $skipRelations) {
+                return $results;
+            }
+
+            return $this->processRelations($results);
+        } catch (\PDOException $e) {
+            Debugger::dumpErr($e);
+            return [];
         }
     }
 
@@ -1137,6 +1163,21 @@ class QueryBuilder extends Connection
     protected function _____isset($name)
     {
         return isset($this->relations->$name);
+    }
+
+    public function beginTransaction(): bool
+    {
+        return $this->pdo->beginTransaction();
+    }
+
+    public function commit(): bool
+    {
+        return $this->pdo->commit();
+    }
+
+    public function rollback(): bool
+    {
+        return $this->pdo->rollback();
     }
 }
 

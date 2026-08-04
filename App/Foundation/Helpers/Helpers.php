@@ -3,58 +3,12 @@
 use App\App;
 use App\Debug\Debugger;
 use App\Foundation\Compiler\Compile;
-use App\Foundation\Exceptions\Http\NotFoundException;
-use App\Foundation\Exceptions\Http\UnauthorizedException;
+use App\Foundation\Exceptions\Framework\Http\UnauthorizedException;
+use App\Foundation\Exceptions\Framework\Http\NotFoundException;
 use App\Foundation\Manager\InstanceManager;
-use App\Foundation\Model;
-use App\Support\Facades\DI;
+use App\Foundation\Database\Model;
 use App\Support\Facades\Route;
 
-// $views = ROOT . '/resources/views';
-
-/**
- * Will include given views when the URL is matched or execute a callback.
- * @deprecated
- */
-function route_($uri, $viewOrCallback): void
-{
-    global $views;
-    global $requestUri;
-
-    if ($requestUri === $uri) {
-        if (is_callable($viewOrCallback)) {
-            $viewOrCallback();  // Execute the callback
-        } else {
-            $viewPath = $views . '/' . $viewOrCallback . '.php';
-            if (file_exists($viewPath)) {
-                include_once $viewPath;
-            } else {
-                Debugger::showErrorPage(404);
-            }
-        }
-        exit();
-    }
-}
-
-/**
- * Same like route, but for backend
- * @deprecated
- */
-function backRoute($uri, $part): void
-{
-    global $resources;
-    global $requestUri;
-    if ($requestUri === $uri) {
-        $backPart = $resources . '/' . $part . '.php';
-
-        if (file_exists($backPart)) {
-            include_once $backPart;
-            exit();
-        } else {
-            Debugger::showErrorPage(404);
-        }
-    }
-}
 
 function view($view, array $data = [], $return = true)
 {
@@ -995,4 +949,280 @@ function uuidv4(): string
         substr($hex, 16, 4),
         substr($hex, 20, 12)
     );
+}
+
+function compressPNG(string $sourcePath, string $destinationPath, int $quality = 6)
+{
+    $image = imagecreatefrompng($sourcePath);
+
+    imagealphablending($image, false);
+    imagesavealpha($image, true);
+
+    $success = imagepng($image, $destinationPath, $quality);
+
+    return $success;
+}
+
+function format_time(int $ns): string
+{
+    if ($ns < 1_000) return "{$ns} ns";
+    if ($ns < 1_000_000) return sprintf("%.2f µs", $ns / 1_000);
+    if ($ns < 1_000_000_000) return sprintf("%.2f ms", $ns / 1_000_000);
+    return sprintf("%.2f s", $ns / 1_000_000_000);
+}
+
+/**
+ * Converts a MIME type string into its most common file extension.
+ * Covers images, documents, audio, video, archives, fonts, code/text,
+ * and many application-specific / vendor MIME types.
+ *
+ * @param string $mime      The MIME type (e.g. "image/png")
+ * @param string $default   Value returned if the MIME type isn't found
+ * @return string            The file extension WITHOUT the leading dot
+ */
+function mime_to_extension(string $mime, string $default = 'bin'): string
+{
+    static $map = [
+        // ---------------------------------------------------------
+        // Images
+        // ---------------------------------------------------------
+        'image/jpeg'                                                  => 'jpg',
+        'image/pjpeg'                                                 => 'jpg',
+        'image/png'                                                   => 'png',
+        'image/gif'                                                   => 'gif',
+        'image/bmp'                                                   => 'bmp',
+        'image/x-ms-bmp'                                              => 'bmp',
+        'image/webp'                                                  => 'webp',
+        'image/svg+xml'                                               => 'svg',
+        'image/tiff'                                                  => 'tiff',
+        'image/x-tiff'                                                => 'tiff',
+        'image/vnd.microsoft.icon'                                    => 'ico',
+        'image/x-icon'                                                => 'ico',
+        'image/heic'                                                  => 'heic',
+        'image/heif'                                                  => 'heif',
+        'image/avif'                                                  => 'avif',
+        'image/apng'                                                  => 'apng',
+        'image/x-xbitmap'                                             => 'xbm',
+        'image/x-portable-bitmap'                                     => 'pbm',
+        'image/x-portable-graymap'                                    => 'pgm',
+        'image/x-portable-pixmap'                                     => 'ppm',
+        'image/x-portable-anymap'                                     => 'pnm',
+        'image/vnd.adobe.photoshop'                                   => 'psd',
+        'image/vnd.dwg'                                               => 'dwg',
+        'image/vnd.dxf'                                                => 'dxf',
+        'image/jp2'                                                   => 'jp2',
+        'image/x-cmu-raster'                                          => 'ras',
+        'image/x-emf'                                                 => 'emf',
+        'image/x-wmf'                                                 => 'wmf',
+
+        // ---------------------------------------------------------
+        // Audio
+        // ---------------------------------------------------------
+        'audio/mpeg'                                                  => 'mp3',
+        'audio/mp3'                                                   => 'mp3',
+        'audio/wav'                                                   => 'wav',
+        'audio/x-wav'                                                 => 'wav',
+        'audio/wave'                                                  => 'wav',
+        'audio/ogg'                                                   => 'ogg',
+        'audio/vorbis'                                                => 'ogg',
+        'audio/webm'                                                  => 'weba',
+        'audio/aac'                                                   => 'aac',
+        'audio/flac'                                                  => 'flac',
+        'audio/x-flac'                                                => 'flac',
+        'audio/mp4'                                                   => 'm4a',
+        'audio/x-m4a'                                                 => 'm4a',
+        'audio/midi'                                                  => 'mid',
+        'audio/x-midi'                                                => 'mid',
+        'audio/x-aiff'                                                => 'aiff',
+        'audio/aiff'                                                  => 'aiff',
+        'audio/amr'                                                   => 'amr',
+        'audio/3gpp'                                                  => '3gp',
+        'audio/3gpp2'                                                 => '3g2',
+        'audio/x-ms-wma'                                              => 'wma',
+        'audio/x-pn-realaudio'                                        => 'ra',
+        'audio/opus'                                                  => 'opus',
+
+        // ---------------------------------------------------------
+        // Video
+        // ---------------------------------------------------------
+        'video/mp4'                                                   => 'mp4',
+        'video/mpeg'                                                  => 'mpeg',
+        'video/quicktime'                                             => 'mov',
+        'video/x-msvideo'                                             => 'avi',
+        'video/x-ms-wmv'                                              => 'wmv',
+        'video/webm'                                                  => 'webm',
+        'video/ogg'                                                   => 'ogv',
+        'video/3gpp'                                                  => '3gp',
+        'video/3gpp2'                                                 => '3g2',
+        'video/x-flv'                                                 => 'flv',
+        'video/x-matroska'                                            => 'mkv',
+        'video/mp2t'                                                  => 'ts',
+        'video/h264'                                                  => 'h264',
+        'video/x-f4v'                                                 => 'f4v',
+        'video/x-m4v'                                                 => 'm4v',
+
+        // ---------------------------------------------------------
+        // Text / code
+        // ---------------------------------------------------------
+        'text/plain'                                                  => 'txt',
+        'text/html'                                                   => 'html',
+        'text/htm'                                                    => 'htm',
+        'text/css'                                                    => 'css',
+        'text/csv'                                                    => 'csv',
+        'text/tab-separated-values'                                   => 'tsv',
+        'text/calendar'                                               => 'ics',
+        'text/xml'                                                    => 'xml',
+        'text/markdown'                                               => 'md',
+        'text/x-markdown'                                             => 'md',
+        'text/rtf'                                                    => 'rtf',
+        'text/x-csrc'                                                 => 'c',
+        'text/x-c'                                                    => 'c',
+        'text/x-c++src'                                               => 'cpp',
+        'text/x-c++'                                                  => 'cpp',
+        'text/x-java-source'                                          => 'java',
+        'text/x-python'                                               => 'py',
+        'text/x-script.python'                                        => 'py',
+        'text/x-ruby'                                                 => 'rb',
+        'text/x-sh'                                                   => 'sh',
+        'text/x-shellscript'                                          => 'sh',
+        'text/x-perl'                                                 => 'pl',
+        'text/x-php'                                                  => 'php',
+        'text/x-sql'                                                  => 'sql',
+        'text/x-yaml'                                                 => 'yaml',
+        'text/vtt'                                                    => 'vtt',
+        'text/x-vcard'                                                => 'vcf',
+        'text/x-log'                                                  => 'log',
+        'text/vnd.trolltech.linguist'                                 => 'ts',
+
+        // ---------------------------------------------------------
+        // Application / documents
+        // ---------------------------------------------------------
+        'application/pdf'                                             => 'pdf',
+        'application/msword'                                          => 'doc',
+        'application/vnd.ms-word'                                     => 'doc',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'docx',
+        'application/vnd.ms-word.document.macroEnabled.12'            => 'docm',
+        'application/vnd.ms-word.template.macroEnabled.12'            => 'dotm',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.template' => 'dotx',
+        'application/vnd.ms-excel'                                    => 'xls',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' => 'xlsx',
+        'application/vnd.ms-excel.sheet.macroEnabled.12'               => 'xlsm',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.template' => 'xltx',
+        'application/vnd.ms-excel.template.macroEnabled.12'            => 'xltm',
+        'application/vnd.ms-powerpoint'                               => 'ppt',
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation' => 'pptx',
+        'application/vnd.ms-powerpoint.presentation.macroEnabled.12'  => 'pptm',
+        'application/vnd.openxmlformats-officedocument.presentationml.slideshow' => 'ppsx',
+        'application/vnd.openxmlformats-officedocument.presentationml.template' => 'potx',
+        'application/vnd.oasis.opendocument.text'                     => 'odt',
+        'application/vnd.oasis.opendocument.spreadsheet'              => 'ods',
+        'application/vnd.oasis.opendocument.presentation'             => 'odp',
+        'application/vnd.oasis.opendocument.graphics'                 => 'odg',
+        'application/vnd.oasis.opendocument.formula'                  => 'odf',
+        'application/vnd.oasis.opendocument.text-template'            => 'ott',
+        'application/rtf'                                             => 'rtf',
+        'application/x-abiword'                                       => 'abw',
+        'application/epub+zip'                                        => 'epub',
+        'application/x-mobipocket-ebook'                               => 'mobi',
+        'application/vnd.amazon.ebook'                                 => 'azw',
+
+        // ---------------------------------------------------------
+        // Archives / compression
+        // ---------------------------------------------------------
+        'application/zip'                                             => 'zip',
+        'application/x-zip-compressed'                                => 'zip',
+        'application/vnd.rar'                                         => 'rar',
+        'application/x-rar-compressed'                                => 'rar',
+        'application/x-tar'                                           => 'tar',
+        'application/x-gzip'                                          => 'gz',
+        'application/gzip'                                            => 'gz',
+        'application/x-bzip'                                          => 'bz',
+        'application/x-bzip2'                                         => 'bz2',
+        'application/x-7z-compressed'                                 => '7z',
+        'application/x-xz'                                            => 'xz',
+        'application/x-lzma'                                          => 'lzma',
+        'application/x-compress'                                      => 'z',
+        'application/x-iso9660-image'                                 => 'iso',
+        'application/vnd.ms-cab-compressed'                           => 'cab',
+        'application/x-debian-package'                                => 'deb',
+        'application/x-rpm'                                           => 'rpm',
+        'application/vnd.android.package-archive'                     => 'apk',
+        'application/x-apple-diskimage'                               => 'dmg',
+        'application/x-msi'                                           => 'msi',
+
+        // ---------------------------------------------------------
+        // Fonts
+        // ---------------------------------------------------------
+        'font/ttf'                                                    => 'ttf',
+        'application/x-font-ttf'                                      => 'ttf',
+        'font/otf'                                                    => 'otf',
+        'application/x-font-otf'                                      => 'otf',
+        'font/woff'                                                   => 'woff',
+        'application/font-woff'                                       => 'woff',
+        'font/woff2'                                                  => 'woff2',
+        'application/font-woff2'                                      => 'woff2',
+        'application/vnd.ms-fontobject'                               => 'eot',
+        'font/collection'                                             => 'ttc',
+
+        // ---------------------------------------------------------
+        // Data / code interchange
+        // ---------------------------------------------------------
+        'application/json'                                            => 'json',
+        'application/ld+json'                                         => 'jsonld',
+        'application/xml'                                             => 'xml',
+        'application/atom+xml'                                        => 'atom',
+        'application/rss+xml'                                         => 'rss',
+        'application/x-yaml'                                          => 'yaml',
+        'application/yaml'                                            => 'yaml',
+        'application/x-httpd-php'                                     => 'php',
+        'application/x-sh'                                            => 'sh',
+        'application/x-csh'                                           => 'csh',
+        'application/javascript'                                      => 'js',
+        'application/x-javascript'                                    => 'js',
+        'text/javascript'                                             => 'js',
+        'application/wasm'                                            => 'wasm',
+        'application/sql'                                             => 'sql',
+        'application/x-sql'                                           => 'sql',
+        'application/graphql'                                         => 'graphql',
+        'application/toml'                                            => 'toml',
+
+        // ---------------------------------------------------------
+        // Fallback binary / misc
+        // ---------------------------------------------------------
+        'application/octet-stream'                                    => 'bin',
+        'application/x-binary'                                        => 'bin',
+        'application/vnd.google-earth.kml+xml'                        => 'kml',
+        'application/vnd.google-earth.kmz'                             => 'kmz',
+        'application/x-shockwave-flash'                                => 'swf',
+        'application/x-font-type1'                                    => 'pfb',
+        'application/postscript'                                      => 'ps',
+        'application/x-latex'                                         => 'latex',
+        'application/x-tex'                                           => 'tex',
+        'application/vnd.visio'                                       => 'vsd',
+        'application/vnd.ms-project'                                  => 'mpp',
+        'application/x-msdownload'                                    => 'exe',
+        'application/x-msdos-program'                                 => 'exe',
+        'application/x-executable'                                    => 'elf',
+        'application/vnd.ms-outlook'                                  => 'msg',
+        'application/pgp-signature'                                   => 'sig',
+        'application/pkcs7-signature'                                 => 'p7s',
+        'application/x-x509-ca-cert'                                  => 'crt',
+        'application/pkix-cert'                                       => 'cer',
+        'application/x-pkcs12'                                        => 'p12',
+        'application/x-pkcs7-certificates'                            => 'p7b',
+        'application/vnd.geogebra.file'                               => 'ggb',
+        'application/x-subrip'                                        => 'srt',
+        'application/dash+xml'                                        => 'mpd',
+        'application/vnd.apple.mpegurl'                               => 'm3u8',
+        'application/x-mpegurl'                                       => 'm3u',
+    ];
+
+    $mime = strtolower(trim($mime));
+
+    // Strip any parameters (e.g. "text/html; charset=UTF-8")
+    if (($pos = strpos($mime, ';')) !== false) {
+        $mime = trim(substr($mime, 0, $pos));
+    }
+
+    return $map[$mime] ?? $default;
 }

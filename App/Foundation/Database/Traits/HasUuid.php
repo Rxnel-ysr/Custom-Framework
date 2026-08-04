@@ -6,7 +6,6 @@ use App\Foundation\Database\Model;
 
 trait HasUuid
 {
-
     protected function uuidv4(): string
     {
         $b = random_bytes(16);
@@ -24,6 +23,13 @@ trait HasUuid
             substr($hex, 16, 4),
             substr($hex, 20, 12)
         );
+    }
+
+    protected function ___create(array $data): self
+    {
+        if(!isset($data[$this->getPrimary()])) $data[$this->getPrimary()] = uuidv4();
+        if(in_array($this->getPrimary(), $this->fillable)) array_push($this->fillable, $this->getPrimary());
+        return (clone $this)->___insert([$data]);
     }
 
     public function save()

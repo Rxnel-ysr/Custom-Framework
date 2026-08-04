@@ -832,6 +832,7 @@ class Collection implements JsonSerializable, Countable, IteratorAggregate, Arra
         if ($this->valueType == 'array') {
             return $this->items[$key] ?? $default;
         }
+
         if($this->valueType == 'object'){
             return $this->items->{$key} ?? $default;
         }
@@ -1281,7 +1282,15 @@ class Collection implements JsonSerializable, Countable, IteratorAggregate, Arra
 
     public function __get($name)
     {
-        return ($this->items instanceof stdClass ? $this->items->{$name}  : $this->items[$name]);
+        if($this->items instanceof stdClass){
+            return $this->items->{$name};
+        }
+
+        if(is_array($this->items)){
+            return $this->items[$name];
+        }
+
+        return null;
     }
 
     public function __toString()

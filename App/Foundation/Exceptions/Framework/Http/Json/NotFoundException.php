@@ -1,10 +1,9 @@
 <?php
 
-namespace App\Foundation\Exceptions\Http\Json;
+namespace App\Foundation\Exceptions\Framework\Http\Json;
 
 use App\Foundation\Exceptions\Framework\Http\Json\JsonBaseHttpException;
 
-// require __DIR__ . '/JsonBaseHttpException.php';
 
 /**
  * Http Exception of Not found exception

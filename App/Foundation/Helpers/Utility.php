@@ -140,18 +140,18 @@ function request($name = null, $default = null): Request|string|int|array|null
     return $instance;
 }
 
-function collect($item)
+function collect(mixed $item)
 {
     return new Collection($item);
 }
 
-function route($name, array $parameters = [])
+function route(string $name, array $parameters = [])
 {
     return Route::route($name, $parameters);
 }
 
 
-function method($method)
+function method(string $method)
 {
     $method = strtoupper($method);
     return "<input type='hidden' name='_HTTP_METHOD' value='$method'></input>";
@@ -203,22 +203,22 @@ function getContent(string $filename, int $flags, array ...$ignoreRanges): strin
     return implode("\n", $filteredLines);
 }
 
-function clearUrl($url)
+function clearUrl(string $url)
 {
     return preg_replace('~(?<!:)//+~', '/', $url);
 }
 
-function cleanPath($path)
+function cleanPath(string $path)
 {
     return preg_replace('~//+~', '/', $path);
 }
 
-function str_rand($length = 16, $prefix = '')
+function str_rand(int $length = 16, string $prefix = '')
 {
     return $prefix . bin2hex(random_bytes(intdiv($length, 2) + ($length % 2)));
 }
 
-function printAsJson($data, $additionalOption = 0)
+function printAsJson(mixed $data, int $additionalOption = 0)
 {
     if (!headers_sent()) {
         header('Content-Type: application/json');
@@ -227,7 +227,7 @@ function printAsJson($data, $additionalOption = 0)
     exit;
 }
 
-function env($name, $default = false)
+function env(string $name, $default = false)
 {
     $result = getenv($name);
     return $result ?: $default;

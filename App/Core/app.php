@@ -29,7 +29,7 @@ class App
         $this->root = DIRECTORY_SEPARATOR . trim($root, DIRECTORY_SEPARATOR);
     }
 
-    public static function configure($root): App
+    public static function configure(string $root): App
     {
         return createInstance(App::class, null, App::class, $root);
     }
@@ -59,12 +59,12 @@ class App
         $this->services['container']->bind($abstract, $concrete, $shared);
     }
 
-    public function __get($name)
+    public function __get(string $name)
     {
         return $this->services[$name] ?? null;
     }
 
-    public function setService($name, $service)
+    public function setService(string $name, object $service)
     {
         $this->services[$name] = $service;
     }

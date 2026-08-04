@@ -13,7 +13,7 @@ require_once 'Connection.php';
 
 $root = dirname(__DIR__, 4);
 
-abstract class Migration
+abstract class Migration extends Connection
 {
 
     private static array $setting;
@@ -70,6 +70,7 @@ abstract class Migration
     {
         $files = glob(self::$setting['migration'] . DIRECTORY_SEPARATOR . '*.php');
         $records = Migration::getRecord();
+        $minLength = 170;
 
         if ($records['current'] > -1) {
             $filenames = array_map(fn($file) => basename($file), $files);
@@ -108,18 +109,24 @@ abstract class Migration
                 Migration::addMigrationOnRecord($records['current'] + 1, getContent($f['file'], FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES, [1]), $basename);
 
                 if ($f['status'] != 'done') {
-                    echo 'Running migration: ' . $basename . PHP_EOL;
+                    $fName = "Running migration: {$basename}";
+                    echo $fName;
+                    $s = hrtime(true);
                     $class = require $f['file'];
                     $class->up();
+                    echo "\r" . str_pad($fName, $minLength, '.', STR_PAD_RIGHT) . ' ' . format_time(hrtime(true) - $s) . " DONE\n";
                 }
             }
         } else {
             foreach ($files as $f) {
                 $basename = basename($f);
                 Migration::addMigrationOnRecord($records['current'] + 1, getContent($f, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES, [1]), $basename);
-                echo 'Running migration: ' . $basename . PHP_EOL;
+                $fName = "Running migration: {$basename}";
+                echo $fName;
+                $s = hrtime(true);
                 $class = require $f;
                 $class->up();
+                echo "\r" . str_pad($fName, $minLength, '.', STR_PAD_RIGHT) . ' ' . format_time(hrtime(true) - $s) . " DONE\n";
             }
         }
 
@@ -214,7 +221,7 @@ abstract class Migration
 
     public static function getCurrentConnection()
     {
-        return Connection::getInstance();
+        return self::getInstance();
     }
 }
 
@@ -230,13 +237,13 @@ class Schema
 
     public static function dropIfExists($table)
     {
-        $pdo = Connection::getInstance();
+        $pdo = Migration::getCurrentConnection();
         $smt = $pdo->prepare('DROP TABLE IF EXISTS ' . $table);
         $smt->execute();
     }
 }
 
-class Blueprint extends Connection
+class Blueprint
 {
     use Macroable;
 
@@ -254,7 +261,7 @@ class Blueprint extends Connection
     public function __construct(string $table_name)
     {
         $this->table_name = $table_name;
-        $this->pdo = Connection::getInstance();
+        $this->pdo = Migration::getCurrentConnection();
         $this->collate = env('DB_COLLATION', self::$config['collation'] ?? null);
         $this->charset = env('DB_CHARSET', self::$config['charset'] ?? null);
         $this->db_type = env('DB_TYPE', self::$config['db_type'] ?? null);
@@ -388,7 +395,7 @@ class Blueprint extends Connection
 
     public function enum(string $column, array $allowed)
     {
-        $this->addColumn($column, 'ENUM(' . implode(', ', array_map(fn($i) => "'{$i}'",$allowed)) . ') NOT NULL');
+        $this->addColumn($column, 'ENUM(' . implode(', ', array_map(fn($i) => "'{$i}'", $allowed)) . ') NOT NULL');
         return $this;
     }
 

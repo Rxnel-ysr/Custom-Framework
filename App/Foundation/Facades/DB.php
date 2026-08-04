@@ -7,11 +7,14 @@ use Dep;
 
 /**
  * @method static \App\Foundation\Database\QueryBuilder table(string $name)
+ * @method bool beginTransaction()
+ * @method bool commit()
+ * @method bool rollback()
  * @mixin \App\Foundation\Database\QueryBuilder
  * @extends Facade<\App\Foundation\Database\QueryBuilder>
  * 
  * @depends App\Support\Facades\Facade
-*/
+ */
 #[Dep(Facade::class)]
 class DB extends Facade
 {

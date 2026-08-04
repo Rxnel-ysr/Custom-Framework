@@ -2,12 +2,16 @@
 
 namespace App\Foundation\Configuration;
 
+use App\Foundation\Exceptions\Framework\LowLevelException;
+
+class EnvException extends LowLevelException {}
+
 class Env
 {
     public static function load(string $path): void
     {
         if (!is_readable($path)) {
-            return;
+            throw new EnvException("File ". basename($path) . " was not readable.");
         }
 
         $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
@@ -58,12 +62,12 @@ class Env
         };
     }
 
-    protected static function setEnvironment(?string $key, $value): void
+    protected static function setEnvironment(?string $key, mixed $value): void
     {
         if (is_null($key)) {
             return;
         }
-        $stringValue = is_bool($value) ? ($value ? 'true' : 'false')
+        $stringValue = is_bool($value) ? ($value ? '1' : '0')
             : (is_null($value) ? 'null'
                 : (string)$value);
 

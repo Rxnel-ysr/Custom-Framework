@@ -79,6 +79,12 @@ class HttpClient
         return $response->saveToFile($savePath);
     }
 
+    public function setUserAgent(string $userAgent)
+    {
+        $this->options['user_agent'] = $userAgent;
+        return $this;
+    }
+
     protected function request(
         string $method,
         string $url,

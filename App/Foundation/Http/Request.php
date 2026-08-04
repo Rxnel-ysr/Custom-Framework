@@ -313,6 +313,13 @@ class Request
         return $this->queryData[$key] ?? $default;
     }
 
+    public function addQuery(array $params): self
+    {
+        $this->queryData = array_merge($this->queryData, $params);
+        $this->fullUri = $this->uri()  . (!empty($this->queryData) ? '?' . http_build_query($this->queryData) : '');
+        return $this;
+    }
+
     /**
      * Retrieve a value from POST data.
      *
@@ -408,9 +415,9 @@ class Request
      *
      * @param string $key The file input name
      * @param string|null $option Consist of tmp, name, size, type, error
-     * @return mixed The uploaded file data or null if not found
+     * @return ($option is null ? FileUpload : string) The uploaded file data or null if not found
      */
-    public function file(string $key, ?string $option = null): mixed
+    public function file(string $key, ?string $option = null): FileUpload|string
     {
         $options = [
             'tmp' => 'tmp_name',
@@ -419,7 +426,7 @@ class Request
             'type' => 'type',
             'error' => 'error'
         ];
-        return (!$option ? $this->filesData[$key] : $this->filesData[$key][$options[$option]]) ?? null;
+        return (!$option ? FileUpload::fromArray($this->filesData[$key]) : $this->filesData[$key][$options[$option]]) ?? null;
     }
 
     /**
@@ -503,7 +510,7 @@ class Request
         $this->customAttributes = $attributes;
 
         foreach ($this->rules as $field => $ruleSet) {
-            $value = $this->method() == 'POST' ? $this->post($field, $this->query($field, null))  : $this->input($field);
+            $value = $this->method() == 'POST' ? $this->post($field, $this->query($field, $this->file($field, 'size')))  : $this->input($field);
             $this->validateField($field, $value, $ruleSet);
         }
 
@@ -866,6 +873,13 @@ class Request
 
         if ($value !== $confirmationValue) {
             $this->addError($field, 'confirmed', "The :attribute confirmation does not match.");
+        }
+    }
+
+    private function validateFile(string $field, mixed $value)
+    {
+        if($this->file($field) == null){
+            $this->addError($field, 'file', 'The :attribute must be uploaded.');
         }
     }
 }

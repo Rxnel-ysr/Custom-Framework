@@ -44,6 +44,7 @@ class Route extends Facade
 
         $nonce = ''; 
 
+        
         if (env('CSP')) {
             $nonce = base64_encode(random_bytes(16));
             withHeader()->set('Content-Security-Policy', "default-src 'self'; media-src 'self'; script-src 'self' 'nonce-$nonce'; style-src 'self' 'nonce-$nonce' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com;");

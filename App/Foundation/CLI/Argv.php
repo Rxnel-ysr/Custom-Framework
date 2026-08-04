@@ -290,9 +290,9 @@ class Argv implements IteratorAggregate
         return $this->positionals[$this->positionalIndex] ?? $default;
     }
 
-    public function get(int $i, mixed $default = null): mixed
+    public function get(int $i, bool $required = false, mixed $default = null): mixed
     {
-        return $this->positionals[$i] ?? $default;
+        return $this->positionals[$i] ?? ($required ? throw new ArgvException("Required args $i") : $default);
     }
 
     public function option(string $name, mixed $default = null,): mixed

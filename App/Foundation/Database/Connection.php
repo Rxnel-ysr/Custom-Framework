@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace App\Foundation\Database;
 
 use App\Foundation\Manager\InstanceManager;
+use Exception;
 use PDO;
-
+use PDOException;
 
 class Connection
 {

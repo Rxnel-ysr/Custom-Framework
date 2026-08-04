@@ -35,7 +35,7 @@ class ApiToken extends Model
 {
     protected $table = 'api_tokens';
     public Model $ownerModel;
-    public $plainTextToken;
+    public string $plainTextToken;
     protected $timestamps = false;
     protected $fillable = [
         'id',
@@ -61,13 +61,15 @@ class ApiToken extends Model
     public static function from($attributes = [])
     {
         $newToken = new self();
+        $primary = $newToken->getPrimary();
 
         $newToken->ownerModel = $attributes['class'];
-        $attributes['class'] = $attributes['class']::class;
-        $attributes['id'] = uuidv4();
-        $gen = $newToken->genToken($attributes['id']);
+        $newToken->class = $attributes['class']::class;
+        $newToken->parent_id = $attributes['parent_id'];
+        $newToken->$primary = uuidv4();
+        $gen = $newToken->genToken($newToken->$primary);
         $newToken->plainTextToken = $gen['plain'];
-        $attributes['token'] =  $gen['hashed'];
+        $newToken->token =  $gen['hashed'];
         return $newToken;
     }
 
