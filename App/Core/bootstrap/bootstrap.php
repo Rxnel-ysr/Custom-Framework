@@ -21,15 +21,15 @@ return (static function () {
 
     // Configuration loading
     if ($cache['config']) {
-        $cfg = (new Config($__root,"{$__root}/storage/cache/config.php"))->readCache();
+        $cfg = (new Config($__root,"storage/cache/config.php"))->readCache();
         $cfg['root'] = $__root;
     } else {
-        $cfg = new Config($__root, "{$__root}/storage/cache/config.php", [
-            'database'       => require "{$__root}/config/database.php",
-            'router'         => require "{$__root}/config/router.php",
-            'compiler'       => require "{$__root}/config/compiler.php",
-            'app'            => require "{$__root}/config/app.php",
-            'rate_limiter'   => require "{$__root}/config/rate_limiter.php",
+        $cfg = new Config($__root, "storage/cache/config.php", [
+            'database'       => require "config/database.php",
+            'router'         => require "config/router.php",
+            'compiler'       => require "config/compiler.php",
+            'app'            => require "config/app.php",
+            'rate_limiter'   => require "config/rate_limiter.php",
             'root'           => $__root
         ]);
     }
