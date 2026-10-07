@@ -17,7 +17,7 @@ return (static function () {
     $cache = require base_path('/config/cache.php');
 
     // Load environment
-    Env::load($__root . '.env');
+    Env::load($__root . '/.env');
 
     // Configuration loading
     if ($cache['config']) {

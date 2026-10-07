@@ -4,9 +4,7 @@ on:
   push:
     branches:
       - master
-    paths:
-      - "back-end/**"
-
+      
 jobs:
   deploy:
     runs-on: ubuntu-latest

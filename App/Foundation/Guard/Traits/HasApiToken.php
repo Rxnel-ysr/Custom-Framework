@@ -4,6 +4,7 @@ namespace App\Foundation\Guard\Traits;
 
 use App\Foundation\Exceptions\Framework\HighLevelException;
 use App\Foundation\Database\Model;
+use App\Foundation\Exceptions\Framework\Http\UnauthorizedException;
 
 trait HasApiToken
 {
@@ -47,8 +48,14 @@ class ApiToken extends Model
     protected function ___verifyToken(string $plain): ?static
     {
         [$id, $plainToken] = explode('|', $plain, 2);
+        if(!$id || !$plain){
+            throw new UnauthorizedException();
+        }
         $hashed = hash('sha256', $plainToken);
 
+        /**
+         * @var ApiToken
+         */
         $token = $this->find($id);
 
         if (!$token || $token->token !== $hashed) {
@@ -62,11 +69,16 @@ class ApiToken extends Model
     {
         $newToken = new self();
         $primary = $newToken->getPrimary();
+        $id = 1;
+
+        if($model = $newToken->select($primary)->orderBy($primary, 'DESC')->first()){
+            $id = $model->{$newToken->getPrimary()} + 1;
+        }
 
         $newToken->ownerModel = $attributes['class'];
         $newToken->class = $attributes['class']::class;
         $newToken->parent_id = $attributes['parent_id'];
-        $newToken->$primary = uuidv4();
+        $newToken->$primary = $id;
         $gen = $newToken->genToken($newToken->$primary);
         $newToken->plainTextToken = $gen['plain'];
         $newToken->token =  $gen['hashed'];

@@ -283,7 +283,7 @@ class Request
      */
     public function bearerToken(): ?string
     {
-        if (isset($this->headers['Authorization']) && preg_match('/Bearer\s+(.+)/', $this->headers['Authorization'], $matches)) {
+        if (isset($this->headers['authorization']) && preg_match('/Bearer\s+(.+)/', $this->headers['authorization'], $matches)) {
             return $matches[1];
         }
 
