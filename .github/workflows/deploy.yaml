@@ -13,6 +13,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+
       - name: Deploy backend
         uses: SamKirkland/FTP-Deploy-Action@v4.4.0
         with:
@@ -24,3 +29,10 @@ jobs:
           exclude: |
             **/.env
             **/.htaccess
+            **/.git
+            **/.github
+      
+      - name: Run PHP
+        run: |
+          php command dump-autoload -c
+          php -r "echo 'PHP works: ' . PHP_VERSION . PHP_EOL;"
