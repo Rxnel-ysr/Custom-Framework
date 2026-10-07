@@ -1,0 +1,28 @@
+name: Deploy to InfinityFree
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - "back-end/**"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Deploy backend
+        uses: SamKirkland/FTP-Deploy-Action@v4.4.0
+        with:
+          server: ftpupload.net
+          username: ${{ secrets.FTP_BACKEND_USERNAME }}
+          password: ${{ secrets.FTP_BACKEND_PASS }}
+          local-dir: ./
+          server-dir: /htdocs/
+          exclude: |
+            **/.env
+            **/.htaccess
