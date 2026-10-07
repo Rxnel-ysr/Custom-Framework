@@ -27,10 +27,10 @@ jobs:
           local-dir: ./
           server-dir: /htdocs/
           exclude: |
-            **/.env
-            **/.htaccess
-            **/.git
-            **/.github
+            .git/**
+            .github/**
+            .env
+            .htaccess
       
       - name: Run PHP
         run: |
