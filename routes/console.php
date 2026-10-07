@@ -93,7 +93,7 @@ Command::register('cache:config', function ($argv) {
     <?php
     PHP . "\nreturn " . var_export($cache, true) . ";\n");
 
-    $cfg = new Config(base_path('/storage/cache/config.php'), [
+    $cfg = new Config(base_path(), '/storage/cache/config.php', [
         'database'       => require base_path("config/database.php"),
         'router'         => require base_path("config/router.php"),
         'compiler'       => require base_path("config/compiler.php"),
@@ -207,5 +207,26 @@ Command::register('make:model', function ($argv) {
     $controlTemplate->save($destination);
 
     echo "New controller created [App/Models/{$classname}.php]";
+    return 0;
+});
+
+Command::register('run:job', function ($argv) {
+    $batch = new \App\Foundation\System\JobBatch();
+
+    $resultFile = __DIR__ . '/job-result.txt';
+
+    $command = PHP_BINARY . ' -r ' . escapeshellarg(
+        'sleep(3); file_put_contents('
+            . var_export($resultFile, true)
+            . ', "Job finished at " . date("Y-m-d H:i:s") . " Yeah shit sherlock" .PHP_EOL);'
+    );
+
+    $job = $batch->run($command);
+
+    echo "Job started.\n";
+    echo "ID: {$job->id}\n";
+    echo "Result will be written to:\n";
+    echo "{$resultFile}\n";
+
     return 0;
 });
