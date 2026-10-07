@@ -6,28 +6,50 @@ use ArrayAccess;
 
 class Config implements ArrayAccess
 {
-    public function __construct(protected string $cachePath, protected array $configs = []) {}
+    public function __construct(
+        protected string $root,
+        protected string $cachePath,
+        protected array $configs = []
+    ) {}
 
-    public function readCache()
+    protected function cacheFile(): string
     {
-        $cfg = require $this->cachePath;
+        return rtrim($this->root, DIRECTORY_SEPARATOR)
+            . DIRECTORY_SEPARATOR
+            . ltrim($this->cachePath, DIRECTORY_SEPARATOR);
+    }
+
+    public function readCache(): static
+    {
+        $cfg = require $this->cacheFile();
+
         $this->configs = is_array($cfg) ? $cfg : [];
+
         return $this;
     }
 
-    public function cached(array $except = [])
+    public function cached(array $except = []): static
     {
-        $dirname = dirname($this->cachePath);
+        $cacheFile = $this->cacheFile();
+        $dirname = dirname($cacheFile);
+
         if (!is_dir($dirname)) {
             mkdir($dirname, 0777, true);
         }
 
-        $tobeSaved = empty($except) ? $this->configs : array_filter($this->configs, fn($key) => !in_array($key, $except), ARRAY_FILTER_USE_KEY);;
+        $toBeSaved = empty($except)
+            ? $this->configs
+            : array_filter(
+                $this->configs,
+                fn($key) => !in_array($key, $except),
+                ARRAY_FILTER_USE_KEY
+            );
 
-        file_put_contents($this->cachePath, <<<PHP
-        <?php
-        return 
-        PHP . var_export($tobeSaved, true) . ";\n");
+        file_put_contents(
+            $cacheFile,
+            "<?php\nreturn " . var_export($toBeSaved, true) . ";\n"
+        );
+
         return $this;
     }
 
@@ -38,12 +60,12 @@ class Config implements ArrayAccess
 
     public function offsetGet(mixed $offset): mixed
     {
-            return $this->configs[$offset] ?? null;
+        return $this->configs[$offset] ?? null;
     }
 
     public function offsetSet(mixed $offset, mixed $value): void
     {
-        if (is_null($offset)) {
+        if ($offset === null) {
             $this->configs[] = $value;
         } else {
             $this->configs[$offset] = $value;
@@ -52,8 +74,6 @@ class Config implements ArrayAccess
 
     public function offsetUnset(mixed $offset): void
     {
-        if (isset($this->configs[$offset])) {
-            unset($this->configs[$offset]);
-        }
+        unset($this->configs[$offset]);
     }
 }
