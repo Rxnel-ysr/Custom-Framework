@@ -35,4 +35,5 @@ jobs:
       - name: Run PHP
         run: |
           php command dump-autoload -c
+          php command cache:config
           php -r "echo 'PHP works: ' . PHP_VERSION . PHP_EOL;"
